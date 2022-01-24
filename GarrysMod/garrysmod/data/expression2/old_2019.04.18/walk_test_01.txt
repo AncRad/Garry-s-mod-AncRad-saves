@@ -1,0 +1,300 @@
+@name walk_test_01
+
+@inputs [P1 P2]:entity
+@outputs 
+@persist [Itialization]:number
+@persist [Legs_list Walkers_list]:table
+
+@persist [Brain_time]:number
+
+@trigger none
+
+
+
+switch(clkName()) {
+    default,
+        if(duped()) {reset()}
+        if(!Itialization & (first() | dupefinished())) {
+            Itialization=1
+            #include "AddHolo_v01"
+            
+            ####
+            #
+            function addLeg(Name:string, LocalPos:vector, INTO:string) {
+                local Length = 25
+                local Leg_T = table(
+                     "name" = Name
+                    #,"" = 
+                )
+                local Mater1 = ""
+                local Color1 = vec(255)
+                
+                local Bone1 = Name+"/bone1"
+                local Bone2 = Name+"/bone2"
+                local Bone3 = Name+"/bone3"
+                addHolo(Bone1,LocalPos,vec(0.8),ang(),vec(255),"models/editor/axis_helper.mdl","lights/white",INTO)
+                addHolo(Bone2,vec(Length,0,0),vec(0.8),ang(),vec(255),"models/editor/axis_helper.mdl","lights/white",Bone1)
+                addHolo(Bone3,vec(Length,0,0),vec(0.8),ang(),vec(255),"models/editor/axis_helper.mdl","lights/white",Bone2)
+                
+                
+                Leg_T["boneList", array] = array(Bone1,Bone2,Bone3)
+                addHolo_callFunc("addLeg", Leg_T)
+            }
+            function addLeg(DATA:table) {
+                local Leg_T = DATA:merge(table("bone_e" = array(),"bone_i" = array()))
+                foreach(C, Holo_n:string = Leg_T:removeArray("boneList")) {
+                    Leg_T["bone_e", array][C, entity] = AddHolo[Holo_n + "/entity", entity]
+                    Leg_T["bone_i", array][C, number] = AddHolo[Holo_n + "/index" , number]
+                }
+                Legs_list[Leg_T["name",string], table] = Leg_T
+            }
+            
+            function table:legAnim([V1 V2]:vector) {
+                local Bone_i = This["bone_i", array]
+                local Bone1_i = Bone_i:number(1)
+                local Bone2_i = Bone_i:number(2)
+                local Bone3_i = Bone_i:number(3)
+                
+                local Bone1_e = holoEntity(Bone1_i)
+                local Bone2_e = holoEntity(Bone2_i)
+                #local Bone3_e = holoEntity(Bone3_i)
+                
+                local DIF = (V1-Bone1_e:pos())
+                local A1 = DIF:toAngle()
+                holoAng(Bone1_i, A1)
+                
+                local A = acos(clamp(DIF:length(),0,50)/50)
+                holoAng(Bone2_i, Bone1_e:toWorld(ang(A,0,0)))
+            }
+            function legAnim(Leg_n:string, [V1 V2]:vector) {Legs_list[Leg_n,table]:legAnim(V1,V2)}
+            #
+            ####
+            
+            ####
+            #
+            function array addLegs(Walker_n:string, INTO_e:entity) {
+                local Base_n = Walker_n + "/base"
+                local Legs_n = Base_n + "/legs"
+                local Leg1_n = Legs_n + "/leg1"
+                local Leg2_n = Legs_n + "/leg2"
+                addHolo(Base_n,vec(),vec(),ang(),vec(),"cube","","") addHolo_INTO(INTO_e)
+                addHolo(Legs_n,vec(),vec(),ang(),vec(),"cube","",Base_n)
+                addLeg(Leg1_n, vec(0, 10,0), Legs_n)
+                addLeg(Leg2_n, vec(0,-10,0), Legs_n)
+                
+                return array(Leg1_n,Leg2_n)
+            }
+            function addWalker(Walker_n:string, INTO_e:entity) {
+                addHolo_callFunc("addWalker", table(
+                     "name" = Walker_n
+                    ,"walker_e" = INTO_e
+                    ,"legs_nameList" = addLegs(Walker_n, INTO_e)
+                ))
+            }
+            function addWalker(DATA:table) {
+                local Walker_T = DATA:merge(table("legs"=table()))
+                foreach(C, Leg_n:string = Walker_T:removeArray("legs_nameList")) {
+                    Walker_T["legs", table][Leg_n, table] = Legs_list[Leg_n, table]
+                }
+                
+                Walkers_list[Walker_T["name", string], table] = Walker_T
+            }
+            #
+            ####
+            
+            addWalker("", entity())
+            
+            timer("spawner", 1) #Spawner_time = curtime()
+            timer("brain", 1) Brain_time = curtime()
+            addHolo_start()
+        }
+    break
+    case "spawner",
+        
+    break
+    case "brain",
+        timer("brain", 50)
+        
+        local Brain_lastTime = Brain_time
+        Brain_time = curtime()
+        local Interval = Brain_time-Brain_lastTime
+        
+        local GACC = (owner():keyPressed("mouse_4") ? vec(100,0,0) : vec(0,0,-600))*Interval
+        
+        foreach(Walker_n, Walker_T:table = Walkers_list) {
+            local Walker_e = Walker_T["walker_e", entity]
+            local Walker_legs = Walker_T["legs", table]
+            
+            #- 
+            foreach(Leg_n, Leg_T:table = Walker_legs) {
+                Leg_T:legAnim(P1:pos(), P2:pos())
+            }
+            
+            #[
+            #-
+            foreach(Leg_n, Leg_T:table = Walker_legs) {
+                local Bone_i = Leg_T["bone_i", array]
+                local Bone1_i = Bone_i:number(1)
+                local Bone2_i = Bone_i:number(2)
+                local Bone3_i = Bone_i:number(3)
+                
+                local Bone1_e = holoEntity(Bone1_i)
+                #local Bone2_e = holoEntity(Bone2_i)
+                #local Bone3_e = holoEntity(Bone3_i)
+                
+                local Bone1_A = vec()
+                local Bone2_A = GACC
+                local Bone3_A = vec()
+                
+                local Bone1_V = entity():vel()
+                local Bone2_V = Leg_T["bone2_V", vector]
+                local Bone3_V = Leg_T["bone3_V", vector]
+                
+                local Bone1_P = Bone1_e:pos()
+                local Bone2_P = Leg_T["bone2_P", vector]
+                local Bone3_P = Leg_T["bone3_P", vector]
+                
+                
+                if(changed(0)) {
+                    Bone2_P = Bone1_P+(Bone2_P-Bone1_P):normalized()*25
+                    Bone3_P = Bone2_P+(Bone3_P-Bone2_P):normalized()*25
+                }
+                holoPos(Bone2_i, Bone2_P)
+                holoPos(Bone3_i, Bone3_P)
+                
+                
+                Leg_T["bone2_V", vector] = Bone2_V #+GACC/2*Interval
+                Leg_T["bone3_V", vector] = Bone3_V #+GACC/2*Interval
+                
+                Leg_T["bone2_P", vector] = Bone2_P
+                Leg_T["bone3_P", vector] = Bone3_P
+                
+                
+                #foreach(C,E:entity=Leg_T["bone_e", array]) {E:setColor(randvec(100,255))}
+            }
+            ]#
+        }
+    break
+    case "AddHolo", addHolo() break
+}
+
+setName("walk_test_01\nOPS: "+ops())
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,35 @@
+@name FILE_load_Example
+@inputs 
+@outputs 
+
+@persist [FILE_Status FILE_String]:string 
+
+
+if(changed(0)) {
+    
+    
+    runOnFile(1)
+    timer("fileRequest", 1)
+}
+
+if(clk("fileRequest")) {
+        timer("fileRequest", 100)
+    
+    if(fileCanLoad()) {
+        stoptimer("fileRequest")
+        fileLoad("test.txt") #D:\Games\Steam\steamapps\common\GarrysMod\garrysmod\data\e2files\creberusturret_01_004\friendlist.txt
+    }
+}
+
+if(fileClk()) {
+    switch(fileStatus()) {
+        case _FILE_OK,
+            FILE_String = fileRead()
+            print("Файл загружен")
+            if(FILE_String:length() < 228) {print(FILE_String)}
+        break
+        case _FILE_404,
+            print("Файла нет")
+        break
+    }
+}

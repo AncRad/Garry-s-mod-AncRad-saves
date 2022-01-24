@@ -1,0 +1,67 @@
+@name example
+@inputs 
+@outputs 
+@persist [Q]:table [E HoloBase]:entity CurtimeAnimations CurtimePhysics
+
+
+
+if(first()) {
+    
+    E = entity()
+    HoloBase = holoCreate(1, E:toWorld(vec(0,0,1)), vec(0), E:angles())
+    holoParent(1, E)
+    
+    holoCreate(2, HoloBase:pos(), vec(0.5), HoloBase:toWorld(ang(90,0,0)), vec(255), "models/sprops/trans/air/prop_3b_s.mdl")
+    holoParent(2, 1)
+    
+    
+    timer("animations", 1)
+    timer("physics", 1)
+}
+
+if(clk("animations")) {
+        timer("animations", 50) #тут можно и принебречь, поставить 50, 75, 100, 150 
+    
+    if(CurtimeAnimations == 0) {CurtimeAnimations = curtime()}
+    LastCurtime = CurtimeAnimations
+    CurtimeAnimations = curtime()
+    Interval = CurtimeAnimations - LastCurtime
+    Loop = Interval / 0.015625
+    
+    holoAng(1, HoloBase:toWorld(ang(0,15*Loop,0)))
+}
+
+
+if(clk("physics")) {
+        timer("physics", 10)  #тут чем меньше тем лучше #на самом деле тикрейт ограничен сервером, по стандарту минимальный возможный интервал 0.015625 секунды, так что меньше 15 мс ставить нет никакого смысла, но десяточка смотрится приятнее, чем 15 :3
+    
+    if(CurtimePhysics == 0) {CurtimePhysics = curtime()}
+    LastCurtime = CurtimePhysics
+    CurtimePhysics = curtime()
+    Interval = CurtimePhysics - LastCurtime
+    Loop = Interval / 0.015625
+    
+    V = E:up() * 9.2
+    E:applyForce(V * E:mass() * Loop)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

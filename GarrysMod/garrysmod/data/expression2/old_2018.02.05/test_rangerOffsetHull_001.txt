@@ -1,0 +1,31 @@
+@name test_rangerOffsetHull_001
+@inputs 
+@outputs 
+@persist 
+@trigger 
+
+interval(1)
+
+
+E = entity()
+
+Hull = vec(15)
+R = rangerOffsetHull(1000, E:toWorld(vec(10,0,0)), E:forward(), Hull)
+
+if(!holoEntity(1)) {
+    holoCreate(1,vec(),vec(10,0.2,0.2)/6)
+}
+holoPos(1, R:pos())
+holoAng(1, angnorm(R:hitNormal():toAngle()))
+
+
+
+if(!holoEntity(2)) {
+    holoCreate(2,vec(),vec(5)/6) holoModel(2, "models/editor/axis_helper.mdl")
+}
+holoPos(2, R:pos())
+
+if(!holoEntity(3)) {
+    holoCreate(3,vec(),vec(5)/6) holoModel(3, "models/editor/axis_helper.mdl")
+}
+holoPos(3, rayAABBoxIntersection(-R:hitNormal()*(Hull:length()*5),R:hitNormal(),vec(),Hull))

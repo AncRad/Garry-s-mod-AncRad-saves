@@ -1,0 +1,443 @@
+@name Turret_01_003_base
+
+@inputs AS:entity
+@outputs
+#
+#- 
+@persist [Q]:table [SWEP_status]:string
+#
+#- 
+@persist [G]:gtable
+#
+#- 
+@persist [Turret_phys User]:entity    [Holo_base_i Holo_CE_i Holo_RH_i]:number [Holo_rt_e Holo_base_e  Holo_CE_e Holo_RH_e]:entity
+
+@model models/sprops/cylinders/size_5/cylinder_12x3.mdl
+
+
+
+#include "Turret_01_004_model"
+if(changed(0)) {
+    
+    #
+    G = gTable("ancrad_turret")
+    #
+    Turret_phys = entity()
+    #
+    runOnDamage(1,Turret_phys)
+    runOnDamage(1)
+    runOnLast(1)
+    runOnChat(1)
+    #
+    addHolo_start()
+    addHolo_timer("base", "swep", 1)
+    #
+    
+    
+    function number entity:to(TO:string) {
+        local SID = This:steamID()
+        local SWEP_status_last = SWEP_status
+        
+        if(TO == "toChest") {
+            if(G[SID + "/inChest/holo", entity]) {return 0}
+            
+            holoPos(Holo_CE_i, This:attachmentPos("chest"))
+            holoAng(Holo_CE_i, This:attachmentAng("chest"))
+            holoPos(Holo_base_i, Holo_CE_e:toWorld(vec()))
+            holoAng(Holo_base_i, Holo_CE_e:toWorld(ang()))
+            #holoParent(Holo_base_i, Holo_CE_i)
+            
+            #[
+            local Holo_CE_e = holoCreate(Holo_CE_i,This:attachmentPos("chest"),-vec(0.3),This:attachmentAng("chest")) holoParentAttachment(Holo_CE_i,This,"chest")
+            holoPos(Holo_base_i, Holo_CE_e:toWorld(vec()))
+            holoAng(Holo_base_i, Holo_CE_e:toWorld(ang()))
+            holoParent(Holo_base_i, Holo_CE_i)
+            print(holoEntity(Holo_base_i):pos()-This:attachmentPos("chest"))
+            ]#
+            
+            
+            #[
+            holoPos(Holo_CE_i, Holo_base_e:pos()) #print(This:attachmentPos("chest"):distance(Holo_RH_e:pos()))
+            holoAng(Holo_CE_i, Holo_base_e:angles())
+            holoParent(Holo_base_i, Holo_CE_i)
+            #holoPos(Holo_base_i, Holo_CE_e:toWorld(vec()))
+            #holoAng(Holo_base_i, Holo_CE_e:toWorld(ang()))
+            holoParentAttachment(Holo_CE_i, This, "chest")
+            holoPos(Holo_CE_i, This:attachmentPos("chest")) #print(This:attachmentPos("chest"):distance(Holo_CE_e:pos()))
+            holoAng(Holo_CE_i, This:attachmentAng("chest"))
+            ]#
+            SWEP_status = "inChest"
+            G[SID + "/inChest/holo", entity] = Holo_base_e
+        }
+        elseif(TO == "toRHand") {
+            if(G[SID + "/inRHand/holo", entity]) {return 0}
+            
+            local Crow = This:weapon()
+            if(Crow:type() != "weapon_crowbar") {return 0}
+            Q[SID + "/crow", entity] = Crow
+            Crow:setAlpha(0)
+            Crow:drawShadow(0)
+            
+            holoPos(Holo_RH_i, This:attachmentPos("anim_attachment_rh"))
+            holoAng(Holo_RH_i, This:attachmentAng("anim_attachment_rh"))
+            holoPos(Holo_base_i, Holo_RH_e:toWorld(vec()))
+            holoAng(Holo_base_i, Holo_RH_e:toWorld(ang()))
+            #holoParent(Holo_base_i, Holo_RH_i)
+            
+            #[
+            local Holo_RH_e = holoCreate(Holo_RH_i,This:attachmentPos("anim_attachment_rh"),-vec(0.3),This:attachmentAng("anim_attachment_rh")) holoParentAttachment(Holo_RH_i,This,"anim_attachment_rh")
+            holoPos(Holo_base_i, Holo_RH_e:toWorld(vec()))
+            holoAng(Holo_base_i, Holo_RH_e:toWorld(ang()))
+            holoParent(Holo_base_i, Holo_RH_i)
+            print(holoEntity(Holo_base_i):pos()-This:attachmentPos("anim_attachment_rh"))
+            ]#
+            
+            #[
+            holoPos(Holo_RH_i, Holo_base_e:pos()) #print(This:attachmentPos("anim_attachment_rh"):distance(Holo_RH_e:pos()))
+            holoAng(Holo_RH_i, Holo_base_e:angles())
+            holoParent(Holo_base_i, Holo_RH_i)
+            #holoPos(Holo_base_i, Holo_RH_e:toWorld(vec()))
+            #holoAng(Holo_base_i, Holo_RH_e:toWorld(ang()))
+            holoParentAttachment(Holo_RH_i, This, "anim_attachment_rh")
+            holoPos(Holo_RH_i, This:attachmentPos("anim_attachment_rh")) #print(This:attachmentPos("anim_attachment_rh"):distance(Holo_RH_e:pos()))
+            holoAng(Holo_RH_i, This:attachmentAng("anim_attachment_rh"))
+            ]#
+            SWEP_status = "inRHand"
+            G[SID + "/inRHand/holo", entity] = Holo_base_e
+        }
+        elseif(TO == "toDrop") {
+            
+            holoPos(Holo_base_i, Turret_phys:pos())
+            #holoParent(Holo_base_i, Turret_phys)
+            User = noentity()
+            SWEP_status = "inDrop"
+        }
+        elseif(TO == "toPut") {
+            
+            SWEP_status = "inPut"
+        }
+        else {
+            return 0
+        }
+        #
+        #
+        #
+        local LastInThis = SWEP_status_last == "inRHand" | SWEP_status_last == "inChest"
+        local RealInThis = SWEP_status      == "inRHand" | SWEP_status      == "inChest"
+        if(SWEP_status_last == "inRHand") {
+            G[SID + "/inRHand/holo", entity]:remove()
+            Q[SID + "/crow", entity]:setAlpha(255)
+            Q[SID + "/crow", entity]:drawShadow(1)
+        }
+        elseif(SWEP_status_last == "inChest") {
+            G[SID + "/inChest/holo", entity]:remove()
+        }
+        #
+        #
+        local DIF = RealInThis-LastInThis
+        if(DIF > 0) {
+            Turret_phys:propNotSolid(1)
+            Turret_phys:setAlpha(150)
+            Turret_phys:propFreeze(1)
+        }
+        elseif(DIF < 0) {
+            Turret_phys:setAng(Holo_base_e:angles())
+            Turret_phys:setPos(Turret_phys:toWorld(-Turret_phys:toLocal(Holo_rt_e:pos())))
+            Turret_phys:propNotSolid(0)
+            Turret_phys:setAlpha(255)
+            Turret_phys:propFreeze(0)
+            #holoParent(Holo_base_i, Holo_rt_e)
+            holoPos(Holo_base_i, Holo_rt_e:toWorld(vec()))
+            holoAng(Holo_base_i, Holo_rt_e:toWorld(ang()))
+        }
+        #
+        #
+        return 1
+    }
+    function number toChest() {
+        return User:to("toChest")
+    }
+    function number toRHand() {
+        return User:to("toRHand")
+    }
+    function number toDrop() {
+        return User:to("toDrop")
+    }
+    function number toPut() {
+        return User:to("toPut")
+    }
+    function number entity:getUser() {
+        local SID = This:steamID()
+        local TO = ""
+        if(!G[SID + "/inRHand/holo", entity] & This:weapon():type() == "weapon_crowbar") {
+            TO = "toRHand"
+        }
+        elseif(!G[SID + "/inChest/holo", entity]) {
+            TO = "toChest"
+        }
+        else {
+            return 0
+        }
+        
+        Holo_CE_i = 157001
+        Holo_CE_e = holoCreate(Holo_CE_i, This:attachmentPos("chest"),-vec(0.3),This:attachmentAng("chest"))
+        holoParentAttachment(Holo_RH_i,This,"chest")
+        Holo_RH_i = 157001
+        Holo_RH_e = holoCreate(Holo_RH_i, This:attachmentPos("anim_attachment_rh"),-vec(0.3),This:attachmentAng("anim_attachment_rh"))
+        holoParentAttachment(Holo_RH_i,This,"anim_attachment_rh")
+        
+        
+        This:to(TO)
+        User = This
+        return 1
+    }
+}
+
+#- swep
+if(clk("swep")) {
+        timer("swep", 50)
+    
+    if(changed(0)) {
+        Holo_rt_e   = AddHolo["rt/entity"  , entity]
+        Holo_base_i = AddHolo["base/index" , number] print(Holo_base_i)
+        Holo_base_e = AddHolo["base/entity", entity]
+    }
+    
+    
+    local User_changed = changed(User)
+    
+    
+    switch(SWEP_status) {
+        case "inChest",
+            local Crow = User:weapon():type()=="weapon_crowbar"
+            if(changed(Crow) & Crow & User:keyUse()) {
+                toRHand()
+            }
+        break
+        case "inRHand",
+            local Crow = User:weapon():type()=="weapon_crowbar"
+            if(changed(Crow)) {
+                if(!Crow) {
+                    if(User:keyUse()) {
+                        if(!toChest()) {toDrop()}
+                    }
+                    else {
+                        toDrop()
+                    }
+                }
+            }
+        break
+        case "inDrop",
+            
+        break
+        case "inPut",
+            
+        break
+        default,
+            toDrop()
+        break
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+}
+
+
+
+
+
+
+
+#- damage
+local Damage_e = damageEntClk()
+if(Damage_e) {
+    if(Damage_e == Turret_phys) {
+        if(curtime()-Q["swep_takeLock", number] >= 0.5) {
+            if((1) & 2) { #1 == T["baseStepReal", number] <= 3 #2 == inrange(T["bashnyaRoot_localAng", angle],ang(-0.1),ang(0.1))
+                if(SWEP_status == "inDrop") {
+                    if(Damage_e:getDamageType() == "club") {
+                        local Attacker_e = Damage_e:getAttacker()
+                        if(Attacker_e:isPlayer()) {
+                            if(Attacker_e:weapon():type() == "weapon_crowbar" & Attacker_e:keyUse()) {
+                                if(Attacker_e:getUser()) {
+                                    Q["swep_takeLock", number] = curtime()
+                                }
+                            }
+                        }
+                    }
+                }
+                elseif(SWEP_status == "inPut") {
+                    if(Damage_e:getDamageType() == "club") {
+                        local Attacker_e = Damage_e:getAttacker()
+                        if(Attacker_e == User) {
+                            if(Attacker_e:weapon():type() == "weapon_crowbar" & Attacker_e:keyUse()) {
+                                if(toRHand()) {
+                                    Q["swep_takeLock", number] = curtime()
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+if(last()) {
+    if(SWEP_status == "inChest" | SWEP_status == "inRHand") {
+        toDrop()
+    }
+}
+setName("Turret_base\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage() * 1e6))

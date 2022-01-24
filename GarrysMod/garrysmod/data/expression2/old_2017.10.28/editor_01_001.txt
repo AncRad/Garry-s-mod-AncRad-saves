@@ -1,0 +1,135 @@
+@name editor 01 001
+
+@inputs 
+@outputs 
+@persist [E O User]:entity [Q]:table
+
+@trigger none
+
+
+
+if(changed(0)) {
+    
+    #include "old 28.10.2017/EGPS"
+    #include "old 28.10.2017/QResource"
+    E = entity()
+    O = owner()
+    
+    
+    
+    
+    
+    Q["menu", array] = array("project", "profile", "program")
+        
+        
+        Q["menu/project", array] = array("save", "info", "new", "import", "export")
+            Q["menu/project/save", array]
+            Q["menu/project/info", array]
+            Q["menu/project/new", array]
+            Q["menu/project/import", array] = array("file", "gTable", "game")
+            Q["menu/project/export", array] = array("file", "gTable", "e2out", "game")
+            
+        Q["menu/profile", array] = array("save", "settings", "load", "new")
+            Q["menu/profile/save", array]
+            Q["menu/profile/settings", array]
+            Q["menu/profile/load", array]
+            Q["menu/profile/new", array]
+            
+        Q["menu/program", array] = array("settings", "repair", "info")
+            Q["menu/profile/settings", array] = array("")
+            Q["menu/profile/repair", array] = array("cancel")
+                Q["menu/profile/egp", array]
+                Q["menu/profile/pv", array]
+            Q["menu/profile/info", array]
+            
+    
+    
+    
+    
+    Q["fontSize", number] = 15
+    Q["indent"  , number] = 2
+    
+    egpSelect(E:isWeldedTo():wirelink())
+    egpClear()
+    
+    
+    
+    function createMenu(Pos:vector2, Step:string) {
+        
+        local List_a = Q[Step, array]
+        local List_c = List_a:count()
+        
+        local FontSize = Q["fontSize", number]
+        local Indent   = Q["indent"  , number]
+        
+        local B_n = "menuBase"
+        local B_s = v(150,List_c*FontSize)
+        local B_p = Pos+B_s/2
+        egpAddBox(B_n, B_p, B_s, "")
+        egpSetColor(30)
+        
+        local T_n = "menuText"
+        local T_s = B_s-v(Indent,0)
+        local T_p = v(Indent,0)-T_s/2
+        local T_t = ""
+        
+        foreach(C, Text:string = List_a) {
+            T_t+=Text+"\n"
+        }
+        
+        egpAddTextLayout(T_n, T_t:upper(), T_p, T_s)
+        egpSetParent(B_n)
+        egpSetSize(FontSize)
+    }
+    
+    
+    
+    createMenu(egpScrSize(O)/2, "menu")
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

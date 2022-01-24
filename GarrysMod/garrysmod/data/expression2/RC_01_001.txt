@@ -1,0 +1,391 @@
+@name RC_01_001
+
+@inputs 
+@outputs 
+
+#- CODE
+@persist Code_FirstRun
+
+#- DEBUG
+@persist BoneView_Number
+
+#- RAGDOLL
+@persist R:entity
+@persist R_curtime:number
+
+
+
+switch(clkName()) {
+    default,
+        if(changed(0)) {
+            if(Code_FirstRun) {reset()}
+            Code_FirstRun = 1
+            
+            
+            local Gate_e = entity()
+            Gate_e:setMass(0.001)
+            Gate_e:propGravity(0)
+            Gate_e:propPhysicalMaterial("superice")
+            #ifdef noCollideAll(entity,number)
+                noCollideAll(Gate_e, 1)
+            #endif
+            
+            R = Gate_e:isWeldedTo()
+            if(R:type() != "prop_ragdoll") {
+                print("[Ragdoll] this is not ragdoll")
+                selfDestruct()
+                exit()
+            }
+            if(0) {
+                R:setMaterial("models/wireframe")
+                R:setColor(vec4(vec(25,25,255), 150))
+            }
+            else {
+                R:setMaterial("")
+                R:setColor(vec4(255))
+            }
+            
+            function holoClip([ID Index]:number, LocalPos:vector, LocalAng:angle, Offset:number) {
+                holoClipEnabled(ID, Index, 1)
+                holoClip(ID, Index, LocalPos + vec(Offset,0,0):rotate(LocalAng), vec(1,0,0):rotate(LocalAng), 0)
+            }
+            function addQuat(N:number, P:vector, Q:quaternion) {
+                if(!holoEntity(N)) {
+                    local S = 3
+                    holoCreate(N,P,vec(S),Q:toAngle(),vec(255), "models/editor/axis_helper.mdl")
+                    holoClip(N,1,vec(),ang(0,90,0),-S/2)
+                    holoClip(N,2,vec(),ang(0,0,0),-S/2)
+                    holoClip(N,3,vec(),ang(-90,0,0),-S/2)
+                }
+                holoPos(N, P)
+                holoAng(N, Q:toAngle())
+            }
+            
+            BoneView_Number = -1
+            
+            addQuat(2,vec(),quat())
+            holoScale(2, vec(3))
+            
+            
+            holoCreate(1001,vec(),vec(1.5),ang(),vec(255),"cplane") holoMaterial(1001, "models/wireframe")
+            holoCreate(1002,vec(),vec(1.5),ang(),vec(255),"cplane") holoMaterial(1002, "models/wireframe")
+            
+            
+            timer("debug", 1)
+            timer("unFreeze", 1)
+        }
+    break
+    case "unFreeze",
+        if(!R:isFrozen() | 1) {
+            print("[Ragdoll] started")
+            timer("ragdoll", 1)
+            break
+        }
+        timer("unFreeze", 1)
+    break
+    case "ragdoll",
+        timer("ragdoll", 50)
+        
+        #################################
+        ###            [10]           ###
+        ###             |             ###
+        ###       /[2]\ | /[3]\       ###
+        ###      /     \|/     \      ###
+        ###    [6]     [1]      \     ###
+        ###    /        |       [4]   ###
+        ###   /         |         \   ###
+        ###  /          |          \  ###
+        ###[7]     [8]-[0]-[11]    [5]###
+        ###         |       |         ###
+        ###         |       |         ###
+        ###         |       |         ###
+        ###        [9]     [12]       ###
+        ###         |       |         ###
+        ###         |       |         ###
+        ###         |       |         ###
+        ###        [14]    [13]       ###
+        #################################
+        #####- STANDART GM SKELET -######
+        #################################
+        
+        local Interval = curtime() - R_curtime
+        R_curtime = curtime()
+        
+        local Key = owner():keyPressed("mouse_4")-owner():keyPressed("mouse_5")
+        if(changed(Key) & Key) {
+            BoneView_Number = clamp(BoneView_Number + Key,-1,14)
+            
+        }
+        
+        local BoneView = R:bone(BoneView_Number)
+        addQuat(1, BoneView:pos(), quat(BoneView:angles()))
+        
+        local Fot_L_B = R:bone(13)
+        local Fot_R_B = R:bone(14)
+        
+        local Body_B = R:bone(0)
+        local Chest_B = R:bone(1)
+        local Head_B = R:bone(10)
+        
+        
+        rangerPersist(1)
+        rangerFilter(R)
+        local Fot_L_R = rangerOffset(0.525*18,Fot_L_B:pos(),vec(0,0,-1))
+        holoPos(1001, Fot_L_R:pos())
+        holoColor(1001, vec4(Fot_L_R:hit() ? vec(50,50,255) : vec(50) ,255))
+        local Fot_R_R = rangerOffset(0.525*18,Fot_R_B:pos(),vec(0,0,-1))
+        holoPos(1002, Fot_R_R:pos())
+        holoColor(1002, vec4(Fot_R_R:hit() ? vec(50,50,255) : vec(50) ,255))
+        rangerPersist(0)
+        #[
+        ########################################################################################################################
+        local Limb_Bones = array(Fot_L_B,Fot_R_B)
+        local Limb_Radius = array(15,15)
+        local Poly_vertex_Pos2 = array()
+        local Poly_vertex_Rad = array()
+        local Poly_vertex_Yaw = array()
+        local Poly_vertex_Count = 0
+        local Poly_CenterPos2 = vec2()
+        local Poly_CenterPosZ = 9e9
+        
+        #- STEP 1
+        rangerPersist(1)
+        rangerFilter(array(R))
+        foreach(C, Limb_Bone:bone = Limb_Bones) {
+            local Limb_Ranger = rangerOffset(17, Limb_Bone:pos(), vec(0,0,-1))
+            if(Limb_Ranger:hit()) {
+                local Limb_ranger_Pos = Limb_Ranger:pos()
+                Poly_CenterPos2 += Poly_vertex_Pos2:pushVector2(vec2(Limb_ranger_Pos))
+                Poly_CenterPosZ = Limb_ranger_Pos[3] < Poly_CenterPosZ ? Limb_ranger_Pos[3] : Poly_CenterPosZ
+                Poly_vertex_Rad:pushNumber(Limb_Radius[C, number])
+            }
+        }
+        rangerPersist(1)
+        Poly_vertex_Count = Poly_vertex_Pos2:count()
+        
+        
+        if(Poly_vertex_Count) {
+            if(Poly_vertex_Count >= 4) {
+                #- STEP 2
+                Poly_CenterPos2 /= Poly_vertex_Count
+                foreach(C, Vertex_Pos2:vector2 = Poly_vertex_Pos2) {
+                    Poly_vertex_Yaw:pushNumber((Vertex_Pos2-Poly_CenterPos2):toAngle())
+                    #Poly_vertex_Pos2[C, vector2] = vec2(Vertex_Pos2)
+                }
+                #step 3
+                local Prior = array()
+                local ArPos_ = array()
+                local Radius_ = array()
+                
+                foreach(C1, N1:number = Poly_vertex_Yaw) {
+                    for(C2 = C1, Poly_vertex_Count){
+                        local N2 = Poly_vertex_Yaw[C2, number]
+                        
+                        if(N2 < N1){
+                            Prior[C1, number] = Prior[C1, number]+1
+                        }
+                        else {
+                            Prior[C2, number] = Prior[C2, number]+1
+                        }
+                    }
+                }
+                foreach(C, P:number = Prior){
+                    Poly_vertex_Yaw_[P, number] = Poly_vertex_Yaw[C, number]
+                    ArPos_[P, vector2] = ArPos[C, vector2]
+                    Radius_[P, number] = Radius[C, number]
+                    
+                    #local ID = 228+C if(!holoEntity(ID)) {holoCreate(ID,vec(),vec(Radius_[P, number]/6),ang(),vec(),"cplane") holoMaterial(ID, "models/wireframe")} holoPos(ID, vec(ArPos[C, vector2],CenterPos[3])) holoColor(ID, 1 ? vec(0,100,255) : vec()) holoScale(ID, vec(Radius_[P, number]/6))
+                }
+                Poly_vertex_Yaw = Poly_vertex_Yaw_
+                ArPos = ArPos_
+                Radius = Radius_
+            }
+            
+            #step 4
+            if(Poly_vertex_Count > 3) {
+                local C = 0
+                local OK = 0
+                while(OK < Poly_vertex_Count) {
+                    C = C==Poly_vertex_Count ? 1 : C+1
+                    OK++
+                    
+                    local P1 = ArPos[C==1 ? Poly_vertex_Count : C-1,vector2]-Poly_CenterPos2
+                    local P2 = ArPos[C,vector2]-Poly_CenterPos2
+                    local P3 = ArPos[C==Poly_vertex_Count ? 1 : C+1,vector2]-Poly_CenterPos2
+                    
+                    local P3P1_yaw = (P1-P3):toAngle()
+                    local P2P3_local = (P2-P3):rotate(-P3P1_yaw)
+                    
+                    if(P2P3_local[2] < 0) {
+                        Poly_vertex_Yaw:remove(C)
+                        ArPos:remove(C)
+                        Radius:remove(C)
+                        C--
+                        OK=0
+                        Poly_vertex_Count--
+                    }
+                }
+            }
+            #step 5
+            local Poly_CenterPos2 = vec2(CenterPos)
+            local ForceCenter_P = E:pos():setZ(CenterPos[3])
+            local ForceCenter_p = vec2(ForceCenter_P)-Poly_CenterPos2
+            
+            local ForceCenter_a = ForceCenter_p:toAngle()
+            foreach(C1, Y1:number = Poly_vertex_Yaw) {
+                local C2 = C1 == Poly_vertex_Count ? 1 : C1 + 1
+                local Y2 = angnorm(Poly_vertex_Yaw[C2, number] - Y1)
+                
+                if(inrange(angnorm(ForceCenter_a-Y1),0,Y2) | (Poly_vertex_Count < 3)) {
+                    #T+="\nsector: " + C1 + "#" + C2
+                    
+                    local P1 = ArPos[C1,vector2]-Poly_CenterPos2
+                    local P2 = ArPos[C2,vector2]-Poly_CenterPos2
+                    
+                    local P1P2 = P1-P2
+                    local P1P2_yaw = P1P2:toAngle()
+                    local P1P2_L = P1P2:length()
+                    
+                    local FCP1 = ForceCenter_p-P1
+                    local FCP1_l = FCP1:rotate(-P1P2_yaw)
+                    
+                    local P1_r = Radius[C1, number]
+                    local P2_r = Radius[C2, number]
+                    local P1P2_r = P2_r-P1_r
+                    local LengthProcent = -FCP1_l[1]/P1P2_L
+                    local Radius = P1_r + P1P2_r*clamp(LengthProcent,0,1)
+                    
+                    #T+="\nRadius: " + Radius
+                    
+                    local OK = 0
+                        if(Poly_vertex_Count == 2) {OK = abs(FCP1_l[2]) < Radius & inrange(LengthProcent,0,1)}
+                    elseif(Poly_vertex_Count  > 2) {OK =     FCP1_l[2]  < Radius & inrange(LengthProcent,0,1)}
+                    if(OK) {
+                        
+                        #T+="\nOK"
+                        
+                       # ForceCenter_P = ForceCenter_P
+                    }
+                    else {
+                        
+                        if(inrange(LengthProcent,0,1)) {
+                            
+                           # T+="\nNOPE"
+                            #T+="\nDISTANCE: " + (abs(FCP1_l[2])-Radius)
+                            
+                            ForceCenter_P = vec(P1+Poly_CenterPos2+vec2(clamp(FCP1_l[1],-P1P2_L,0),Radius*sign(FCP1_l[2])):rotate(P1P2_yaw),CenterPos[3])
+                        }
+                        else {
+                            if(Poly_vertex_Count==1 & FCP1:length() <= P1_r) {
+                                
+                                #T+="\nOK"
+                                
+                            }
+                            else {
+                                
+                                #T+="\nNOPE"
+                                
+                                local P   = LengthProcent > 0 ? P2   : P1
+                                local P_r = LengthProcent > 0 ? P2_r : P1_r
+                                local FCP_LP = ForceCenter_p-P
+                                ForceCenter_P = vec(P+Poly_CenterPos2+FCP_LP:normalized()*P_r,CenterPos[3])
+                                
+                               # T+="\nDISTANCE: " + (FCP_LP:length()-P_r)
+                            }
+                        }
+                    }
+                    break
+                }
+            }
+            if(!holoEntity(3333)) {holoCreate(3333,vec(),vec(0.2))} else {holoPos(3333,ForceCenter_P)}
+        }
+        ########################################################################################################################
+        ]#
+        
+        
+        
+        
+        addQuat(101, Fot_L_B:massCenter(), quat(Fot_L_B:angles()))
+        addQuat(102, Fot_R_B:pos(), quat(Fot_R_B:angles()))
+        
+        
+        
+        
+        #- BODY
+        local Body_yaw = toWorldAng(vec(),ang(0,0,0),vec(),Body_B:angles()) #-ang(0,90,0)
+        local NeedA = ang(0,Body_yaw[2],90)
+        local AngAcc = clamp( toLocalAng(vec(),NeedA,vec(),Body_B:angles()) ,ang(-30),ang(30))
+        local QuatAcc = conj(quat(AngAcc))
+        local VecAcc = -rotationVector(QuatAcc)
+        Body_B:applyTorque((VecAcc*5-Body_B:angVelVector()*0.5)*Body_B:mass()*5)
+        #- CHEST
+        local Chest_yaw = (toWorldAng(vec(),ang(90,0,0),vec(),Chest_B:angles())+ang(0,90,0))[2]
+        local NeedA = ang(-90,Chest_yaw,-90)
+        local AngAcc = clamp( toLocalAng(vec(),NeedA,vec(),Chest_B:angles()) ,ang(-30),ang(30))
+        local QuatAcc = conj(quat(AngAcc))
+        local VecAcc = -rotationVector(QuatAcc)
+        Chest_B:applyTorque((VecAcc*5-Chest_B:angVelVector()*0.5)*Chest_B:mass()*5)
+        #- HEAD
+        local NeedA = toWorldAng(vec(),ang(0,15,180),vec(),Chest_B:angles())
+        local AngAcc = clamp( toLocalAng(vec(),NeedA,vec(),Head_B:angles()) ,ang(-30),ang(30))
+        local QuatAcc = conj(quat(AngAcc))
+        local VecAcc = -rotationVector(QuatAcc)
+        Head_B:applyTorque((VecAcc*5-Head_B:angVelVector()*0.5)*Head_B:mass()*1)
+        
+        
+        
+        local ForceZ = vec(0,0,35.966403*Head_B:mass()*1)
+        #Head_B:applyForce(ForceZ)
+        #Chest_B:applyForce(-ForceZ)
+        
+        
+        
+        local Debug = ""
+        +"\n" + round(angnorm(Body_yaw))
+        
+        setName("[Ragdoll]\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1.6) + "\nBoneView_Number: " + BoneView_Number + Debug)
+        
+    break
+}
+
+
+#models/dusty/playermodels/zoom/zoom.mdl
+#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

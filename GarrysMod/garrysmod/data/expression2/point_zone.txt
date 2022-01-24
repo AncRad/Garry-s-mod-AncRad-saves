@@ -1,0 +1,144 @@
+@name Point_Zone
+
+@inputs 
+@outputs 
+
+#- CODE
+@persist Code_FirstRun
+
+#- CHAT
+@persist 
+
+#- ZONE
+@persist Zone_Pos:vector
+@persist Zone_Radius
+@persist Zone_moneyBubble_enable
+@persist Zone_moneyBubble_size
+@persist Zone_
+@persist Zone_list_white:array
+@persist Zone_list_black:array
+@persist Zone_list_ban:array
+
+
+
+switch(clkName()) {
+    default,
+        if(changed(0)) {
+            if(Code_FirstRun) {reset()}
+            Code_FirstRun = 1
+            
+            #- ZONE
+            Zone_Radius = 52.5 * 10
+            
+            
+            runOnPlayerConnect(1)
+            function zone_WhiteList_build() {
+                
+                local Zone_list_ban_invert = invert(Zone_list_ban)
+                Zone_list_white:clear()
+                foreach(C, Player:entity = players()) {
+                    if(Zone_list_ban_invert:exists(Player:steamID())) {
+                        Zone_list_white:pushEntity(Player)
+                    }
+                }
+            }
+            
+            exit()
+        }
+        
+        if(playerConnectClk()) {
+            
+        }
+    break
+    
+    case "find",
+        timer("find", 100)
+        
+        if(findCanQuery()) {
+            findClearBlackList()
+            findClearWhiteList()
+            findIncludeEntities(Zone_list_white)
+            local Zone_players_Count = findInSphere(Zone_Pos, Zone_Radius)
+            local Zone_players_List = findToArray()
+            if(Zone_players_Count == 1) {
+                
+            }
+            elseif(Zone_players_Count) {
+                
+            }
+            else {
+                
+            }
+        }
+    break
+}
+
+setName("Point_Zone" + "\nOPS: "+ops() + "\nCPU: " + floor(cpuUsage()*1e6))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

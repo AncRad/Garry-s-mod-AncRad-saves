@@ -1,0 +1,117 @@
+@name poclass
+@inputs 
+@outputs 
+@persist [T]:table
+@trigger 
+
+
+
+if(changed(0))
+{
+    
+    function entity:addBone(Bone_n:string) 
+    {  
+        local Holo_e = This
+        local Bone_i = T["indexCounter", number] = T["indexCounter", number] + 1
+        
+        T[Bone_n + "/bone/index"     , number] = Bone_i
+        T[Bone_i + "/bone/name"      , string] = Bone_n
+        
+        T[Bone_i + "/bone/realPos"   , vector] = Holo_e:pos()
+        T[Bone_i + "/bone/needPos"   , vector] = Holo_e:pos()
+        T[Bone_i + "/bone/holoEntity", entity] = Holo_e
+        T[Bone_i + "/bone/holoIndex" , number] = holoIndex(Holo_e)
+        T[Bone_i + "/bone/animate"   , number] = 0
+        
+        T["boneList", array] = T["boneList", array]:add(array(Bone_i))
+    }
+    
+    function boneNewNeedPos(Bone_n:string, Bone_p:vector) {
+        local Bone_i = T[Bone_n + "/bone/index", number]
+        
+        T[Bone_i + "/bone/needPos", vector] = Bone_p
+        if(!T[Bone_i + "/bone/animate", number]) {
+            
+            T[Bone_i + "/bone/animate", number] = 1
+            T["animatedBoneList", array] = T["animatedBoneList", array]:add(array(Bone_i))
+        }
+    }
+    
+    Pos = entity():pos()
+    Holo = holoCreate(1, Pos, vec(0.2), ang())
+    
+    
+    local EP = entity():pos()
+    
+    for(C = 1, 30) {
+        
+        local Bone_n = "testHolka" + C
+        
+        
+        local Pos = entity():pos() + randvec(-200,200)
+        local Holo = holoCreate(C, Pos, vec(0.2), ang())
+        
+        Holo:addBone(Bone_n)
+        boneNewNeedPos(Bone_n, EP)
+    }
+    
+    
+}
+
+
+interval(50)
+
+local Clear = array()
+foreach(C, Bone_i:number = T["animatedBoneList", array]) {
+    
+    
+    local RealPos = T[Bone_i + "/bone/realPos", vector]
+    local NeedPos = T[Bone_i + "/bone/needPos", vector]
+    local Dif = NeedPos - RealPos
+    if(Dif:length() >= 1) {
+        
+        RealPos = T[Bone_i + "/bone/realPos", vector] = RealPos + clamp(Dif / 12   ,-10,10)
+        
+        local Holo_i = T[Bone_i + "/bone/holoIndex" , number]
+        
+        holoPos(Holo_i, RealPos)
+    }
+    else {
+        Clear = array(C):add(Clear)
+        T[Bone_i + "/bone/animate", number] = 0
+    }
+}
+foreach(C, I:number = Clear) {
+    T["animatedBoneList", array]:remove(I)
+}
+
+
+
+
+Use = owner():keyUse()
+if(changed(Use) & Use) {
+    
+    local EP = entity():pos()
+    
+    for(C = 1, T["boneList", array]:count()) {
+        local Bone_n = "testHolka" + C
+        
+        boneNewNeedPos(Bone_n, EP + randvec(-100,100))
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

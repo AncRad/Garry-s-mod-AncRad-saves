@@ -1,0 +1,461 @@
+@name test 01 001
+
+@inputs 
+@outputs 
+@persist [E O W  HL HR]:entity [Q]:table
+
+@trigger none
+
+
+
+if(changed(0)) {
+    
+    
+    E = entity()
+    O = owner()
+    W = E:isWeldedTo()
+    
+    
+    
+    W:setMass(58)
+    
+    local Y = 18
+    local Z = 0
+    HL = holoCreate(1, W:toWorld(vec(0, Y,Z)), vec(0.5), W:toWorld(ang()), vec(225,75,0), "hq_sphere") holoParent(1, W)
+    HR = holoCreate(2, W:toWorld(vec(0,-Y,Z)), vec(0.5), W:toWorld(ang()), vec(0,75,255), "hq_sphere") holoParent(2, W)
+    
+    timer("", 1)
+}
+
+if(clk("")) {
+        timer("", 1)
+    
+    if(changed(0)) {
+        
+        Q["lastCurtime", number] = curtime()
+    }
+    local LastCurtime = Q["lastCurtime", number]
+    local Curtime = Q["lastCurtime", number] = curtime()
+    local Interval = Curtime - LastCurtime
+    local Loop = Interval/0.015625
+    
+    
+    local W_m  = W:mass()
+    local W_a  = W:angles()
+    local W_av = W:angVel()
+    local W_p  = W:boxCenterW()
+    local W_v  = W:vel()
+    
+    local AF = (-W_a:setYaw(0) - W_av / 8)*5
+    W:applyAngForce(AF*W_m*Loop)
+    
+    
+    
+    local Length = 70
+    local NeedHeight = Length - 10
+    rangerFilter(W)
+    local RL = rangerOffset(Length, HL:pos(), vec(0,0,-1))
+    rangerFilter(W)
+    local RR = rangerOffset(Length, HR:pos(), vec(0,0,-1))
+    
+    
+    
+    local Hit = RL:hit() | RL:hit()
+    if(Hit) {
+        local RL_p = RL:pos()
+        local RR_p = RR:pos()
+        
+        local Height = abs((RL_p[3] < RR_p[3] ? RL_p[3] : RR_p[3]) - W_p[3])
+        
+        
+        
+        
+        local Z = 9.55 + clamp(NeedHeight-Height-W_v[3]/5,-9.55,9.55)
+        
+        
+        local F = vec(0,0,Z) - W_v:setZ(0) / 50
+        
+        
+        W:applyForce(F*Loop*W_m)
+        
+        holoColor(1, vec(255,75,0))
+        holoColor(2, vec(0,75,255))
+    }
+    else {
+        holoColor(1, vec(255,75,0)/4)
+        holoColor(2, vec(0,75,255)/4)
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

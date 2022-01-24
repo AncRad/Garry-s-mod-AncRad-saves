@@ -1,0 +1,20 @@
+@name Prisoner on the loose
+@inputs 
+@outputs 
+@persist [Prisoner]:entity [Q]:table
+@trigger 
+
+
+
+if(changed(0)) {
+    
+    Prisoner = findPlayerByName("Апель")
+    
+    
+    
+    
+}
+
+#Prisoner = owner()
+
+

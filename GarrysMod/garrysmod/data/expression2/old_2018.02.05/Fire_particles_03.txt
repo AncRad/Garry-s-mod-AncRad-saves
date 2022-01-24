@@ -1,0 +1,124 @@
+@name Fire_particles_03
+
+@inputs 
+@outputs 
+@persist [Q]:table [Q_wait Q_fly Q_drop]:array [Q_partCounter]:number
+
+@persist [E O]:entity
+
+
+
+if(changed(0)) {
+    
+    Q_partCounter = 28956586
+    
+    
+    
+    timer("Q_fly", 1)
+    timer("Q_drop", 1)
+}
+
+if(clk("Q_fly")) {
+        timer("Q_fly", 75)
+    
+    local LastCurtime = Q["Q_fly/lastCurtime", number]
+    local Curtime     = Q["Q_fly/lastCurtime", number] = curtime()
+    local Interval    = Curtime - LastCurtime
+    
+    if(changed(0)) {
+        Interval = 0
+    }
+    
+    
+    foreach(C, Part_i:number = Q_fly) {
+        local Part_e = holoEntity(Part_i)
+        
+        
+        if(Part_e) {
+            
+            local Part_p = Q[Part_i + "/pos", vector]
+            local Part_v = Q[Part_i + "/vel", vector]
+            
+            local Part_V = Part_v + (vec(0,0,-600) - Part_v*0.1)*Interval
+            
+            local Part_d = (Part_v+Part_V)/2
+            local R = rangerOffset(Part_d:length()*Interval,Part_p,Part_d)
+            if(R:hit()) {
+                Part_p = R:pos()
+                Part_V = vec()
+            }
+            else {
+                Part_p = R:pos()
+            }
+            
+            Q[Part_i + "/pos", vector] = Part_p
+            Q[Part_i + "/vel", vector] = Part_V
+            holoPos(Part_i, Part_p)
+            
+        }
+        else {
+            if(holoCanCreate()) {
+                local Part_p = Q[Part_i + "/pos", vector]
+                holoCreate(Part_i, Part_p, vec())
+            }
+        }
+    }
+    
+    local O = owner()
+    local E = entity()
+    if(O:keyPressed("mouse_4")) {
+        
+        Q_partCounter++
+        local Part_i = Q_partCounter
+        local Part_p = Q[Part_i + "/pos", vector] = O:eye() * 20 + O:shootPos()
+        Q[Part_i + "/vel", vector] = O:eye() * 30 * 52.5
+        
+        holoCreate(Part_i, Part_p, vec(0.5), ang(), vec(255,100,0), "cube") holoMaterial(Part_i, "lights/white") #holoEntity(Part_i):ignite(10000000)
+        Q_fly:pushNumber(Part_i)
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

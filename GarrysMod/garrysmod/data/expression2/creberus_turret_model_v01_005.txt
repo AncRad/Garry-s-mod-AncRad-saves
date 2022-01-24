@@ -1,0 +1,105 @@
+@name creberus_turret_model_v01_005
+
+@inputs 
+@outputs 
+
+#- BASE
+@persist CT_FirstRun
+@persist [CT_IsNoInclude]:number [CT_GateName]:string
+#- LOGGING
+@persist [CT_logging_GateName]:array
+
+#- TURRET
+@persist 
+@persist CT_Preloaded CT_Loaded
+@persist 
+#- 
+@persist 
+
+
+
+local ClkName = clkName()
+switch(ClkName) {
+    default,
+        if(changed(0)) {
+            
+            #- BASE
+            if(CT_FirstRun) {reset()}
+            CT_FirstRun = 1
+            noDuplications()
+            
+            #- INCLUDE
+            AddHolo_NoDuplications = 1
+            #include "AddHolo_v01"
+            
+            #- BASE
+            CT_GateName = entity():name()
+            if(CT_GateName == "creberus_turret_model_v01_005") {
+                CT_IsNoInclude = 1
+            }
+            else {
+                CT_GateName = ""
+                CT_IsNoInclude = 0
+            }
+            
+            #- TURRET PRELOAD START
+            timer("creberus_turret_preloadStart", 1)
+        }
+    break
+        #
+        #
+        #
+    case "creberus_turret_preloadStart",
+        
+        local Base_prop = entity()
+        addHolo("rt",vec(0,0,0),vec(),ang(0,0,0),vec(),"cube","","") addHolo_INTO(Base_prop)
+        
+        addHolo_timer("creberus_turret_loadStart")
+        addHolo_start()
+        CT_Preloaded = 1
+    break
+    case "creberus_turret_loadStart",
+        
+        CT_Loaded = 1
+    break
+        #
+        #
+        #
+    case "AddHolo",
+        addHolo()
+    break
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

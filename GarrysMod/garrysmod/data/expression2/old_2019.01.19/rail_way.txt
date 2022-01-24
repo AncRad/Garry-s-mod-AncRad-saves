@@ -1,0 +1,214 @@
+@name rail_way
+
+@inputs [P1 P2]:entity
+@outputs 
+@persist [E W]:entity [Helper]:table
+
+@model models/bull/gates/processor.mdl
+
+
+
+#include "AddHolo"
+
+
+
+if(changed(0)) {
+    
+    E = entity() E:setSkin(1)
+    W = E:isWeldedTo()
+    
+    #addHolo("", vec(), vec(), ang(), vec(), "cube", "", "")
+    
+    #addHolo("rt", vec(), vec(), ang(), vec(), "cube", "", "") addHolo_INTO(E)
+    
+    
+    
+    addHolo("", vec(), vec(1), ang(), vec(255), "models/props_phx/trains/tracks/track_turn90.mdl", "lights/white", "rt")
+    
+    
+    
+    
+    
+    addHolo_timer("")
+    addHolo_start()
+    
+    
+    
+}
+
+if(clk("")) {
+        timer("", 50)
+    
+    if(changed(0)) {
+        function entity helper_point(Point_n:string, Point_p:vector) {
+            local StartHolo_e = Helper[Point_n + "/entity", entity]
+            if(!StartHolo_e) {
+                if(holoCanCreate()) {
+                    local StartHolo_i = 0
+                    StartHolo_i = Helper[Point_n + "/index" , number] = Helper["indexCounter", number] = max(Helper["indexCounter", number] + 1 ,2281448)
+                    StartHolo_e = Helper[Point_n + "/entity", entity] = holoCreate(StartHolo_i, Point_p, vec(0.2), ang(), vec(255), "models/editor/axis_helper.mdl")
+                } else {return noentity()}
+            } elseif(Point_p) {holoPos(Helper[Point_n + "/index", number], Point_p)}
+            return StartHolo_e
+        }
+        function entity helper_beam([Beam_n PointStart_n PointEnd_n]:string, Helper_color:vector) {
+            
+            local PointStart_e = Helper[PointStart_n + "/entity", entity]
+            local PointEnd_e   = Helper[PointEnd_n   + "/entity", entity]
+            
+            if(PointStart_e & PointEnd_e & !Helper[Beam_n + "/beam/entity", entity]) {
+                local Helper_e = PointStart_e:drawBeam("trails/smoke",PointStart_e:pos(),PointEnd_e:pos(),Helper_color,255,5)
+                Helper_e:setBeamEndEnt(PointEnd_e)
+                
+                Helper[Beam_n + "/beam/entity", entity] = Helper_e
+                return Helper_e
+            }
+            else {
+                return noentity()
+            }
+        }
+        function entity helper([Helper_n StartHolo_n EndHolo_n]:string, [StartPos EndPos Helper_color]:vector) {
+            local StartHolo_e = helper_point(StartHolo_n, StartPos)
+            local EndHolo_e   = helper_point(EndHolo_n  , EndPos  )
+            
+            return helper_beam(Helper_n, StartHolo_n, EndHolo_n, Helper_color)
+        }
+    }
+    
+    local C_P = W:pos()
+    local P1_P = W:toWorld(W:toLocal(P1:pos()):setZ(0))
+    local P2_P = W:toWorld(W:toLocal(P2:pos()):setZ(0))
+    
+    
+    helper_point("p1", P1_P)
+    helper_point("p2", P2_P)
+    helper_beam("l1", "p1", "p2", vec(255,0,0))
+    
+    
+    helper_point("c", C_P)
+    helper_beam("l2", "p1", "c", vec(75,255,0))
+    helper_beam("l3", "p2", "c", vec(75,255,0))
+    
+    
+    local P3_P = (P1_P+P2_P)/2
+    local P3_p = W:toLocal(P3_P)
+    helper_point("p3", P3_P)
+    helper_point("p4", P3_P + ((P2_P-P1_P):cross(W:up())):normalized() * P1_P:distance(P2_P)/2)
+    helper_beam("l4", "p3", "p4", vec(255))
+    
+    
+    if(changed(0)) {
+        
+        print(floor(C_P:distance(P1_P)) + " # " + floor(C_P:distance(P2_P)) + " # " + floor(P1_P:distance(P2_P)))
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

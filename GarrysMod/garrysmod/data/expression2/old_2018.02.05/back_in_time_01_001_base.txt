@@ -1,0 +1,256 @@
+@name back_in_time_01_001_base
+
+@inputs 
+@outputs 
+@persist [O E]:entity [Q]:table [Props FrameList]:array FrameCounter
+
+
+
+if(changed(0)) {
+    
+    O = owner()
+    E = entity()
+    runOnLast(1)
+    
+    if(0) {
+        findIncludeClass("prop")
+        findInSphere(E:pos(), 52.5 * 20)
+        Props = findToArray()
+    }
+    else {
+        Props = E:getConstraints():add(array(E))
+    }
+    
+    
+    timer("", 1)
+}
+
+if(clk("")) {
+        timer("", 50)
+    
+    if(changed(0)) {
+        
+        Q["startTime", number] = curtime()
+        
+    }
+    
+    
+    switch(Q["staus", string]) {
+        case "normal",
+            
+            local Curtime = curtime()
+            
+            FrameCounter++
+            local Frame_t = table(
+                "index" = FrameCounter,
+                "cutrime" = Curtime
+            )
+            local Pos = array()
+            local Ang = array()
+            local Vel = array()
+            local AngVel = array()
+            local Mass = array()
+            local Freeze = array()
+            
+            
+            local Count = FrameList:count()
+            if(!Count) {
+                Q["normalStartTime", number] = Curtime
+            }
+            
+            foreach(C, Prop:entity = Props) {
+                
+                Pos:pushVector(Prop:pos())
+                Ang:pushAngle(Prop:angles())
+                Vel:pushVector(Prop:vel())
+                AngVel:pushAngle(Prop:angVel())
+                Mass:pushNumber(Prop:mass())
+                Freeze:pushNumber(Prop:isFrozen())
+                
+            }
+            Q[FrameCounter + "", table] = Frame_t:merge(table(
+                "pos" = Pos,
+                "ang" = Ang,
+                "vel" = Vel,
+                "angVel" = AngVel,
+                "mass" = Mass,
+                "freeze" = Freeze
+            ))
+            
+            if(Curtime - Q["normalStartTime", number] >= 120) {
+                Q:remove(FrameList:removeString(Count))
+            }
+            FrameList:pushString(""+FrameCounter)
+            
+            if(O:keyPressed("mouse_4")) {
+                if(Curtime - Q["backEndTime", number] >= 2) {
+                    Q["staus", string] = "back"
+                }
+            }
+        break
+            #
+            #
+            #
+        case "back",
+            
+            local Count = FrameList:count()
+            local Frame_t = Q:removeTable(FrameList:removeString(1))
+            if(Frame_t["index", number]) {
+                local Pos = Frame_t["pos", array]
+                local Ang = Frame_t["ang", array]
+                
+                foreach(C, Prop:entity = Props) {
+                    
+                    Prop:propFreeze(C)
+                    Prop:setPos(Pos[C, vector])
+                    Prop:setAng(Ang[C, angle])
+                }
+                if(Count == 1) {
+                    local Vel = Frame_t["vel", array]
+                    local AngVel = Frame_t["angVel", array]
+                    local Mass = Frame_t["mass", array]
+                    local Freeze = Frame_t["freeze", array]
+                    
+                    foreach(C, Prop:entity = Props) {
+                        
+                        local Mass = Mass[C, number]
+                        
+                        Prop:propFreeze(Freeze[C, number])
+                        Prop:setVel(Vel[C, vector])
+                        Prop:applyAngForce(AngVel[C, angle]*Mass*10)
+                        Prop:setMass(Mass)
+                    }
+                }
+            }
+            else {
+                Q["staus", string] = "normal"
+                Q["backEndTime", number] = curtime()
+            }
+        break
+            #
+            #
+            #
+        default,
+            Q["staus", string] = "normal"
+        break
+    }
+}
+
+
+
+
+
+if(last()) {
+    if(Q["staus", string] == "back") {
+        local Frame_t = Q:removeTable(FrameList:removeString(1))
+        if(Frame_t["index", number]) {
+            local Pos = Frame_t["pos", array]
+            local Ang = Frame_t["ang", array]
+            local Vel = Frame_t["vel", array]
+            local AngVel = Frame_t["angVel", array]
+            local Mass = Frame_t["mass", array]
+            local Freeze = Frame_t["freeze", array]
+            
+            foreach(C, Prop:entity = Props) {
+                
+                local Mass = Mass[C, number]
+                Prop:setPos(Pos[C, vector])
+                Prop:setAng(Ang[C, angle])
+                Prop:propFreeze(Freeze[C, number])
+                Prop:setVel(Vel[C, vector])
+                Prop:applyAngForce(AngVel[C, angle]*Mass*10)
+                Prop:setMass(Mass)
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+if(O:keyPressed("mouse_5")) {reset()}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName("back_in_time\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1e6))

@@ -1,0 +1,226 @@
+@name controller_24x24
+
+@inputs [LHC1 LHC2 LHC3 LHC4 LHC5 LHC6 LHC7 LHC8 LHC9 LHC10 LHC11 LHC12]:wirelink
+@inputs [RHC1 RHC2 RHC3 RHC4 RHC5 RHC6 RHC7 RHC8 RHC9 RHC10 RHC11 RHC12]:wirelink
+
+@outputs 
+
+@persist [Base]:entity
+@persist [LW]:entity
+@persist [RW]:entity
+
+@persist [E O]:entity [Q]:table
+
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+
+if(changed(0)) {
+    
+    ################
+    #
+    #- constants
+    E = entity() E:setSkin(1)
+    O = owner()
+    #
+    ################
+    ################
+    #
+    #- start
+    timer("", 1)
+    #
+    ################
+}
+
+if(clk("")) {
+        timer("", 50)
+    
+    local Step = Q["step", number]
+    if(Step != -1) {
+        ################
+        #
+        #- подготовка
+        #
+        switch(Step) {
+                #
+                #- 
+                #
+            case 0,
+                Q["step", number] = 1
+            break
+                #
+                #- 
+                #
+            case 1,
+                if(findCanQuery()) {
+                    findClearBlackList()
+                    findClearWhiteList()
+                    findIncludeModel("models/sprops/cuboids/height12/size_5/cube_96x240x12.mdl")
+                    findInSphere(E:pos(), 50)
+                    foreach(C, F:entity = findToArray()) {
+                        if(F:owner() == O) {
+                            
+                            Base = F
+                            Q["step", number] = Step + 1
+                            break
+                        }
+                    }
+                }
+            break
+                #
+                #- 
+                #
+            case 2,
+                if(changed(0)) {
+                    
+                    Q["constraints", array] = Base:getConstraints()
+                    
+                    Q["1C", array] = array()
+                    Q["2C", array] = array()
+                }
+                local Box_s = Base:boxSize()
+                local Box_sx = Box_s[1]
+                local Box_sy = Box_s[2]
+                local Box_sx12 = floor(Box_sx / 12)
+                
+                local Constraints_a = Q["constraints", array]
+                local Constraints_c = Constraints_a:count()
+                while(perf(80) & Constraints_c) {
+                    local C_e = Q["constraints", array]:removeEntity(1)
+                    local C_t = C_e:type()
+                    
+                    if(C_t == "prop_physics") {
+                        local C_m = C_e:model()
+                        if(C_m == "models/sprops/mechanics/sgears/spur_36t_l.mdl") {
+                            local C_lp = Base:toLocal(C_e:pos())
+                            
+                            if(C_lp[2] > 0) {
+                                LW = C_e
+                            }
+                            else {
+                                RW = C_e
+                            }
+                        }
+                    }
+                }
+                if(!Constraints_c) {
+                    Q["step", number] = Step + 1
+                }
+            break
+                #
+                #- 
+                #
+            case 3,
+                Q["step", number] = Step + 1
+            break
+                #
+                #- 
+                #
+            default,
+                for(C1 = 1,2) {
+                    local CW = Q[C1 + "CW", array] = select(C1,array(LHC1,LHC2,LHC3,LHC4,LHC5,LHC6,LHC7,LHC8,LHC9,LHC10,LHC11,LHC12),array(RHC1,RHC2,RHC3,RHC4,RHC5,RHC6,RHC7,RHC8,RHC9,RHC10,RHC11,RHC12))
+                    
+                    
+                    for(C2 = 1,12) {
+                        local W = CW[C2, wirelink]
+                        
+                        Q[C1 + "CE", array]:pushEntity(W:entity())
+                        
+                        W["Length"  , number] = 49.5
+                        W["Constant", number] = 100000
+                        W["Damping" , number] = 5000
+                    }
+                }
+                
+                Q["step", number] = -1
+            break
+            #
+            ################
+        }
+    }
+    else {
+        
+        
+        if(changed(0)) {
+            
+            Q["lastCurtime", number] = curtime()-0.015625
+        }
+        local LastCurtime = Q["lastCurtime", number]
+        local Curtime = Q["lastCurtime", number] = curtime()
+        local Interval = Curtime - LastCurtime
+        local Loop = Interval / 0.015625
+        
+        
+        local W     = O:keyPressed("pad_8")
+        local S     = O:keyPressed("pad_5")
+        local A     = O:keyPressed("pad_4")
+        local D     = O:keyPressed("pad_6")
+        local Shift = O:keyPressed("pad_0")
+        
+        local WS = W - S
+        
+        local L = W - S + (D - A)*(WS ? 0.75 : 1)*2.5
+        local R = W - S + (A - D)*(WS ? 0.75 : 1)*2.5
+        
+        local F = Shift ? 3000 : 1000
+        
+        
+        local LF = F * L
+        LW:applyAngForce(ang(0,-LF*LW:mass()*Loop,0))
+        
+        local RF = F * R
+        RW:applyAngForce(ang(0,-RF*RW:mass()*Loop,0))
+        
+        local M45 = O:keyPressed("mouse_4")-O:keyPressed("mouse_5")
+        
+        for(C1 = 1,2) {
+            for(C2 = 1,12) {
+                
+                local RealLength = Q[C1 + "/realLength/" + C2, number]
+                local NeedLength = Q[C1 + "/needLength/" + C2, number] = 49.5 + 4 #- 10 + C2 * M45 * 4 #+ M45 * 15 #+ M45 * abs(C2-6)/12 * 40-(12-C2)*2    #1 * abs(C2-6.5) * 1 #+ M45 * 15
+                local Dif = NeedLength-RealLength
+                
+                if(abs(Dif) >= 0.2 | 1) {
+                    
+                    local C_w = Q[C1 + "CW", array][C2, wirelink]
+                    
+                    C_w["Length", number] = Q[C1 + "/realLength/" + C2, number] = clamp(RealLength + (Dif)/2,10,100)
+                }
+            }
+        }
+    }
+    
+    setName("controller_24x24\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1e6))
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

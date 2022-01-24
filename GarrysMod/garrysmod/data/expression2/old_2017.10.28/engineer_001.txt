@@ -1,0 +1,597 @@
+@name engineer_001
+
+@inputs 
+@outputs 
+@persist [E O User Burner]:entity [Q]:table [GT]:gtable
+
+@model models/bull/gates/processor.mdl
+
+
+
+#include "old_2017.10.28/AddHolo"
+#include "old_2017.10.28/effect_01_001"
+#include "old_2017.10.28/PBA001"
+if(changed(0)) {
+    runOnLast(1)
+    
+    GT = gTable("Assault drone 001")
+    E = entity() E:setSkin(1)
+    E = entity()
+    O = owner()
+    
+    PBA["pba/interval", number] = 30
+    
+    
+    
+    
+    
+    
+    addHolo("rt", vec(), vec(), ang(), vec(), "tetra", "", "")
+    addHoloINTO(E)
+    
+    addHolo("ballon", vec(), vec(0.3), ang(0,85,0), vec(255), "models/props_junk/propane_tank001a.mdl", "", "rt")
+    addHolo("valve", vec(0.3,0,5), vec(0.05), ang(0,185,90), vec(255), "models/props_pipes/valve001.mdl", "", "ballon")
+    addHolo("valvewhee", vec(0,0,1), vec(0.05), ang(0,0,0), vec(255), "models/props_pipes/valvewheel001.mdl", "", "valve")
+    
+    addHolo("pipeDegree", vec(0,1.0,0.4), vec(0.03), ang(90,0,0), vec(255), "models/props_pipes/pipe03_45degree01.mdl", "", "valve")
+    addHoloOffset(vec(), ang(0,45,0))
+    
+    addHolo("laundry_basket", vec(0,1.35,0), vec(0.02,0.02,0.07), ang(0,0,-130), vec(255), "models/props_wasteland/laundry_basket001.mdl", "", "valve")
+    addHoloOffset(vec(0,0,1.45), ang())
+    addHolo("laundry_basket2", vec(0,0,0), vec(0.0195,0.0195,0.068), ang(0,0,0), vec(100), "models/props_wasteland/laundry_basket001.mdl", "", "laundry_basket")
+    #addHolo("laundry_basket3", vec(0,0,0), vec(0.01,0.01,0.05), ang(0,0,0), vec(100), "models/props_wasteland/laundry_basket001.mdl", "", "laundry_basket")
+    
+    effect01("flame", vec(0,0,1.59), -0.48, 5, ang(), vec(50,150,255), 15, "laundry_basket")
+    effect01_clamping("flame", 0)
+    effect01("flame", 0)
+    
+    
+    local N = 3
+    Q["glowNumber", number] = N * 2
+    for(C = 1, N * 2) {
+        local A = 360 / N * C
+        local R = C <= N ? 0.022 : 0.018
+        
+        addHolo("glowing" + C, vec(0,0,-0.7), vec(-R,R,0.101), ang(0,A,0), vec(255,10,10) * 0, "models/props_wasteland/laundry_basket001.mdl", "models/roller/rollermine_glow", "laundry_basket")
+        addHoloAlpha(254)
+        addHoloClip(ang(-90,0,0), -1)
+    }
+    for(C = 1,6) {
+        local A = 60 * C
+        addHolo("flame" + C, vec(0,0,1.7), -vec(0.9,0.48,0.48), ang(-90,A,0), vec(), "hq_sphere", "models/roller/rollermine_glow", "laundry_basket")
+        addHoloAlpha(254)
+    }
+    
+    addHoloTimer("engineer")
+    
+    function effect01(Mul:number, Color:vector) {
+        effect01("flame", Mul, Color)
+        for(C = 1,6) {
+            holoColor(AddHolo["flame" + C + "/id", number], Color*Mul)
+        }
+    }
+    
+    
+    if(0) {
+        if(1) {
+            User = O
+        }
+        else {
+            User = findPlayerByName("bot2")
+            User = entity(3)
+        }
+        
+        local Vriable = 0
+        if(Vriable == 1) {
+            local RH_i = 1000
+            local RH_e = holoCreate(RH_i, User:attachmentPos("anim_attachment_rh"), vec(0.1), User:attachmentAng("anim_attachment_rh"), vec(255,0,0))
+            holoParentAttachment(RH_i, User, "anim_attachment_rh")
+            addHoloOffset("rt", vec(0.5,-0.5,-1.5), ang(15,0,0))
+            addHoloINTO("rt", RH_e)
+            
+            #[idle
+            TargetAnimate:addPBA(14, ang(-51.44,27.14,-119.5), ang(20), ang(4), "1")
+            ]#
+            #[idle duck
+            TargetAnimate:addPBA(14, ang(-16.09,8.9,-69.08), ang(20), ang(4), "1")
+            TargetAnimate:addPBA(15, ang(0,-38.74,-38.06), ang(20), ang(4), "1")
+            ]#
+            
+            #[fire
+            TargetAnimate:addPBA(14, ang(-79.72,22.74,-103.54), ang(20), ang(4), "1")
+            TargetAnimate:addPBA(16, ang(-34.95,0,0), ang(20), ang(4), "1")
+            ]#
+            #[fire duck
+            TargetAnimate:addPBA(14, ang(-75.33,-123.32,40.49), ang(20), ang(4), "1")
+            TargetAnimate:addPBA(15, ang(0,28.92,-40.86), ang(20), ang(4), "1")
+            TargetAnimate:addPBA(16, ang(-25.75,0,0), ang(20), ang(4), "1")
+            ]#
+            
+            #[change
+            TargetAnimate:addPBA(14, ang(1.36,27.6,-149.28), ang(20), ang(4), "1")
+            TargetAnimate:addPBA(15, ang(0,-19.7,0), ang(20), ang(4), "1")
+            TargetAnimate:addPBA(16, ang(-103.68,49.19,-10.2), ang(20), ang(4), "1")
+            ]#
+            #[change duck
+            TargetAnimate:addPBA(14, ang(18.46,25.72,-112.45), ang(20), ang(4), "1")
+            TargetAnimate:addPBA(15, ang(0,26.57,0), ang(20), ang(4), "1")
+            TargetAnimate:addPBA(16, ang(0,-53.17,75.08), ang(20), ang(4), "1")
+            ]#
+        }
+        elseif(Vriable == 2) {
+            local Chest_i = 1000
+            local Chest_e = holoCreate(Chest_i, User:attachmentPos("chest"), vec(0.05), User:attachmentAng("chest"), vec(255,0,0))
+            holoParentAttachment(Chest_i, User, "chest")
+            
+            addHoloOffset("rt", vec(-3.5,-5,-14), ang(160,-40,-10))
+            addHoloINTO("rt", Chest_e)
+        }
+        local W = User:weapon()
+        if(W:type() == "weapon_crowbar") {
+            W:setAlpha(0)
+        }
+    }
+    
+    
+    
+    function number entity:steam() {
+        return max(This:steamID():right(8):toNumber(),10000)
+    }
+    function toChest() {
+        local User_i = User:steam()
+        
+        local Chest_i = 1000
+        local RT_i = AddHolo["rt/id", number]
+        
+        local Chest_e = holoCreate(Chest_i, User:attachmentPos("chest"), vec(0.05), User:attachmentAng("chest"), vec(255,0,0))
+        holoParentAttachment(Chest_i, User, "chest")
+        holoPos(RT_i, Chest_e:toWorld(vec(-3.5,-5,-14)))
+        holoAng(RT_i, Chest_e:toWorld(ang(160,-40,-10)))
+        holoParent(RT_i, Chest_e)
+        
+        Q["userCrowbar", entity]:setAlpha(255)
+        Q["userCrowbar", entity]:drawShadow(1)
+        Q["needGas", number] = 0
+        Q["status", string] = "chest"
+    }
+    function toRightHand() {
+        local User_i = User:steam()
+        
+        local RH_i = 1001
+        local RT_i = AddHolo["rt/id", number]
+        
+        local RH_e = holoCreate(RH_i, User:attachmentPos("anim_attachment_rh"), vec(0.05), User:attachmentAng("anim_attachment_rh"), vec(255,0,0))
+        holoParentAttachment(RH_i, User, "anim_attachment_rh")
+        holoPos(RT_i, RH_e:toWorld(vec(0.5,-0.5,-1.5)))
+        holoAng(RT_i, RH_e:toWorld(ang(15,0,0)))
+        holoParent(RT_i, RH_e)
+        
+        local Crowbar = User:weapon()
+        Q["userCrowbar", entity] = Crowbar
+        Crowbar:setAlpha(0)
+        Crowbar:drawShadow(0)
+        Q["needGas", number] = 0
+        Q["status", string] = "rhand"
+    }
+    function toLeftHand() {
+        local User_i = User:steam()
+        
+        Q["needGas", number] = 0
+        Q["status", string] = "lhand"
+    }
+    function drop() {
+        local RT_i = AddHolo["rt/id", number]
+        local RT_e = holoEntity(RT_i)
+        
+        Burner:setPos(RT_e:pos())
+        Burner:setAng(RT_e:angles())
+        Burner:propNotSolid(0)
+        Burner:propFreeze(0)
+        Burner:setVel(User:vel())
+        
+        holoParent(RT_i, Burner)
+        holoPos(RT_i, Burner:pos())
+        holoAng(RT_i, Burner:angles())
+        
+        Q["userCrowbar", entity]:setAlpha(255)
+        Q["userCrowbar", entity]:drawShadow(1)
+        Q["needGas", number] = 0
+        User:setPBA0()
+        User:removePBA()
+        GT[User:steam() + "/drone", entity] = noentity()
+        User = noentity()
+        Q["status", string] = "drop"
+    }
+}
+
+if(clk("engineer")) {
+        timer("engineer", 75)
+    
+    if(changed(0)) {
+        Burner = propSpawn("models/sprops/cylinders/size_2/cylinder_3x12.mdl", E:pos() + vec(0,0,10), ang(), 0)
+        Burner:setAlpha(0)
+        Burner:drawShadow(0)
+        Burner:propBuoyancy(0)
+        Burner:propPhysicalMaterial("metal")
+        
+        #[
+        local RT_i = AddHolo["rt/id", number]
+        holoPos(RT_i, Burner:pos())
+        holoAng(RT_i, Burner:angles())
+        holoParent(RT_i, Burner)
+        Q["status", string] = "drop"
+        ]#
+        drop()
+        
+        if(1) {
+            User = O
+            User:addPBA()
+            if(User:weapon():type() == "weapon_crowbar") {
+                toRightHand()
+            }
+            else {
+                toChest()
+            }
+        }
+        
+        Q["engineerCurtime", number] = curtime()
+        
+    }
+    local LastCurtime = Q["engineerCurtime", number]
+    local Curtime = 0
+    Curtime = Q["engineerCurtime", number] = curtime()
+    local Interval = Curtime - LastCurtime
+    
+    
+    
+    
+    
+    local Weapon_e = User:weapon()
+    local Weapon_t = Weapon_e:type()
+    
+    local Status = Q["status", string]
+    local Status_change = changed(Status)
+    
+    
+    local Change = Q["change", string]
+    if((Weapon_t == "weapon_crowbar" & Status == "chest") | Status == "rhand") {
+        
+        if(User:keyReload()) {
+            if(!Change) {
+                Q["change", string] = "chest_rHand"
+            }
+            elseif(Change == "chest") {
+                Q["change", string] = ""
+            }
+        }
+        if(User:keyAttack2() | User:keyJump()) {
+            Q["change", string] = ""
+        }
+        local Change = Q["change", string]
+        local Change_change = changed(Change)
+        local Crouch = User:isCrouch()
+        local Crouch_change = changed(Crouch)
+        if(Change_change | Crouch_change) {
+            if(Change == "chest_rHand") {
+                if(Crouch) {
+                    User:addPBA(14, ang(  18.46, 25.72,-112.45), ang(10), ang(4), "1")
+                    User:addPBA(15, ang(      0, 26.57,      0), ang(10), ang(5), "1")
+                    User:addPBA(16, ang(      0,-53.17,  75.08), ang(10), ang(5), "1")
+                }
+                else {
+                    User:addPBA(14, ang(   1.36,  27.6,-149.28), ang(10), ang(4), "1")
+                    User:addPBA(15, ang(      0, -19.7,      0), ang(10), ang(5), "1")
+                    User:addPBA(16, ang(-103.68, 49.19,  -10.2), ang(10), ang(5), "1")
+                }
+            }
+            elseif(Change_change) {
+                User:addPBA(14, ang(), ang(15), ang(5), "1")
+                User:addPBA(15, ang(), ang(15), ang(5), "1")
+                User:addPBA(16, ang(), ang(15), ang(5), "1")
+            }
+        }
+        if(Change == "chest_rHand") {
+            local Text = User:steamID() + "/pba/players/bone/animVariable/"
+            local W_14 = PBA[Text + 14, string] == "wait"
+            local W_15 = PBA[Text + 15, string] == "wait"
+            local W_16 = PBA[Text + 16, string] == "wait"
+            if(W_14 & W_15 & W_16) {
+                if(Status == "rhand") {
+                    toChest()
+                }
+                elseif(Status == "chest") {
+                    toRightHand()
+                }
+                User:addPBA(14, ang(), ang(15), ang(5), "1")
+                User:addPBA(15, ang(), ang(15), ang(5), "1")
+                User:addPBA(16, ang(), ang(15), ang(5), "1")
+                Q["change", string] = ""
+            }
+        }
+    }
+    
+    
+    if(Status == "drop") {
+        local Holder = Q["holder", entity]
+        if(Burner:isPlayerHolding() | Holder) {
+            if(Curtime >= Q["lockTime", number]) {
+                
+                if(Holder) {
+                    if(Holder:keyAttack2()) {
+                        local Weapon_e = Holder:weapon()
+                        local Weapon_t = Weapon_e:type()
+                        User = Holder
+                        User:addPBA()
+                        if(Weapon_t == "weapon_crowbar") { #weapon_physcannon
+                            toRightHand()
+                            Q["crowbar", entity] = Weapon_e
+                            Weapon_e:setAlpha(0)
+                            Weapon_e:drawShadow(0)
+                        }
+                        else {
+                            toChest()
+                        }
+                        
+                        Q["holder", entity] = noentity()
+                        Q["lockTime", number] = Curtime + 0.5
+                        Burner:propNotSolid(1)
+                        Burner:propFreeze(1) 
+                    }
+                }
+                else {
+                    findClearBlackList()
+                    findClearWhiteList()
+                    findExcludeClass("player_pickup")
+                    findIncludeClass("player")
+                    findInSphere(Burner:pos(), 50)
+                    Q["holder", entity] = find()
+                }
+            }
+        }
+        else {
+            Q["holder", entity] = noentity()
+        }
+    }
+    elseif(Status == "rhand" & !Change) {
+        local Burn = User:keyAttack2()
+        local Burn_change = changed(Burn)
+        
+        local Crouch = User:isCrouch()
+        local Crouch_change = changed(Crouch)
+        if(Burn_change | Crouch_change | Status_change) {
+            if(Burn) {
+                if(Crouch) {
+                    User:addPBA(14, ang(-75.33,-123.32,  40.49), ang(10), ang(4), "1")
+                    User:addPBA(15, ang(     0,  28.92, -40.86), ang(10), ang(4), "1")
+                    User:addPBA(16, ang(-25.75,      0,      0), ang(10), ang(4), "1")
+                }
+                else {
+                    User:addPBA(14, ang(-79.72,  22.74,-103.54), ang(10), ang(4), "1")
+                    User:addPBA(15, ang(                      ), ang(10), ang(4), "1")
+                    User:addPBA(16, ang(-34.95,      0,      0), ang(10), ang(4), "1")
+                }
+                
+                Q["needGas", number] = 1
+            }
+            else {
+                if(Crouch) {
+                    User:addPBA(14, ang(-16.09,   8.9,-69.08), ang(15), ang(4), "1")
+                    User:addPBA(15, ang(     0,-38.74,-38.06), ang(15), ang(4), "1")
+                }
+                else {
+                    User:addPBA(14, ang(-51.44, 27.14,-119.5), ang(15), ang(4), "1")
+                    User:addPBA(15, ang(), ang(15), ang(4), "1")
+                }
+                User:addPBA(16, ang(), ang(15), ang(4), "1")
+                Q["needGas", number] = 0.4
+            }
+        }
+        if(Burn | Burn_change) {
+            if(User:shootPos():distance(User:aimPos()) <= 55) {
+                local AE = User:aimEntity()
+                if(AE) {
+                    local Inputs = AE:getWireInputs()
+                    local Outputs = AE:getWireOutputs()
+                    local AE_s = AE:toString()
+                    
+                    if(Inputs:count() > 1 | Outputs:count() > 1 ) {
+                        local AE_d = 0
+                        AE_d = Q[AE_s + "/", number] = Q[AE_s + "/", number] + Interval
+                        if(AE_d >= 1.0) {
+                            local AE_w = AE:wirelink()
+                            foreach(C, I:string = Inputs) {
+                                local I_t = AE_w:inputType(I)
+                                
+                                switch(I_t) {
+                                    case "number" , AE_w[I, number ] = randint(-9e9,9e9) break
+                                    case "vector2", AE_w[I, vector2] = randvec2() break
+                                    case "vector" , AE_w[I, vector ] = randvec() break
+                                    case "vector4", AE_w[I, vector4] = randvec4() break
+                                    case "angle"  , AE_w[I, angle  ] = ang(randvec()) break
+                                }
+                            } 
+                            Q[AE_s + "/", number] = 0.5
+                            local Rand = randint(1,5)
+                            local Rand = (Rand == 4 ? 7 : Rand)
+                            AE:soundPlay("", 1.5, "buttons/combine_button" + Rand + ".wav")
+                        }
+                    }
+                    else {
+                        local AE_m = AE:mass()
+                        local Damage = 0
+                        if(AE_m < 1000) {
+                            Damage = Interval / max(AE_m / 100,1)
+                        }
+                        elseif(AE_m >= 1000) {
+                            Damage = Interval / (9 + AE_m / 1000)
+                        }
+                        
+                        local AE_d = 0
+                        AE_d = Q[AE_s + "/", number] = Q[AE_s + "/", number] + Damage
+                        if(AE_d >= 1) {
+                            AE:constraintBreak()
+                            AE:propFreeze(0)
+                            AE:setColor(AE:getColor()/6)
+                            AE:soundPlay("", 1.5, "physics/metal/metal_sheet_impact_hard" + randint(6,8) + ".wav")
+                            Q[AE_s + "/", number] = -9e9
+                            printColor(array(
+                                vec(255, 70,  0), "[Engineer]",
+                                vec(255,255,255), "Проп  с массой ",
+                                vec(255,100,100), ceil(AE_m),
+                                vec(255,255,255), " провер до основания за ",
+                                vec(255,100,100), ceil(Q[AE_s + "/timer", number],3),
+                                vec(255,255,255), " сек."
+                                
+                            ))
+                        }
+                        elseif(AE_d >= 0) {
+                            Q[AE_s + "/timer", number] = Q[AE_s + "/timer", number] + Interval
+                        }
+                        else {
+                            if(AE:isFrozen()) {
+                                Q[AE_s + "/", number] = 0.5
+                                Q[AE_s + "/timer", number] = 0
+                            }
+                        }
+                    }
+                    #[
+                    if(AE_d >= 1) {
+                        local AE_const1 = AE:getConstraints()[1, entity]
+                        if(AE_const1) {
+                            AE:constraintBreak(AE_const1)
+                            AE_const1:constraintBreak(AE)
+                            Q[AE_s + "/", number] = 0.8 + (1 - AE_d)
+                        }
+                        else {
+                            AE:constraintBreak()
+                            AE:propFreeze(0)
+                            Q[AE_s + "/", number] = 0.95 + (1 - AE_d)
+                        }
+                        AE:soundPlay("", 1.5, "physics/metal/metal_sheet_impact_hard" + randint(6,8) + ".wav")
+                    }
+                    ]#
+                }
+                rangerOffset(5, User:aimPos()-User:eye(), User:eye()):drawPaint("fadingScorch")
+                effectSpawn("ElectricSpark", User:aimPos(), 1) #effects/spark
+            }
+        }
+        
+        
+        if(Weapon_t != "weapon_crowbar") {
+            
+            drop()
+            Q["crowbar", entity]:setAlpha(255)
+            Q["crowbar", entity]:drawShadow(1)
+        }
+    }
+    
+    
+    local RealGas = Q["realGas", number]
+    local NeedGas = Q["needGas", number] #= O:keyPressed("mouse_4")
+    local Dif = NeedGas - RealGas
+    if(abs(Dif) >= 0.02) {
+        
+        RealGas = Q["realGas", number] = RealGas + Dif / 3
+        if(RealGas <= 0.02) {
+            RealGas = Q["realGas", number] = 0
+        }
+        
+        local Mul = RealGas
+        local Gradient = max(RealGas * 1.4 - 0.4,0) ^ 1.5
+        local Color = vec(255,10,10) * (1-Gradient) + vec(50,150,255) * (Gradient)
+        effect01(Mul, Color)
+        Q["needGlow", number] = RealGas ^ 2
+        
+        local Light = Q["GlowLight", entity]
+        if(Light) {
+            Light:setColor(Color * RealGas ^ 1 * 0.02)
+        }
+        else {
+            local Laundry_basket = AddHolo["laundry_basket/entity", entity]
+            Q["GlowLight", entity] = Laundry_basket:setdLight(Laundry_basket:toWorld(vec(0,0,2)), vec(), 1, 75, 0)
+        }
+    }
+    
+    local UnderWater = AddHolo["rt/entity", entity]:isUnderWater()
+    
+    local RealGlow = Q["realGlow", number]
+    local NeedGlow = Q["needGlow", number]
+    local Dif = NeedGlow - RealGlow
+    if(abs(Dif) >= 0.02) {
+        RealGlow = Q["realGlow", number] = RealGlow + clamp(Dif / 10,-0.01 - 0.01 * UnderWater,0.05)
+        
+        
+        local Color = vec(255, 20, 20) * RealGlow ^ 1.2 * 1
+        for(C = 1, Q["glowNumber", number]) {
+            local Glow_n = "glowing" + C
+            local Glow_i = AddHolo[Glow_n + "/id", number]
+            
+            holoColor(Glow_i, Color)
+        }
+    }
+    
+    if(RealGlow >= 0.05) {
+        if(UnderWater) {
+            local Laundry_basket = AddHolo["laundry_basket/entity", entity]
+            local LB_p = Laundry_basket:pos()
+            #local R = rangerOffset(30,LB_p,vec(0,0,-1))
+            
+            particleGravity(randvec(-5,5):setZ(0) + vec(0,0,10))
+            for(C = 1, round(1 + RealGlow ^ 0.5 * 2)) {
+                if(randint(0, 10 - RealGlow ^ 0.2 * 10) == 0) {
+                    local S = clamp(random(1,5) * RealGlow,1,5)
+                    local Pos = LB_p + randvec(-vec(0.7,0.7,1.5),vec(0.7,0.7,1.5)):rotate(Laundry_basket:angles())
+                    particle(1, S, S, "particle/particle_glow_05", vec(255), Pos, vec(0,0,10), 0, 0, 200 * RealGlow ^ 2, 0)
+                }
+            }
+        }
+        else {
+            local Trail = Q["smokeTrail", entity]
+            if(Trail) {
+                Trail:setColor(vec(100 * RealGlow ^ 2))
+            }
+            else {
+                local Flame_e = AddHolo["effect01/flame/base/entity", entity]
+                Flame_e:setTrails(3, 20, 1.5, "trails/smoke", vec(), 10)
+                findClearBlackList()
+                findClearWhiteList()
+                findIncludeClass("env_spritetrail")
+                findInSphere(Flame_e:pos(), 5)
+                Trail = Q["smokeTrail", entity] = find()
+            }
+        }
+        if(changed(UnderWater)) {
+            Q["smokeTrail", entity]:setAlpha(!UnderWater)
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+setName("engineer 001\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage() * 1e6))
+
+
+
+
+
+
+
+
+
+if(last()) {
+    Burner:remove()
+}
+
+
+
+
+
+
+
+

@@ -1,0 +1,125 @@
+@name mover 01 001
+
+@inputs 
+@outputs 
+@persist [E O]:entity [Q]:table
+
+@trigger 
+
+
+
+if(changed(0)) {
+    
+    #include "EGPS"
+    
+    
+    function vector2 entity:cursorPos() {
+        ###########################################################################################
+        ############################################################################################
+        local EyeAngles  = This:eyeAngles()
+        local Eye        = This:eye()
+        if(changed(Eye) | changed(EyeAngles)) {                                                     ##
+            local EyeA       = EyeAngles:forward()                                                  ##
+            local EgpScrSize = egpScrSize(This)                                                     ##
+                                                                                                    ##
+            local Holo = holoEntity(0)                                                              ##
+            if(!Holo) {holoCreate(0,vec(),vec())}                                                   ##
+            holoAng(0, EyeAngles)                                                                   ##
+                                                                                                    ##
+            local Cos = Eye[1] * EyeA[1] + Eye[2] * EyeA[2] + Eye[3] * EyeA[3]                      ##
+            local CursorV = (Holo:toLocal(Eye / Cos) / vec(1, -1.332, -0.75) + vec(0, 1, 1)) / 2    ##
+                                                                                                    ##
+            local Cursor = Q["cursorPos", vector2] = vec2(CursorV[2], CursorV[3]) * EgpScrSize     ###
+        }                                                                                         ###
+        ############################################################################################
+        ###########################################################################################
+    }
+    function vector2 entity:toScreen(V:vector) {
+        local ShootPos   = This:shootPos()
+        local EyeAngles  = This:eyeAngles()
+        local Holo = holoEntity(0)                if(!Holo) {holoCreate(0,vec(),vec())} holoAng(0, EyeAngles)
+        local EyeA       = EyeAngles:forward()
+        local EgpScrSize = egpScrSize(This)
+        
+        local Eye = (ShootPos - V):normalized()
+        local Cos = Eye[1] * EyeA[1] + Eye[2] * EyeA[2] + Eye[3] * EyeA[3]
+        local Pos = (Holo:toLocal(Eye / Cos) / vec(1, -1.332, -0.75) + vec(0, 1, 1)) / 2
+        local ScreenPos = vec2(Pos[2], Pos[3]) * EgpScrSize
+        return ScreenPos
+    }
+    
+    E = entity()
+    O = owner()
+    
+    
+    egpSelect(E:isWeldedTo():wirelink())
+    egpClear()
+    
+    egpAddCircle("cursor", v(), v(2), "o")
+    
+    egpAddLine("helperX", v(), v()) egpSetColor(255,0,0)
+    egpAddLine("helperY", v(), v()) egpSetColor(0,255,0)
+    egpAddLine("helperZ", v(), v()) egpSetColor(0,0,255)
+
+    
+    
+    holoCreate(1, E:toWorld(vec(0,0,50)), vec(1), E:toWorld(ang()))
+}
+
+timer("", 50)
+
+
+
+
+#
+O:cursorPos()
+CursorPos = Q["cursorPos", vector2]
+CursorNormal = O:eye()
+ShootPos = O:shootPos()
+EyeAngles = O:eyeAngles()
+
+
+Holo = holoEntity(1)
+HoloPos = Holo:pos()
+HoloAng = Holo:angles()
+#
+
+Orientation = "world"
+if(Orientation == "world") {
+    Holo_scrPos = O:toScreen(HoloPos)
+    
+    Length = 200
+    X_normal = v(1,0,0)
+    Y_normal = v(0,1,0)
+    Z_normal = v(0,0,1)
+    
+    
+    
+    
+    egpAddLine("helperX", Holo_scrPos, v())
+    egpAddLine("helperY", Holo_scrPos, v())
+    egpAddLine("helperZ", Holo_scrPos, v())
+}
+
+
+
+if(changed(CursorPos)) {
+    egpSetPos("cursor", CursorPos)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

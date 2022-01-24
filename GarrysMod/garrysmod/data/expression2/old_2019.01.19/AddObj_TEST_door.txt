@@ -1,0 +1,235 @@
+@name AddObj_TEST_door
+
+@inputs 
+@outputs 
+
+#- base
+@persist [E]:entity [Gate_name]:string
+
+#- 
+@persist [O]:entity [Q]:table
+
+#- 
+@persist [Door_base  Door_N_rt_e Door_N_root_e  Door_V_rt_e Door_V_root_e]:entity
+@persist Door_real Door_need
+
+#- 
+@persist 
+
+
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+
+#include "AddObj"
+if(changed(0)) {
+    #if(!isSinglePlayer()) {noDuplications()}
+    
+    #- base
+    E = entity()
+    E:setSkin(1)
+    Gate_name = E:getName():explode("\n"):string(1)
+    
+    #- 
+    O = owner()
+    
+    local Yaw = E:up():toAngle()[2]
+    
+    local Pos = E:toWorld(vec(0,0,0))
+    
+    local R1 = rangerOffset(100,Pos,ang(0,Yaw,0):forward())
+    local Pos = R1:hit() ? (Pos+R1:pos())/2 : Pos
+    
+    local Pos = (rangerOffset(100,Pos,vec(0,0,-1)):pos()+rangerOffset(100,Pos,vec(0,0,1)):pos())/2
+    
+    local Ang = ang(0,Yaw+90*sign((O:pos()-Pos):rotate(0,-Yaw,0)[2]),0)
+    
+    local Material1 = "phoenix_storms/metal_plate"
+    
+    addHolo("base", Pos, vec(), Ang, vec(255), "tetra", "", "")
+    local ParentName = AddObj_lastName
+    addProp("", vec(-4.51,24,0.03), ang(-0,0,0), vec(255), "models/sprops/cylinders/size_2/cylinder_3x108.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(-3.01,23.25,0.03), ang(89.9,90,0), vec(255), "models/sprops/rectangles_thin/size_1/rect_3x108x1_5.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(-4.51,-24,0.03), ang(0,0,0), vec(255), "models/sprops/cylinders/size_2/cylinder_3x108.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(-3.01,-23.25,0.03), ang(89.9,-90.1,0), vec(255), "models/sprops/rectangles_thin/size_1/rect_3x108x1_5.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(3,23.25,0.03), ang(89.9,89.9,0), vec(255), "models/sprops/rectangles_thin/size_1/rect_3x108x1_5.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(4.5,24,0.03), ang(0,-180,-0.1), vec(255), "models/sprops/cylinders/size_2/cylinder_3x108.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(3,-23.25,0.03), ang(89.9,-90,0), vec(255), "models/sprops/rectangles_thin/size_1/rect_3x108x1_5.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(4.5,-24,0.03), ang(0,179.9,-0.1), vec(255), "models/sprops/cylinders/size_2/cylinder_3x108.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(-4.5,0,-52.47), ang(-0,90,0), vec(255), "models/sprops/rectangles/size_1/rect_3x48x3.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(4.5,0,-52.47), ang(-0,90,0), vec(255), "models/sprops/rectangles/size_1/rect_3x48x3.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(-11.08,25.74,-55.27), ang(-14.8,0,-32), vec(255), "models/sprops/rectangles/size_1_5/rect_6x12x3.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(-11.08,-25.75,-55.27), ang(-14.8,-0.1,32), vec(255), "models/sprops/rectangles/size_1_5/rect_6x12x3.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(4.5,0,52.53), ang(0,90,-180), vec(255), "models/sprops/rectangles/size_1/rect_3x48x3.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(-4.5,0,52.53), ang(0,90,-180), vec(255), "models/sprops/rectangles/size_1/rect_3x48x3.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(11.42,0,-53.95), ang(0,89.9,14.7), vec(255), "models/sprops/rectangles/size_2/rect_12x48x3.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(11.07,-25.75,-55.27), ang(-14.8,-180,-32.1), vec(255), "models/sprops/rectangles/size_1_5/rect_6x12x3.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(11.07,25.74,-55.27), ang(-14.8,179.9,32), vec(255), "models/sprops/rectangles/size_1_5/rect_6x12x3.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(-11.43,0,-53.95), ang(0,90,-14.8), vec(255), "models/sprops/rectangles/size_2/rect_12x48x3.mdl", Material1, "rt") add_INTO(ParentName)
+    
+    
+    
+    
+    
+    
+    
+    addHolo("v_rt", vec(), vec(), ang(), vec(255), "tetra", "", "base")
+    local ParentName = AddObj_lastName
+    #addProp("", vec(-0.04,-0.01,25.5), ang(89.9,-0,0), vec(255), "models/sprops/rectangles/size_4_5/rect_42x48x3.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(0,0,36), ang(0,90,90), vec(255), "models/sprops/rectangles/size_4/rect_36x48x3.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(0.73,0,7.5), ang(0,-90,-0.1), vec(255), "models/sprops/misc/sq_holes/t_hsqhole_d3_30.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(1.48,18,18), ang(-0,0,-90), vec(255), "models/sprops/geometry/sphere_3.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(1.48,-18,18), ang(-0,0,0), vec(255), "models/sprops/geometry/sphere_3.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(1.48,0,18), ang(89.9,89.9,0), vec(255), "models/sprops/cylinders/size_2/cylinder_3x36.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(1.48,-18,9), ang(-0,0,0), vec(255), "models/sprops/cylinders/size_2/cylinder_3x18.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(1.48,18,9), ang(-0,0,0), vec(255), "models/sprops/cylinders/size_2/cylinder_3x18.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(0,0,9), ang(0,-90,-0.1), vec(255), "models/sprops/misc/sq_holes/hsqhole_d3_36.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(2.23,0,9), ang(0,-90,-0.1), vec(255), "models/sprops/misc/sq_holes/t_hsqhole_d3_36.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(0,-21,9), ang(89.9,0,0), vec(255), "models/sprops/rectangles/size_1_5/rect_6x18x3.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(0,21,9), ang(89.9,0,0), vec(255), "models/sprops/rectangles/size_1_5/rect_6x18x3.mdl", Material1, "rt") add_INTO(ParentName)
+
+    addHolo("v_root", vec(), vec(), ang(0,0,90), vec(255), "tetra", "", ParentName)
+    local ParentName = AddObj_lastName
+    addProp("", vec(0.75,-7.51,4.5), ang(0,-90,0), vec(255), "models/sprops/misc/sq_holes/t_qsqhole_d3_18.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(0.75,-6.01,0), ang(-90,89.9,0), vec(255), "models/sprops/geometry/t_hdisc_12.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(0.75,7.49,4.5), ang(0,89.9,0), vec(255), "models/sprops/misc/sq_holes/t_qsqhole_d3_18.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(2.24,0,7.5), ang(0,89.9,0), vec(255), "models/sprops/geometry/t_hdisc_30.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(-0.76,0,7.5), ang(-0.1,89.9,0), vec(255), "models/sprops/geometry/t_hdisc_30.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(0.75,0,6), ang(89.9,179.9,0), vec(255), "models/sprops/rectangles_thin/size_1_5/rect_6x12x1_5.mdl", Material1, "rt") add_INTO(ParentName)
+    
+    
+    addHolo("n_rt", vec(), vec(), ang(0,0,180), vec(255), "tetra", "", "base")
+    local ParentName = AddObj_lastName
+    #addProp("", vec(-0.04,-0.01,25.5), ang(89.9,-0,0), vec(255), "models/sprops/rectangles/size_4_5/rect_42x48x3.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(0,0,36), ang(0,90,90), vec(255), "models/sprops/rectangles/size_4/rect_36x48x3.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(0.73,0,7.5), ang(0,-90,-0.1), vec(255), "models/sprops/misc/sq_holes/t_hsqhole_d3_30.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(1.48,18,18), ang(-0,0,-90), vec(255), "models/sprops/geometry/sphere_3.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(1.48,-18,18), ang(-0,0,0), vec(255), "models/sprops/geometry/sphere_3.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(1.48,0,18), ang(89.9,89.9,0), vec(255), "models/sprops/cylinders/size_2/cylinder_3x36.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(1.48,-18,9), ang(-0,0,0), vec(255), "models/sprops/cylinders/size_2/cylinder_3x18.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(1.48,18,9), ang(-0,0,0), vec(255), "models/sprops/cylinders/size_2/cylinder_3x18.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(0,0,9), ang(0,-90,-0.1), vec(255), "models/sprops/misc/sq_holes/hsqhole_d3_36.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(2.23,0,9), ang(0,-90,-0.1), vec(255), "models/sprops/misc/sq_holes/t_hsqhole_d3_36.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(0,-21,9), ang(89.9,0,0), vec(255), "models/sprops/rectangles/size_1_5/rect_6x18x3.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(0,21,9), ang(89.9,0,0), vec(255), "models/sprops/rectangles/size_1_5/rect_6x18x3.mdl", Material1, "rt") add_INTO(ParentName)
+
+    addHolo("n_root", vec(), vec(), ang(0,0,90), vec(255), "tetra", "", ParentName)
+    local ParentName = AddObj_lastName
+    addProp("", vec(0.75,-7.51,4.5), ang(0,-90,0), vec(255), "models/sprops/misc/sq_holes/t_qsqhole_d3_18.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(0.75,-6.01,0), ang(-90,89.9,0), vec(255), "models/sprops/geometry/t_hdisc_12.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(0.75,7.49,4.5), ang(0,89.9,0), vec(255), "models/sprops/misc/sq_holes/t_qsqhole_d3_18.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(2.24,0,7.5), ang(0,89.9,0), vec(255), "models/sprops/geometry/t_hdisc_30.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(-0.76,0,7.5), ang(-0.1,89.9,0), vec(255), "models/sprops/geometry/t_hdisc_30.mdl", Material1, "rt") add_INTO(ParentName)
+    addProp("", vec(0.75,0,6), ang(89.9,179.9,0), vec(255), "models/sprops/rectangles_thin/size_1_5/rect_6x12x1_5.mdl", Material1, "rt") add_INTO(ParentName)
+    
+    
+    add_timer("door")
+    add_callFunction("door")
+    
+    function door() {
+        Door_base     = AddObj["base"   + "/entity", entity]
+        Door_N_rt_e   = AddObj["n_rt"   + "/entity", entity]
+        Door_N_root_e = AddObj["n_root" + "/entity", entity]
+        
+        Door_V_rt_e   = AddObj["v_rt"   + "/entity", entity]
+        Door_V_root_e = AddObj["v_root" + "/entity", entity]
+    }
+    
+    
+    
+}
+
+
+
+if(clk("door")) {
+        timer("door", 50)
+    
+    if(changed(0)) {
+        
+        ################
+        #
+        #- math
+        #
+        #- smooth
+        function number smooth(Value:number) {
+            return 0.5-sin(90 + clamp(Value,0,1) * 180)/2
+        }
+        function number smooth([Value IN TO]:number) {
+            local Min = (IN < TO ? IN : TO)
+            local Max = (TO > IN ? TO : IN)
+            Value = clamp(Value,Min,Max)
+            Value = clamp((Value-Min)/(Max-Min),0,1)
+            return 0.5-sin(90 + Value * 180)/2
+        }
+        #
+        ################
+        
+        Q["curtime", number] = curtime()
+    }
+    local LastCurtime = Q["curtime", number]
+    local Curtime = curtime()
+    Q["curtime", number] = Curtime
+    local Interval = Curtime - LastCurtime
+    
+    local O = owner()
+    local Key_use = O:keyPressed("mouse_4")
+    if(changed(Key_use) & Key_use) {
+        Door_need = !Door_need
+    }
+    if(Door_real != Door_need) {
+        Door_real = clamp(Door_real + sign(Door_need-Door_real)*Interval/1.5 ,0,1)
+        
+        local B = 0.3
+        
+        local A = (1-smooth(Door_real,0,B))*90
+        Door_N_root_e:setAng(Door_N_rt_e:toWorld(ang(0,0,A)))
+        Door_V_root_e:setAng(Door_V_rt_e:toWorld(ang(0,0,A)))
+        
+        local Z = smooth(Door_real,B,1)^2*56
+        Door_N_rt_e:setPos(Door_base:toWorld(vec(0,0,-Z)))
+        Door_V_rt_e:setPos(Door_base:toWorld(vec(0,0, Z)))
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName(Gate_name + "\nOPS: " + ops() + "\nCPU: " + int(cpuUsage()*1e6))
+if(dupefinished()) {reset()}

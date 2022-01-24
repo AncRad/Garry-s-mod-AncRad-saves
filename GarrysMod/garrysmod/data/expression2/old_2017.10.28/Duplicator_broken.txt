@@ -1,0 +1,935 @@
+@name Duplicator broken
+@inputs 
+@outputs 
+@persist [O]:entity [Duplicator Library]:table [GDuplicator]:gtable
+
+
+
+if(changed(0)) {
+        runOnChat(1)
+        runOnFile(1)
+        timer("printSistem", 1)
+        timer("getSistem", 1)
+        timer("update", 1)
+        timer("file", 1)
+    #
+    
+    
+    
+    #E = entity()
+    O = owner()
+    
+    GDuplicator = gTable(O:name() + "/duplicator")
+    
+    #Duplicator["printSistem/prints/noAddE2Name", number] = 1
+    function printSistem([AddColorText]:array) {
+        local ColorText = Duplicator["printSistem/colorText", array]
+        if(ColorText:count()) {
+            ColorText = ColorText:add(array("\n"))
+        }
+        if(Duplicator["printSistem/prints/noAddE2Name", number]) {
+        }
+        else {
+            AddColorText = array(vec( 30,255, 30), "[Duplicator] "):add(AddColorText)
+        }
+        Duplicator["printSistem/colorText", array] = ColorText:add(AddColorText)
+    }
+    function string numToStringEnding(Number:number) {
+        local Number = Number:toString():right(1):toNumber()
+        if(Number == 1) {
+            return ""
+        }
+        elseif(Number == 0 | Number >= 5) {
+            return "ов"
+        }
+        else {
+            return "а"
+        }
+    }
+    
+    ##Library_t["history", string] = Library_t["history", string]:addToHistory("blueprintAdded|" + Blueprint_n + "\n")
+    function string string:addToHistory(Text:string) {
+        local History = This
+        
+        local History_explode = History:explode("\n")
+        local UTC = dateUTC()
+        local Date = UTC["day", number] + "." + UTC["month", number] + "." + UTC["year", number]
+        local Time = UTC["sec", number] + ":" + UTC["min", number] + ":" + UTC["hour", number]
+        local Add = Date + "|" + Time + "|" + Text
+        
+        return History + Add
+    }
+    function table table:addBlueprint(Blueprint_n:string, Blueprint_t:table) {
+        local Library_t = This
+        
+        
+        local UTC = dateUTC()
+        
+        Blueprint_t["dateUTC", table] = UTC
+        Blueprint_t["autor/name", string] = O:name()
+        Blueprint_t["autor/steamID", string] = O:steamID()
+        Blueprint_t["blueprintName", string] = Blueprint_n
+        
+        Library_t[Blueprint_n + "/blueprint/table", table] = Blueprint_t
+        Library_t["BlueprintsNames", array] = Library_t["BlueprintsNames", array]:add(array(Blueprint_n))
+        
+        return Library_t
+    }
+}
+
+
+
+if(chatClk(O)) {
+    if(changed(0)) {
+        Duplicator["scanSistem/selectionArea/sphere/radius/u", number] = 5 * 52.5
+        Duplicator["scanSistem/selectionArea/sphere/radius/m", number] = 5
+        
+        
+        
+        
+        
+        function duplicatorAddCommamd([Command]:string, Description:array) {
+            if(!Duplicator["commads/" + Command, number]) {
+                Duplicator["commads/list", array] = Duplicator["commads/list", array]:add(array( Command ))
+                
+                Duplicator["commads/" + Command + "/description", array] = Description
+                
+                
+                Duplicator["commads/" + Command, number] = Duplicator["commads/list", array]:count()
+            }
+        }
+        
+        
+        
+        
+        duplicatorAddCommamd(
+            "команды",
+            array(
+                vec(255,255,255), "Печатает в чат список загруженных команд."
+            )
+        )
+        #
+        #- 
+        #
+        duplicatorAddCommamd(
+            "проверить обновления",
+            array(
+                vec(255,255,255), "Отправляет запрос на загрузку страницы с последней оригинальной версией кода. Если страница будет загружена, то вы сможете воспользоваться командой \"",
+                vec(150,150,255), "!обновить",
+                vec(255,255,255), "\""
+            )
+        )
+        duplicatorAddCommamd(
+            "обновить",
+            array(
+                vec(255,255,255), "Заменяет код чипа на код, который был загружен с сервера gitHub."
+            )
+        )
+        #
+        #- 
+        #
+        duplicatorAddCommamd(
+            "выделить",
+            array(
+                vec(255,255,255), "Определяет позицию выделения."
+            )
+        )
+        duplicatorAddCommamd(
+            "радиус",
+            array(
+                vec(255,255,255), "Определяет радиус сферического выделения."
+            )
+        )
+        duplicatorAddCommamd(
+            "сканировать",
+            array(
+                vec(255,255,255), "Сканирует выделенную область."
+            )
+        )
+        duplicatorAddCommamd(
+            "добавить чертеж",
+            array(
+                vec(255,255,255), "Добавляет чертёж в библиотеку."
+            )
+        )
+        #
+        #- 
+        #
+        duplicatorAddCommamd(
+            "создать библиотеку",
+            array(
+                vec(255,255,255), "Создаёт новую библиотеку."
+            )
+        )
+        duplicatorAddCommamd(
+            "сохранить",
+            array(
+                vec(255,255,255), "Сохраняет отсканированное."
+            )
+        )
+        duplicatorAddCommamd(
+            "загрузить",
+            array(
+                vec(255,255,255), "Загружает сохранённое."
+            )
+        )
+        duplicatorAddCommamd(
+            "прервать",
+            array(
+                vec(255,255,255), "Прерывает указанную процедуру."
+            )
+        )
+    }
+    
+    local LastSaid = O:lastSaid()
+    
+    if(LastSaid:index(1) == "!") {
+        
+        hideChat(1)
+        local Explode = LastSaid:sub(2, LastSaid:length()):explode(" ")
+        
+        
+        local Command = Explode[1, string]
+        switch(Command) {
+            case "команды",
+                local CommandList = Duplicator["commads/list", array]
+                local Print = array()
+                foreach(C, Command:string = CommandList) {
+                    Print = Print:add(array(
+                        vec(255,255,255), "\n" + C + ". \"",
+                        vec(150,150,255), "!" + Command,
+                        vec(255,255,255), "\" "
+                    ):add(Duplicator["commads/" + Command + "/description", array]))
+                }
+                printSistem(array(vec(255,255,255), "Список команд(" + CommandList:count() + "): "):add(Print))
+            break
+            #
+            #- 
+            #
+            case "выделить",
+                Duplicator["scanSistem/selectionArea/type", string] = "sphere"
+                Duplicator["scanSistem/selectionArea/sphere/centerPos", vector] = O:aimPos()
+                printSistem(array(
+                    vec(255,255,255), "Новое место выделено"
+                ))
+            break
+            case "радиус",
+                local Arg2 = Explode[2, string]
+                local Text = " source юнит"
+                local Arg2Number = Arg2:toNumber()
+                local ToMetr = 0
+                local Print = 0
+                
+                if(Arg2:right(1) == "м" | Explode[3, string] == "м") {
+                    Text = " метр"
+                    ToMetr = 1
+                    Arg2Number = round( Arg2Number / toUnit("m", 1) ,1)
+                }
+                
+                if(!Arg2Number) {
+                    Print = 1
+                    Arg2Number = Duplicator["scanSistem/selectionArea/sphere/radius/u", number]
+                }
+                if(ToMetr) {
+                    Radius    = round( Arg2Number * toUnit("m", 1) ,1)
+                    Arg2Number = round( Radius    / toUnit("m", 1) ,1)
+                }
+                else {
+                    Radius = round( Arg2Number ,1)
+                }
+                
+                
+                Text = Text + numToStringEnding(Radius)
+                if(!Print) {
+                    Duplicator["scanSistem/selectionArea/sphere/radius/u", number] = Arg2Number
+                    Duplicator["scanSistem/selectionArea/sphere/radius/m", number] = Radius
+                    printSistem(
+                        array(
+                            vec(255,255,255), "Радиус сканирования изменён на ",
+                            vec(255,120,120), Radius,
+                            vec(255,255,255), Text
+                        )
+                    )
+                }
+                else {
+                    printSistem(
+                        array(
+                            vec(255,255,255), "Текущий радиус ",
+                            vec(255,120,120), Radius,
+                            vec(255,255,255), Text
+                            
+                        )
+                    )
+                }
+            break
+            case "сканировать",
+                local Arg1 = Explode[2, string]
+                
+                local AreaSelectType = Duplicator["scanSistem/selectionArea/type", string]
+                findClearBlackList()
+                findClearWhiteList()
+                
+                switch(AreaSelectType) {
+                    case "sphere",
+                        local Pos = Duplicator["scanSistem/selectionArea/sphere/centerPos", vector]
+                        local Radius_u = Duplicator["scanSistem/selectionArea/sphere/radius/u", number]
+                        
+                        
+                        findIncludeClass("prop")
+                        findIncludeClass("wire_holo")
+                        local Count = findInSphere(Pos, Radius_u)
+                        Duplicator["scanSistem/scaned/entityNumber", number] = Count
+                        Duplicator["scanSistem/scaned/entityList", array] = findToArray()
+                        
+                        printSistem(array(
+                            vec(255,255,255), "Сканирование в \"",
+                            vec(255,120,120), AreaSelectType,
+                            vec(255,255,255), "\" в радиусе ",
+                            vec(255,120,120), Radius_u + "u"
+                        ))
+                        printSistem(array(
+                            vec(255,255,255), "Обнаружено ",
+                            vec(140,200,255), Count,
+                            vec(255,255,255), " объект" + numToStringEnding(Count)
+                        ))
+                        
+                        Duplicator["getSistem/procedure", string] = "getData"
+                    break
+                    default,
+                        printSistem(array(
+                            vec(255, 60, 60), "Ошибка: неопознанный тип выделения!"
+                        ))
+                    break
+                }
+            break
+            case "добавить",
+                local Arg2 = Explode[2, string]
+                if(Arg2 == "чертёж" | Arg2 == "чертеж") {
+                    local Library_n = Library["libraryName", string]
+                    local Arg3 = Explode:concat(" ", 3)
+                    
+                    if(Arg3) {
+                        
+                        local BlueprintData = Duplicator["getSistem/blueprintData", table]
+                        local DataIsTrye = BlueprintData != table()
+                        if(DataIsTrye & Library_n) {
+                            
+                            
+                            
+                            
+                            
+                            printSistem(array(
+                                vec(140,200,255), "[Библиотека \"" + Library_n + "\"] ",
+                                vec(255,255,255), "Чертеж \"",
+                                vec(255,120,120), Arg3,
+                                vec(255,255,255), "\" добавлен в библиотеку"
+                            ))
+                        }
+                        elseif(!DataIsTrye & !Library_n) {
+                            printSistem(array(
+                                vec(140,200,255), "[Библиотека]",
+                                vec(255, 60, 60), "Невозможно добавть чертёж. ",
+                                vec(255,255,255), "Указаны две причины: незагружена библиотека; нет отсканированных объектов."
+                            ))
+                        }
+                        elseif(!DataIsTrye) {
+                            printSistem(array(
+                                vec(140,200,255), "[Библиотека \"" + Library_n + "\"] ",
+                                vec(255, 60, 60), "Невозможно добавть чертёж. ",
+                                vec(255,255,255), "Указана причина: нет отсканированных объектов."
+                            ))
+                        }
+                        elseif(!Library_n) {
+                            printSistem(array(
+                                vec(140,200,255), "[Библиотека]",
+                                vec(255, 60, 60), "Невозможно добавть чертёж. ",
+                                vec(255,255,255), "Указана причина: незагружена библиотека."
+                            ))
+                        }
+                    }
+                    else {
+                        printSistem(array(
+                            vec(255,255,255), "Дайте название нового чертежа"
+                        ))
+                    }
+                }
+                else {
+                    printSistem(array(
+                        vec(255,255,255), "Добавить что?"
+                    ))
+                }
+            break
+            #
+            #- 
+            #
+            case "создать",
+                local Arg2 = Explode[2, string]
+                if(Arg2 == "библиотеку") {
+                    local Arg3 = Explode:concat(" ", 3)
+                    
+                    if(Arg3) {
+                        
+                        #libraryExplode(libraryGenerate(Arg3))
+                        
+                        printSistem(array(
+                            vec(140,200,255), "[Библиотека \"" + Library["libraryName", string] + "\"] ",
+                            vec(255,255,255), "Библиотека создана и готова к работе"
+                        ))
+                    }
+                    else {
+                        printSistem(array(
+                            vec(140,200,255), "[Файловая система] ",
+                            vec(255,255,255), "Укажите имя новой библиотеки"
+                        ))
+                    }
+                }
+                else {
+                    printSistem(array(
+                        vec(255,255,255), "Создать что?"
+                    ))
+                }
+            break
+            case "сохранить",
+                local Arg2 = Explode[2, string]
+                
+                if(!Arg2) {
+                    printSistem(array(
+                        vec(255,255,255), "Сохранить что?"
+                    ))
+                }
+                elseif(!Duplicator["file/procedure", string]) {
+                    if(Arg2 == "библиотеку") {
+                        
+                        local Library_n = Library["libraryName", string]
+                        if(Library_n) {
+                            printSistem(array(
+                                vec(140,200,255), "[Файловая система] ",
+                                vec(255,255,255), "Подготовка к сохранению библиотеки \"",
+                                vec(255,120,120), Library_n,
+                                vec(255,255,255), "\""
+                            ))
+                            Duplicator["file/procedure", string] = "saveLibrary"
+                        }
+                        else {
+                            printSistem(array(
+                                vec(140,200,255), "[Файловая система] ",
+                                vec(255,255,255), "Нет загруженной библиотеки"
+                            ))
+                        }
+                    }
+                }
+                else {
+                    local Procedure = Duplicator["file/procedure", string]
+                    if(Procedure) {
+                        local Procedure_VN = Duplicator["displayName#" + Procedure, string]
+                        printSistem(array(
+                            vec(140,200,255), "[Файловая система] ",
+                            vec(255, 60, 60), "Невозможно начать сохранение библиотеки!",
+                            vec(255,255,255), " Причина: активна файловая процедура \"",
+                            vec(255,120,120), (Procedure_VN ? Procedure_VN : Procedure),
+                            vec(255,255,255), "\""
+                        ))
+                    }
+                }
+            break
+            case "загрузить",
+                local Arg2 = Explode[2, string]
+                if(Arg2 == "библиотеку") {
+                    local Arg3 = Explode[3, string]
+                    if(Arg3) {
+                        Arg3 = Explode:concat(" ", 3)
+                    }
+                    else {
+                        Arg3 = "default"
+                    }
+                    local GO = 1
+                    local Procedure = Duplicator["file/procedure", string]
+                    if(Procedure) {
+                        local Procedure_VN = Duplicator["displayName#" + Procedure, string]
+                        printSistem(array(
+                            vec(140,200,255), "[Файловая система] ",
+                            vec(255, 60, 60), "Невозможно начать загрузку библиотеки!",
+                            vec(255,255,255), " Причина: активна файловая процедура \"",
+                            vec(255,120,120), (Procedure_VN ? Procedure_VN : Procedure),
+                            vec(255,255,255), "\""
+                        ))
+                    }
+                    else {
+                        Duplicator["file/procedure", string] = "fileLoad"
+                        Duplicator["file/fileLoad/filename", string] = "Duplicator#" + Arg3
+                        
+                        
+                        printSistem(array(
+                            vec(140,200,255), "[Файловая система] ",
+                            vec(255,255,255), "Начинаю загрузку бибилиотеки \"",
+                            vec(255,120,120), "Duplicator#" + Arg3,
+                            vec(255,255,255), "\""
+                        ))
+                    }
+                }
+                else {
+                    printSistem(array(
+                        vec(140,200,255), "[Файловая система] ",
+                        vec(255,255,255), "Загрузить что?"
+                    ))
+                }
+            break
+            #
+            #- 
+            #
+            case "прервать",
+                local Arg2 = Explode[2, string]
+                switch(Arg2) {
+                    case "загрузку",
+                        local FileName = Duplicator["file/fileLoad/filename", string]
+                        if(FileName) {
+                            printSistem(array(
+                                vec(140,200,255), "[Файловая система] ",
+                                vec(255,255,255), "Преравана загрузка библиотеки \"",
+                                vec(255,120,120), FileName,
+                                vec(255,255,255), "\""
+                            ))
+                            Duplicator["file/procedure", string] = ""
+                            Duplicator["file/fileLoad/step", string] = ""
+                            Duplicator["file/fileLoad/filename", string] = ""
+                        }
+                        else {
+                            printSistem(array(
+                                vec(140,200,255), "[Файловая система] ",
+                                vec(255,255,255), "В данный момент нет никаких процедур"
+                            ))
+                        }
+                    break
+                    default,
+                        if(changed(0)) {
+                            printSistem(array(
+                                vec(255,255,255), "Что, простите?"
+                            ))
+                        }
+                        else {
+                            printSistem(array(
+                                vec(255,255,255), "Что прервать?"
+                            ))
+                        }
+                    break
+                }
+            break
+            #
+            #- 
+            #
+            case "проверить",
+                local Arg2 = Explode[2, string]
+                switch(Arg2) {
+                    case "обновления",
+                        Duplicator["update/procedure", string] = "request"
+                        printSistem(array(
+                            vec(140,200,255), "[Система обновлений] ",
+                            vec(255,255,255), "Начинаю поиск обновлений"
+                        ))
+                    break
+                    default,
+                        if(changed(0)) {
+                            printSistem(array(
+                                vec(255,255,255), "Что, простите?"
+                            ))
+                        }
+                        else {
+                            printSistem(array(
+                                vec(255,255,255), "Проверить что?"
+                            ))
+                        }
+                    break
+                }
+            break
+            case "обновить",
+                local HttpData = Duplicator["update/httpData", string]
+                
+                if(HttpData) {
+                    local Code = Duplicator["update/code", string]
+                    
+                    if(HttpData != Code) {
+                        #ifdef entity:remoteSetCode(string)
+                            Duplicator["update/procedure", string] = "update"
+                            printSistem(
+                                array(
+                                    vec(140,200,255), "[Система обновлений] ",
+                                    vec(255,255,255), "Код чипа будет заменён на новый. После замены кода откройте чип и сохраните новую версию."
+                                )
+                            )
+                        #else
+                            printSistem(
+                                array(
+                                    vec(140,200,255), "[Система обновлений] ",
+                                    vec(255,255,255), "Невозможно заменить код. Не работает функция ",
+                                    
+                                    vec(130,130,255), "entity",
+                                    vec(255,255,255), ":",
+                                    vec(130,130,255), "remoteSetCode",
+                                    vec(255,255,255), "(",
+                                    vec(130,130,255), "string",
+                                    vec(255,255,255), ")",
+                                    
+                                    vec(255,255,255), "\nВы можете загрузить код, самостоятельно перейдя по ссылке ",
+                                    vec(100,255,100), Duplicator["update/url", string]
+                                )
+                            )
+                        #endif
+                    }
+                    else {
+                        printSistem(
+                            array(
+                                vec(140,200,255), "[Система обновлений] ",
+                                vec(255,255,255), "Не имеет смысла. Коды абсолютно идентичны!"
+                            )
+                        )
+                    }
+                }
+                else {
+                    printSistem(
+                        array(
+                            vec(140,200,255), "[Система обновлений] ",
+                            vec(255,255,255), "Невозможно. Осутствует файл."
+                        )
+                    )
+                }
+            break
+            #
+            #- 
+            #
+            default,
+                if(Duplicator["commads/" + Command, number]) {
+                    printSistem(array(
+                        vec(255,255,255), "Этой команде не назначено действие, вознможно, она еще на стадии разработки."
+                    ))
+                }
+                else {
+                    printSistem(
+                        array(
+                            vec(255,255,255), "Напишите ",
+                            vec(150,150,255), "!команды",
+                            vec(255,255,255), " чтобы получить список команд." 
+                        )
+                    )
+                }
+            break
+        }
+    }
+}
+
+
+if(clk("update") | httpClk()) {
+        timer("update", 200)
+    
+    if(changed(0)) {
+            runOnHTTP(1)
+        
+        Duplicator["update/url", string] = "https://raw.githubusercontent.com/AncRad/expression/master/Duplicator"
+        
+        if(GDuplicator["update", number]) {
+            if(curtime() - GDuplicator["update", number] <= 1) {
+                
+                printSistem(
+                    array(
+                        vec(140,200,255), "[Система обновлений] ",
+                        vec(255,255,255), "Код был успешно заменён и запущен, не забудьте открыть и сохранить его. Спасибо за то, что вы с нами :>"
+                    )
+                )
+            }
+            GDuplicator["update", number] = 0
+        }
+    }
+    
+    switch(Duplicator["update/procedure", string]) {
+        case "request",
+            if(httpCanRequest()) {
+                httpRequest(Duplicator["update/url", string])
+                
+                Duplicator["update/procedure", string] = "waitingForResponse"
+                printSistem(
+                    array(
+                        vec(140,200,255), "[Система обновлений] ",
+                        vec(255,255,255), "Запрос отправлен"
+                    )
+                )
+            }
+        break
+        case "waitingForResponse",
+            if(httpClk()) {
+                local HttpData = Duplicator["update/httpData", string] = httpData()
+                
+                if(HttpData) {
+                    local Code = Duplicator["update/code", string] = getCode()
+                    if(Code != HttpData) {
+                        printSistem(
+                            array(
+                                vec(140,200,255), "[Система обновлений] ",
+                                vec(255,255,255), "Файл получен. Ваш код ",
+                                vec(255, 60, 60), " отличается",
+                                vec(255,255,255), " от последней оригинальной версии."
+                            )
+                        )
+                    }
+                    else {
+                        printSistem(
+                            array(
+                                vec(140,200,255), "[Система обновлений] ",
+                                vec(255,255,255), "Файл получен. Ваш код ",
+                                vec( 60,255, 60), "не отличается",
+                                vec(255,255,255), " от последней оригинальной версии."
+                            )
+                        )
+                    }
+                }
+                else {
+                    printSistem(
+                        array(
+                            vec(255,255,255), "Файл получен, он пуст"
+                        )
+                    )
+                }
+                Duplicator["update/procedure", string] == ""
+            }
+        break
+        case "update",
+            if(Duplicator["printSistem/printList", array]:count() == 0) {
+                local HttpData = Duplicator["update/httpData", string]
+                
+                
+                #ifdef entity:remoteSetCode(string)
+                    if(HttpData) {
+                        GDuplicator["update", number] = curtime()
+                        entity():remoteSetCode(HttpData)
+                    }
+                    else {
+                        printSistem(
+                            array(
+                                vec(140,200,255), "[Система обновлений] ",
+                                vec(255,255,255), "Невозможно заменить код. Осутствует файл."
+                            )
+                        )
+                        Duplicator["update/procedure", string] == ""
+                    }
+                #else
+                    printSistem(
+                        array(
+                            vec(140,200,255), "[Система обновлений] ",
+                            vec(255,255,255), "Невозможно заменить код. Не работает функция ",
+                            
+                            vec(130,130,255), "entity",
+                            vec(255,255,255), ":",
+                            vec(130,130,255), "remoteSetCode",
+                            vec(255,255,255), "(",
+                            vec(130,130,255), "string",
+                            vec(255,255,255), ")",
+                            
+                            vec(255,255,255), "\n Вы можете загрузить код, самостоятельно перейдя по ссылке ",
+                            vec(100,255,100), Duplicator["update/url", string]
+                        )
+                    )
+                    Duplicator["update/procedure", string] == ""
+                #endif
+            }
+            else {
+                
+            }
+        break
+    }
+}
+
+if(clk("file") | fileClk()) {
+        timer("file", 250)
+    
+    if(changed(0)) {
+            runOnFile(1)
+        
+    }
+    
+    
+    switch(Duplicator["file/procedure", string]) {
+        
+        case "fileLoad",
+            local Step = Duplicator["file/fileLoad/step", string]
+            local File_n = Duplicator["file/fileLoad/filename", string]
+            switch(Step) {
+                case "fileRequest",
+                    if(fileCanLoad()) {
+                        
+                        fileLoad(File_n + ".txt")
+                        Duplicator["file/fileLoad/step", string] = "waitingFile"
+                        printSistem(array(
+                            vec(140,200,255), "[Файловая система] ",
+                            vec(255,255,255), "Запрос отправлен, ожидается файл"
+                        ))
+                    }
+                break
+                case "waitingFile",
+                    if(fileClk()) {
+                        
+                        local File = fileRead()
+                        printSistem(array(
+                            vec(140,200,255), "[Файловая система] ",
+                            vec(255,255,255), "Загрузка файла завершена, файл \"",
+                            vec(255,120,120), File_n,
+                            vec(255,255,255), "\"  получен"
+                        ))
+                        
+                        
+                        if(File) {
+                            
+                            if(0) {
+                                printSistem(array(
+                                    vec(140,200,255), "[Библиотека \"" + File_n + "\"] "
+                                ))
+                            }
+                        }
+                        else {
+                            printSistem(array(
+                                vec(140,200,255), "[Файловая система] ",
+                                vec(255,255,255), "Файл \"",
+                                vec(255,120,120), File_n,
+                                vec(255,255,255), "\" пуст"
+                            ))
+                        }
+                        Duplicator["file/fileLoad/filename", string] = ""
+                        Duplicator["file/fileLoad/step", string] = ""
+                        Duplicator["file/procedure", string] = ""
+                    }
+                break
+                default,
+                    Duplicator["file/fileLoad/step", string] = "fileRequest"
+                break
+            }
+        break
+        #
+        #- 
+        #
+        case "saveLibrary",
+            if(fileCanWrite()) {
+                local Library_n          = Library["libraryName"       , string]
+                local Head       = Library["head", string]
+                local History    = Library["history"   , string]
+                local Blueprints = Library["blueprints", string]
+                
+                
+                local File = "\n"
+                File+= "#-head-#"
+                File+= Head
+                File+= "#-head-#" + "\n"
+                File+= "\n"
+                File+= "#-history-#"
+                File+= History
+                File+= "#-history-#" + "\n"
+                File+= "\n"
+                File+= "#-blueprints-#" + "\n"
+                #
+                local BlueprintsNames = Library["BlueprintsNames", array]
+                local BlueprintsNames_c = BlueprintsNames:count()
+                foreach(C, Blueprint_n:string = BlueprintsNames) {
+                    local Blueprint_t = Library[Blueprint_n + "/blueprint/table", table]
+                    local Blueprint_von = vonEncode(Blueprint_t)
+                    File+= Blueprint_von + "\n"
+                    if(BlueprintsNames_c != C | BlueprintsNames_c == 1) {
+                        File+= "##blueprintBorder##" + "\n"
+                    }
+                }
+                #
+                File+= "#-blueprints-#"
+                fileWrite(Library_n + ".txt", File)
+                entity():remoteSetCode(File)
+                printSistem(array(
+                    vec(140,200,255), "[Файловая система] ",
+                    vec(255,255,255), "Библиотека \"",
+                    vec(255,120,120), Library_n,
+                    vec(255,255,255), "\" сохранёна"
+                ))
+                Duplicator["file/procedure", string] = ""
+            }
+        break
+        default,
+            #Duplicator["file/procedure", string] = ""
+        break
+    }
+    
+    
+    
+}
+
+if(clk("getSistem")) {
+    
+    local Procedure = Duplicator["getSistem/procedure", string]
+    if(Procedure) {
+        switch(Procedure) {
+            case "getData",
+                
+                local BlueprintData = Duplicator["getSistem/blueprintData", table]
+                
+                if(!Duplicator["getSistem/startTime", number]) {
+                    BlueprintData:clear()
+                    Duplicator["getSistem/startTime", number] = curtime()
+                }
+                
+                local EntityList = Duplicator["scanSistem/scaned/entityList", array]
+                local Count = EntityList:count()
+                
+                local Pass = Duplicator["getSistem/pass", number]
+                while(perf(80) & (Pass < Count)) {
+                    Pass++
+                    
+                    local Entity = EntityList[Pass, entity]
+                    BlueprintData[Pass + "/entity/", string] = Entity:type()
+                    BlueprintData[Pass + "/entity/", string] = Entity:model()
+                    BlueprintData[Pass + "/entity/", vector] = Entity:pos()
+                    BlueprintData[Pass + "/entity/", angle ] = Entity:angles()
+                    BlueprintData[Pass + "/entity/", string] = Entity:getMaterial()
+                    BlueprintData[Pass + "/entity/", vector] = Entity:getColor()
+                    BlueprintData[Pass + "/entity/", number] = Entity:getAlpha()
+                }
+                Duplicator["getSistem/pass", number] = Pass
+                if(Count == Pass) {
+                    
+                    local Interval = (curtime() - Duplicator["getSistem/startTime", number]) * 1000
+                    printSistem(array(
+                        vec(255,255,255), "Сбор данных завершен (",
+                        vec(255,120,120), Interval + "мс",
+                        vec(255,255,255), ")"
+                    ))
+                    
+                    
+                    BlueprintData["entityNumber", number] = Count
+                    BlueprintData["gettingTime", number] = Interval
+                    
+                    Duplicator["getSistem/pass", number] = 0
+                    Duplicator["getSistem/startTime", number] = 0
+                    Duplicator["getSistem/procedure", string] = ""
+                }
+                Duplicator["getSistem/blueprintData", table] = BlueprintData
+            break
+            default,
+                Duplicator["getSistem/procedure", string] = ""
+            break
+        }
+        
+        timer("getSistem", 50)
+    }
+    else {
+        timer("getSistem", 300)
+    }
+}
+
+
+
+
+
+
+if(clk("printSistem")) {
+        timer("printSistem", 350)
+    
+    local ColorText = Duplicator["printSistem/colorText", array]
+    local Count = ColorText:count()
+    if(Count) {
+        printColor(ColorText)
+        Duplicator["printSistem/colorText", array]:clear()
+    }
+}
+
+setName("Duplicator\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage() * 1e6))

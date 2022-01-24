@@ -1,0 +1,428 @@
+@name Q wing
+
+@inputs 
+@outputs 
+@persist [E O User]:entity [Q]:table [GT]:gtable
+
+@trigger none
+@model models/sprops/rectangles/size_2/rect_12x18x3.mdl
+
+
+
+#include "AddHolo"
+if(changed(0)) {
+    
+    GT = gTable("1")
+    
+    E = entity() E:setAng(E:toWorld(ang(0,180,0)))
+    O = owner()
+    
+    timer("create", 1)
+    runOnLast(1)
+    
+    Q["swepLockTimeConstant", number] = 0.5
+    
+    
+    function toChest() {
+        local CHEST_i = AddHolo["CHEST/id", number]
+        local CHEST_e = holoEntity(CHEST_i)
+        
+        local RTID = AddHolo["RT/id", number]
+        
+        holoParent(RTID, CHEST_e)
+        holoPos(   RTID, CHEST_e:toWorld(vec( -6.9 , 0 , 0 )))
+        holoAng(   RTID, CHEST_e:toWorld(ang()))
+        holoAng(RTID, holoEntity(RTID):toWorld(ang( -88 , 0 , 0 )))
+        
+        E:propFreeze(1)
+        E:propNotSolid(1)
+        
+        
+        GT[User:steamID(), entity] = E
+        Q["swepStatus", string] = "chest"
+        Q["swepLockTime", number] = curtime() + Q["swepLockTimeConstant", number]
+    }
+    function toDrop() {
+        local Vel  = User:vel() #Q["user/vel", vector]
+        local E2_i = AddHolo["E2/id"    , number]
+        local E2_e = AddHolo["E2/entity", entity]
+        
+        local RT_i = AddHolo["RT/id"    , number]
+        local RT_e = AddHolo["RT/entity", entity]
+        
+        
+        E:setPos(RT_e:pos())
+        E:setAng(RT_e:angles())
+        E:propNotSolid(0)
+        E:propFreeze(0)
+        E:setVel(Vel)
+        
+        
+        holoParent(RT_i, E2_i)
+        holoPos(   RT_i, E2_e:pos())
+        holoAng(   RT_i, E2_e:angles())
+        
+        
+        GT[User:steamID(), entity] = User = noentity()
+        Q["swepStatus"  , string] = "drop"
+        Q["swepLockTime", number] = curtime() + Q["swepLockTimeConstant", number]
+    }
+    function entity:getUser() {
+        if(!GT[This:steamID(), entity]) {
+            
+            User = This
+            
+            
+            
+            local CHEST_i = AddHolo["CHEST/id", number]
+            AddHolo["CHEST/entity" , entity] = holoCreate(CHEST_i, User:attachmentPos("chest"), vec(0.3), User:attachmentAng("chest"))
+            holoParentAttachment(CHEST_i, User, "chest")
+            
+            #toChest()
+        }
+    }
+    
+    
+    
+    
+    
+    
+}
+
+
+if(clk("create")) {
+        timer("create", 100)
+    
+    if(changed(0)) {
+        
+        Q["createStep", number] = 1
+    }
+    
+    local Step = Q["createStep", number]
+    if(Step) {
+        if(perf(50)) {
+            local M1 = "phoenix_storms/OfficeWindow_1-1"
+            local C1 = vec(255)
+            switch(Step) {
+                case 1,
+                    
+                    
+                    E:setAlpha(0)
+                    E:drawShadow(0)
+                    #E:noCollideAll(0)
+                    
+                    addHolo("E2", vec( 5.0 , 0.0 , -1.0 ), vec( 0.0 , 0.0 , 0.0 ), ang( 0 , 0 , 0 ), vec( 200 ), "cube", "", "")
+                    addHoloINTO(E)
+                    
+                    
+                    addHolo("CHEST", vec( 0.0 , 0.0 , 0.0 ), vec( 0.0 ), ang( 0 , 0 , 0 ), vec( 0 , 0 , 255 ), "cube", "", "")
+                    
+                    addHolo("RT", vec( 0.0 , 0.0 , 0.0 ), vec( 0.0 ), ang( 0 , 0 , 0 ), vec( 200 ), "cube", "", "E2")
+                    
+                    addHolo("gyroX", vec( 0.0 , 0.0 , 0.0 ), vec( 0.0 ), ang( 0 , 0 , 90 ), vec( 200 ), "cube", "", "RT")
+                    addHolo("gyroY", vec( 0.0 , 0.0 , 0.0 ), vec( 0.0 ), ang( 90 , 0 , 0 ), vec( 200 ), "cube", "", "RT")
+                    addHolo("gyroZ", vec( 0.0 , 0.0 , 0.0 ), vec( 0.0 ), ang( 0 , 0 , 0 ), vec( 200 ), "cube", "", "RT")
+                    
+                    addHolo("base", vec( -2.0 , 0.0 , 1.0 ), vec( 0.0 ), ang( 80 , 0 , 0 ), vec( 255 , 0 , 0 ), "cube", "", "RT")
+                    
+                    Q["createStep", number] = Step + 1
+                break
+                case 2,
+                    
+                    
+                    local Step2 = Q["createStep2", number] = Q["createStep2", number] + 1
+                    
+                    local C = (Step2 <= 4 ? Step2 : Step2-4)
+                    local N1 = "fly/" + C
+                    local N2 = N1 + "/axis/" + C
+                    local Z = 0.1
+                    local R = 1.5
+                    if(Step2 <= 4) {
+                        local A = 0
+                        local Ang = ang()
+                        local V = vec()
+                                if(C == 1) {V = vec( 1.1 , -2.5 ,  3.0 ) Ang = ang( -80 ,  20 , 0 ) A =    0  M =  1}
+                            elseif(C == 2) {V = vec( 1.1 ,  2.5 ,  3.0 ) Ang = ang( -80 , -20 , 0 ) A =    0  M = -1}
+                            elseif(C == 3) {V = vec( 0.9 ,  1.4 , -0.0 ) Ang = ang( -70 ,  -7 , 0 ) A =  2.5  M =  1}
+                            elseif(C == 4) {V = vec( 0.9 , -1.4 , -0.0 ) Ang = ang( -70 ,   7 , 0 ) A = -2.5  M = -1}
+                            
+                            addHolo(N1, V, vec( 0.3 ) * 0, Ang, vec( 255 , 0 , 0 ), "cube", "", "base")
+                            addHolo(N2, vec( 0.0 ,  0.0 , 0.0 ), vec( 0.2 , 0.2 , 1.0 ) * 0, ang( 0 , A , 0 ), vec( 200 ), "cube", "", N1)
+                            
+                            addHolo("", vec( 0.0 ,  0.0 , Z ), vec( R , R , Z ), ang( 0 , 0 , 0 ), C1, "hq_cylinder", M1, N1)
+                            
+                        }
+                        else {
+                            local Z2 = 0.3
+                            addHolo("", vec( 0.0 ,  0.0 , Z2 + Z * 2 ), vec( R , R , Z2 ), ang( 0 , 0 , 0 ), C1, "hq_tube_thin", M1, N1)
+                            
+                            local R1 = R - 0.15
+                            local Z3 = Z2
+                            addHolo("", vec( 0.0 ,  0.0 , Z3 + Z * 2 ), vec( R1 , R1 , Z3 ), ang( 0 , 0 , 0 ), C1 / 2, "hq_cylinder", M1, N2)
+                            addHolo("", vec( 0.0 ,  0.0 , 1.1 ), vec( R , R , 0.4 ), ang( 0 , 0 , 0 ), C1, "hq_cylinder", M1, N2)
+                            
+                            local M = ((C==1|C==3) ? 1 : -1)
+                            local Len = 8
+                            local NN1 = "_" + C
+                            addHolo(NN1, vec( -Len / 2 - 1 ,  -0.45 * M , 1.2 ), vec( Len , 1.0 , 0.2 ), ang( 0 , 0 , 0 ), C1, "rcube_thick", M1, N2)
+                            addHoloClip(ang( 0 , 0 , 0 ), -Len * 0.66)
+                            addHoloClip(ang( 0 , 180 , 0 ), -Len * 0.66)
+                            
+                            local NN2 = "__" + C
+                            addHolo(NN2, vec( -10.24 , -0.45 * M , 1.2 ), vec( 3 , 0.7 , 0.2 ), ang( 0 , -45 * M , 0 ), C1, "rcube_thick", M1, N2)
+                            addHoloClip(ang( 0 , -135 * M , 0 ), 0)
+                        }
+                    if(Step2 == 8) {
+                        Q["createStep2", number] = 0
+                        Q["createStep", number] = Step + 1
+                    }
+                break
+                case 3,
+                    
+                    local Step2 = Q["createStep2", number] = Q["createStep2", number] + 1
+                    if(Step2 == 1) {
+                        addHolo("", vec( 1.4 ,  0.0 , 0.5 ), vec( 0.8 , 0.8 , 0.8 ), ang( -135 , 0 , 45 ), C1 / 2, "models/gibs/scanner_gib02.mdl", "", "base")
+                    }
+                        
+                        local N1 = "fly/" + Step2
+                        local N2 = N1 + "/" + "axis/" + Step2
+                        
+                        for(C_ = 1, 6) {
+                            
+                            local NNN = Step2 + "light " + C_
+                            local Holo_i = addHolo(NNN, vec( -10 + C_ * 0.7 , -0.45 * ((Step2==1|Step2==3) ? 1 : -1) , 1.2 ), vec( 0.3 , 0.7 , 0.25 ), ang( 0 , 0 , 0 ), vec( 0 , 0 , 0 ), "rcube_thick", "lights/white", N2)
+                            Q["lightHolo", array] = Q["lightHolo", array]:add(array(Holo_i))
+                        }
+                    if(Step2 == 4) {
+                        addHoloTimer("swep", 1)
+                        addHoloTimer("animations", 1)
+                        Q["createStep", number] = 0
+                        Q["createStep2", number] = 0
+                    }
+                break
+            }
+        }
+    }
+}
+
+
+
+if(clk("swep")) {
+        timer("swep", 100)
+    
+    if(changed(0)) {
+        
+        if(O:keyPressed("E") | 0) {
+            O:getUser()
+        }
+    }
+    
+    local Swep = Q["swepStatus", string]
+    if(Swep == "chest") {
+        
+        local CHEST_i = AddHolo["CHEST/id", number]
+        holoPos(CHEST_i, User:attachmentPos("chest"))
+        holoAng(CHEST_i, User:attachmentAng("chest"))
+        holoParentAttachment(CHEST_i, User, "chest")
+        
+        
+        
+        if(User:keyPressed("lalt")) {
+            if(User:keyPressed("e")) {
+                if(curtime() - Q["swepLockTime", number] >= 0) {
+                    toDrop()
+                }
+            }
+        }
+    }
+    elseif(Swep == "drop") {
+        local E_p = E:pos()
+        findClearBlackList()
+        findClearWhiteList()
+        findIncludeClass("player")
+        findInSphere(E_p, 75)
+        foreach(C, Player:entity = findToArray()) {
+            if(Player:aimEntity() == E) {
+                if(Player:keyUse()) {
+                    if((Player:shootPos()-E_p):length() <= 70) {
+                        if(curtime() - Q["swepLockTime", number] >= 0) {
+                            Player:getUser()
+                        }
+                    }
+                }
+            }
+        }
+    }
+    else {
+        Q["swepStatus", string] = "drop"
+        #toDrop()
+    }
+}
+
+
+
+
+if(clk("animations")) {
+        timer("animations", 75)
+    
+    if(changed(0)) {
+        
+        Q["open", number] = 1
+        stoptimer("addHolo")
+        Q["animationsCurtime", number] = curtime()
+        
+    }
+    local LastCurtime = Q["animationsCurtime", number]
+    local Curtime = Q["animationsCurtime", number] = curtime()
+    local Loop = (Curtime - LastCurtime) / 0.015
+    ##############
+    #
+    #
+    #
+    ##############
+    local Open = Q["open", number]
+    local Real = Q["A", number]
+    
+    local DIF = Open - Real
+    local Apply = abs(DIF) > 0.01
+    if(Apply) {
+        
+        local Real = Q["A", number] = Real + clamp(DIF / 20 ,-0.02,0.02) * Loop
+        local Mul = sin(Real * 90) ^ 2
+        
+        for(C = 1,4) {
+            local N = "fly/" + C
+            local Need = select(C, 140, -140, -40, 40)
+            
+            
+            holoAng(AddHolo[N + "/axis/" + C + "/id", number], AddHolo[N + "/entity", entity]:toWorld(ang( 0 , Need * Mul , 0 )))
+        }
+        foreach(C, Holo_i:number = Q["lightHolo", array]) {
+            holoColor(Holo_i,vec( 0 , 50 , 255 ) * Mul)
+        }
+    }
+    ##############
+    #
+    #
+    #
+    ##############
+    if(changed(Apply)) {
+        if(Q["A", number] > 0.90) {
+            timer("physics", 1)
+        } else {
+            stoptimer("physics")
+        }
+    }
+}
+
+if(last()) {
+    if(Q["swepStatus", string] == "chest") {
+        #toDrop()
+    }
+    E:setAlpha(255)
+    E:propNotSolid(0)
+}
+setName("Ino wing\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage() * 1000000) + "\n")
+
+
+
+
+
+
+
+##############
+if(clk("physics")) {
+        timer("physics", 1)
+    
+    if(changed(0)) {
+        
+        O:getUser()
+        
+        E:setMass(25)
+        
+        Q["physicsCurtime", number] = curtime()
+    }
+    local LastCurtime = Q["physicsCurtime", number]
+    local Curtime = Q["physicsCurtime", number] = curtime()
+    local Loop = (Curtime - LastCurtime) / 0.015
+    ##############
+    #
+    #
+    #
+    ##############
+    local Base = AddHolo["base/entity", entity]
+    
+    if(E:isFrozen()) {
+        
+        E:propFreeze(0)
+        
+    }
+    else {
+        
+        #local GyroX_i = AddHolo["gyroX/id"    , number]
+        local RT_e = AddHolo["gyroX/entity", entity]
+        
+        local Vel = E:vel()
+        local RT_p = RT_e:boxCenterW()
+        
+        
+        local NeedPos = RT_p
+        local NeedAng = RT_e:angles()
+        
+        if(User) {
+            local Stat = Q["swepStatus", string]
+            if(Stat == "drop") {
+                
+                local A_p = User:attachmentPos("chest")
+                local A_a = User:attachmentAng("chest")
+                
+                NeedPos = A_p + vec(-30,0,0):rotate(ang(0,A_a[2],0))
+                NeedAng = ang(0,A_a[2],A_a[3])
+                
+            }
+        }
+        
+        
+        
+        local F = (NeedPos-RT_p)*20  -E:vel() / 1.5
+        E:applyForce((F-vec(0,0,9))*E:mass()*Loop)
+        
+        local L = Q["l", angle]
+        local R = Q["l", angle] = RT_e:toWorld(ang()) #RT_e:toWorld(RT_e:toLocal(User:attachmentAng("chest")))
+        local V = angnorm(R - L)
+        
+        local AF = -V * Loop * 0 - R * 0.1 #(angnorm(NeedAng-Gyro_a) * 4   - AVel / 10) * 3
+        E:applyAngForce(AF*E:mass()*Loop)
+    }
+}
+
+
+
+
+
+#E:noCollideAll(0)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

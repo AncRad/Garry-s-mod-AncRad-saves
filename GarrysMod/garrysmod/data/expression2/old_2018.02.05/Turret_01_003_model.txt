@@ -1,0 +1,534 @@
+@name Turret_01_003_model
+
+@inputs Tracker:entity
+@outputs NStep RStep
+@persist [T]:table
+
+@persist Radius    Length1 Length2 Length3 Length4 Length12 Length123   Fingertip_height AxisOffSet
+
+@model models/hunter/plates/plate1x1.mdl
+
+
+
+#include "AddHolo"
+
+
+
+if(changed(0)) {
+    
+    local Color1 = vec(150)
+    local Mater1 = ""
+    
+    local Scale = 5
+    "local" Radius = 6 *Scale
+    local Height = 1 *Scale
+    
+    local Clip = Height
+    
+    
+    local Dno_height = Height*0.05
+    
+    local Height0 = Height+Dno_height*1.5
+    local Height1 = Height0*0.89
+    local Height2 = Height1*0.89
+    local Height3 = Height2*0.85
+    local Height4 = Height3*0.75
+    "local" Fingertip_height = Height4
+    
+    "local" AxisOffSet = Height1
+    
+    local Length0 = Radius/2 * sin(acos(Clip/Radius))*0.995
+    "local" Length1 = Length0
+    "local" Length4 = Length0-Fingertip_height/2
+    "local" Length3 = Length4*0.98
+    "local" Length2 = Length3*0.98
+    
+    
+    addHolo("base",vec(0,0,Height+entity():boxSize()[3]/2),vec(),ang(),vec(),"cube","","") addHoloINTO(entity()) entity():setAlpha(0)
+    
+    for(Lapka = 1,3) {
+        local A = (Lapka-1)*120
+        
+        #
+        #names
+        local RT0 = "lapaRT0" + Lapka
+        local RAX = "lapaRAX" + Lapka
+        local AXI = "lapaAXI" + Lapka
+        local RT1 = "lapaRT1" + Lapka
+        local RT2 = "lapaRT2" + Lapka
+        local RT3 = "lapaRT3" + Lapka
+        local RT4 = "lapaRT4" + Lapka
+        #
+        
+        #
+        #bones
+        addHolo(RT0,vec(0,0,-AxisOffSet),vec(),ang(0,A,0),vec(),"cube","","base") #none
+        addHolo(RAX,vec(),vec(),ang(),vec(),"cube","",RT0)                        #move
+        addHolo(AXI,vec(),vec(),ang(),vec(),"cube","",RAX)                        #rotate
+        addHolo(RT1,vec(0,0,+AxisOffSet),vec(),ang(),vec(),"cube","",AXI)         #none
+        addHolo(RT2,vec(),vec(),ang(),vec(),"cube","",RT1)                        #move
+        addHolo(RT3,vec(),vec(),ang(),vec(),"cube","",RT2)                        #move
+        addHolo(RT4,vec(),vec(),ang(),vec(),"cube","",RT3)                        #move
+        #
+        
+        
+        #
+        #visual
+        addHolo("",vec(),vec(Radius,Radius,Height),ang(),Color1,"hq_tube_thin",Mater1,"base")
+        addHolo_clip(vec(),ang(0,A+30,0),Clip)
+        addHolo_clip(vec(),ang(0,A+90,0),Clip)
+        local Dverka_radius = Radius-Radius/6*0.02
+        addHolo("dverka"+Lapka,vec(),vec(Dverka_radius,Dverka_radius,Height+Dno_height),ang(),Color1*2,"hq_tube_thin",Mater1,"base") #addHolo_clip(vec(),ang(45,90,0),Height/2)
+        addHolo_clip(vec(),ang(0,A+90,0),-Clip*1.1)
+        addHolo_clip(vec(),ang(0,A-90,0),-Clip*1.1)
+        addHolo_clip(vec(),ang(0,A,0),Dverka_radius*0.95)
+        #
+        addHolo("",vec(Length0,0,+AxisOffSet),vec(Height0,Height0,Length0),ang(90,0,0),Color1,"hq_stube_thin",Mater1,RT0) #addHolo_clip(vec(),ang(0,45,0),-Height0/2)
+        #
+        local Koleno_height = Height1*0.98
+        addHolo("",vec(),vec(Koleno_height*2,Koleno_height,0.005),ang(),Color1*2,"cube",Mater1,RAX)
+        addHolo_clip(vec(),ang(0,180,0),0)
+        addHolo("",vec(),vec(Koleno_height*2,Koleno_height*2,Koleno_height),ang(0,0,90),Color1*2,"hq_cylinder",Mater1,RAX)
+        addHolo_clip(vec(),ang(0,90,0),0)
+        #
+        addHolo("",vec(Length1,0,0),vec(Height1,Height1,Length1),ang(90,0,0),Color1,"hq_stube_thin",Mater1,RT1)
+        addHolo("",vec(0,0,Length1*0.2),vec(Height1*0.97,Height1*0.97,-Length1*0.5),ang(0,0,0),vec(5),"pyramid",Mater1,AddHolo_lastName)
+        addHolo_clip(vec(),ang(90,0,0),-Length0*0.5*0.95)
+        #
+        addHolo("",vec(Length2,0,0),vec(Height2,Height2,Length2),ang(90,0,0),Color1,"rcube_thin",Mater1,RT2)
+        #
+        addHolo("",vec(Length3,0,0),vec(Height3,Height3,Length3),ang(90,0,0),Color1,"hq_cylinder",Mater1,RT3)
+        #
+        addHolo("",vec(Length4,0,0),vec(Height4,Height4,Length4),ang(90,0,0),Color1,"hq_cylinder",Mater1,RT4)
+        addHolo("fingertip",vec(Length4*2,0,0),vec(Fingertip_height),ang(0,0,0),Color1,"hq_sphere",Mater1,RT4)
+    }
+    
+    
+    #
+    #visual
+    addHolo("",vec(0,0,(-Dno_height-Height)),vec(Radius,Radius,Dno_height),ang(),Color1,"hq_cylinder",Mater1,"base")
+    addHolo("",vec(0,0,(+Dno_height+Height)),vec(Radius,Radius,Dno_height),ang(),Color1,"hq_cylinder",Mater1,"base")
+    #
+    #addHolo("",vec(0,0,(-Dno_height*2-Height)),vec(Radius*4,Radius*4,0.01),ang(),Color1*0.5,"cube","","base")
+    
+    addHolo_timer("animations")
+}
+
+
+
+
+
+if(clk("animations")) {
+        timer("animations", 75)
+    
+    
+    if(changed(0)) {
+        T["lastCurtime", number] = curtime()
+        
+        Length1*=2*0.95 Length2*=2 Length3*=2 Length4*=2
+        Fingertip_height/=2
+        Length12 = Length1 + Length2
+        Length123 = Length1 + Length2 + Length3
+        
+        
+        function number smooth(Value:number) {
+            return 0.5-sin(90 + clamp(Value,0,1) * 180)/2
+        }
+        function number smooth([Value IN TO]:number) {
+            local Min = (IN < TO ? IN : TO)
+            local Max = (TO > IN ? TO : IN)
+            Value = clamp(Value,Min,Max)
+            Value = clamp((Value-Min)/(Max-Min),0,1)
+            return 0.5-sin(90 + Value * 180)/2
+        }
+        function lapkaAnim([Lapka Length Angle]:number) {
+            local Real = T["real" + Lapka, number]
+            local Need = T["real" + Lapka, number] = Length
+            
+            if(Real != Need) {
+                
+                
+                if(Need | Real) {
+                    if(Real & !Need) {
+                        #
+                        #- RAX
+                        local RT0_e = AddHolo["lapaRT0" + Lapka + "/entity", entity]
+                        local RAX_i = AddHolo["lapaRAX" + Lapka + "/index" , number]
+                        holoPos(RAX_i, RT0_e:pos())
+                    }
+                    else {
+                        #
+                        #- RAX
+                        local RT0_e = AddHolo["lapaRT0" + Lapka + "/entity", entity]
+                        local RAX_i = AddHolo["lapaRAX" + Lapka + "/index" , number]
+                        holoPos(RAX_i, RT0_e:toWorld(vec(Radius*1.02,0,0)))
+                    }
+                    
+                    #
+                    #- AXI
+                    local RAX_e = AddHolo["lapaRAX" + Lapka + "/entity", entity]
+                    local AXI_i = AddHolo["lapaAXI" + Lapka + "/index" , number]
+                    holoAng(AXI_i, RAX_e:toWorld(ang(clamp(Angle,0,70),0,0)))
+                    
+                    Length=max((Length-Length1+Fingertip_height)/3,0)
+                    #
+                    #- RT2
+                    local RT1_e = AddHolo["lapaRT1" + Lapka + "/entity", entity]
+                    local RT2_i = AddHolo["lapaRT2" + Lapka + "/index" , number]
+                    holoPos(RT2_i, RT1_e:toWorld(vec(clamp(Length,0,Length1),0,0)))
+                    #
+                    #- RT3
+                    local RT2_e = AddHolo["lapaRT2" + Lapka + "/entity", entity]
+                    local RT3_i = AddHolo["lapaRT3" + Lapka + "/index" , number]
+                    holoPos(RT3_i, RT2_e:toWorld(vec(clamp(Length,0,Length2),0,0)))
+                    #
+                    #- RT4
+                    local RT3_e = AddHolo["lapaRT3" + Lapka + "/entity", entity]
+                    local RT4_i = AddHolo["lapaRT4" + Lapka + "/index" , number]
+                    holoPos(RT4_i, RT3_e:toWorld(vec(clamp(Length,0,Length3),0,0)))
+                }
+            }
+        }
+        
+        print("Использованно голограмм: " + AddHolo_counter)
+        
+    }
+    local LastCurtime = T["lastCurtime", number]
+    local Curtime     = T["lastCurtime", number] = curtime()
+    local Interval    = Curtime - LastCurtime
+    
+    
+    local O = owner()
+    local M45 = O:keyPressed("mouse_4")-O:keyPressed("mouse_5")
+    
+    
+    if(changed(M45) & M45) {
+        T["step_need", number] = clamp(T["step_need", number] + M45,0,3)
+    }
+    
+    
+    local Step_need = NStep = T["step_need", number]
+    local Step_real = RStep = T["step_real", number]
+    
+    if(Step_real <= 1) {
+        if(min(Step_need,1) != Step_real) {
+            Step_real = clamp(Step_real + (Step_real<Step_need? 1 : -1)*Interval/0.5,0,1)
+            
+            local Base_e   = AddHolo["base" + "/entity", entity]
+            for(Lapka = 1,3) {
+                local Dverka_i = AddHolo["dverka" + Lapka + "/index", number]
+                
+                local Yaw = 20 * smooth(Step_real)
+                holoAng(Dverka_i, Base_e:toWorld(ang(0,Yaw,0)))
+            }
+            T["step_real", number] = Step_real
+        }
+    }
+    
+    
+    if(Step_real >= 1) {
+        if(Step_need > 1) {
+            
+            local RT1_e = AddHolo["lapaRT1" + 1 + "/entity", entity]
+            local Tp = RT1_e:toLocal(Tracker:pos())
+            
+            local A_ = (Tp+Tp:setY(0))/2
+            if(changed(0)) {
+                holoCreate(1111,RT1_e:toWorld(A_),vec(0.1,abs(A_[2]),0.1)/6,RT1_e:angles(),vec(0,100,255), "cube") holoParent(1111,RT1_e) holoAlpha(1111, 150) holoMaterial(1111, "lights/white")
+                holoCreate(2222,vec(),vec(-0.11),ang(),vec(255),"hq_sphere") holoParent(2222, RT1_e) holoAlpha(2222, 200) holoMaterial(2222, "lights/white")
+            }
+            else {
+                holoPos(1111,RT1_e:toWorld(A_)) holoScale(1111,vec(0.1,abs(A_[2]),0.1)/6)
+                holoPos(2222,RT1_e:toWorld(Tp:setY(0)))
+            }
+            
+            
+            local RT0_e = AddHolo["lapaRT0" + 1 + "/entity", entity]
+            
+            local P = (RT0_e:toLocal(Tracker:pos())-RT0_e:toLocal(RT1_e:pos())):setY(0) 
+            local L = P:length()
+            local A = angnorm(P:toAngle()[1])
+            for(Lapka = 1,3) {
+                lapkaAnim(Lapka, L, A)
+            }
+        }
+        elseif(Step_real <= 1) {
+            for(Lapka = 1,3) {
+                lapkaAnim(Lapka, 0, 0)
+            }
+        }
+        T["step_real", number] = Step_real
+    }
+    
+        #[
+        if(Step_real >= 1 & Step_real <= 2) {
+            Step_real = clamp(Step_real + (Step_real<Step_need? 1 : -1)*Interval/0.75,1,2)
+            
+            local Smooth = smooth(Step_real-1)
+            local RAX_X = 6.1 * Smooth
+            local RT4_X = 5.22/2 * Smooth
+            
+            for(Lapka = 1,3) {
+                #
+                #- RAX
+                local RT0_e = AddHolo["lapaRT0" + Lapka + "/entity", entity]
+                local RAX_i = AddHolo["lapaRAX" + Lapka + "/index" , number]
+                holoPos(RAX_i, RT0_e:toWorld(vec(RAX_X,0,0)))
+                #
+                #- RT4
+                local RT3_e = AddHolo["lapaRT3" + Lapka + "/entity", entity]
+                local RT4_i = AddHolo["lapaRT4" + Lapka + "/index" , number]
+                holoPos(RT4_i, RT3_e:toWorld(vec(RT4_X,0,0)))
+            }
+        }
+        #
+        #- 
+        if(Step_real >= 2) {
+            Step_real = clamp(Step_real + (Step_real<Step_need? 1 : -1)*Interval/0.5,2,3)
+            
+            
+            local Smooth = smooth(Step_real-2)
+            local AXI_Pitch = 4 * Smooth
+            
+            for(Lapka = 1,3) {
+                #
+                #- RAX
+                local RAX_e = AddHolo["lapaRAX" + Lapka + "/entity", entity]
+                local AXI_i = AddHolo["lapaAXI" + Lapka + "/index" , number]
+                holoAng(AXI_i, RAX_e:toWorld(ang(AXI_Pitch,0,0)))
+                
+                if(Lapka == 1) {
+                    local RT1_e = AddHolo["lapaRT1" + Lapka + "/entity", entity]
+                    local Tp = RT1_e:toLocal(Tracker:pos())
+                    
+                    local A_ = (Tp+Tp:setY(0))/2
+                    if(changed(0)) {holoCreate(1111, RT1_e:toWorld(A_),vec(0.1,abs(A_[2]),0.1)/6,RT1_e:angles(),vec(0,100,255), "cube") holoParent(1111,RT1_e) holoAlpha(1111, 150) holoMaterial(1111, "lights/white")}
+                    else {holoPos(1111,RT1_e:toWorld(A_)) holoScale(1111,vec(0.1,abs(A_[2]),0.1)/6)}
+                    
+                }
+            }
+        }
+        T["step_real", number] = Step_real
+    }
+    ]#
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName("Turret_model\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1e6))

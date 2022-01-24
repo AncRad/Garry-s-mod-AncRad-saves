@@ -1,0 +1,239 @@
+@name Baloon Music Player
+@persist Color:vector Menu Light InUse [Buttons Song_data]:table Wait
+@persist E:entity [SongInfo Request]:string Show Replace ReplaceId Hour Min Sec On Tick T
+@persist [URLTable ArtistTable SongNameTable TimeTable]:table [SongInfoArrayS SongInfoArray]:array
+@model models/maxofs2d/balloon_classic.mdl
+
+interval(100)
+
+if(dClk()) 
+{ 
+    if(InUse) 
+    { 
+        InUse = 0
+    } 
+    else 
+    { 
+        Buttons[dClk(), string]()
+    }
+    
+    exit()
+}
+
+if(httpClk()) 
+{ 
+    local Data = httpData():replace("&quot;", "\""):replace("&amp;", "&"):replace("&lt;", "<"):replace("&gt;", ">")
+    local Info = array()
+    
+    Wait = 0
+    
+    Song_data = table(
+        "urlArray"   = Data:gmatch("/play/[0-9a-zA-Z+%%]*"), 
+        "name1Array" = Data:gmatch("class%=\"author\"%>%<span class%=\"b%-link%_%_inner\" onclick%=\"getText%_author%(this%)%;scroll%(0%,0%)%; return false\"%>(.-)%<"), 
+        "name2Array" = Data:gmatch("class%=\"song\"%>%<span class%=\"b%-link%_%_inner\" onclick%=\"getText%_author%(this%)%;scroll%(0%,0%)%; return false\"%>(.-)%<"), 
+        "timeArray"  = Data:gmatch("duration%-real\"%>([0-9%:]*)%<")
+    )
+    
+    local Count = Song_data["urlArray", table]:count()
+    
+    if(!Count) 
+    { 
+        dArray("Song list", array("Nothing found!"))
+        exit()
+    }
+    
+    for(I = 1, clamp(Count, 1, 50)) 
+    { 
+        local Time = Song_data["timeArray", table][I, array]:string(1)
+        
+        Info:pushString(
+            (I < 10 ? " " : "") + I + 
+            ". [" + (Time[1] != "0" & Time[2] == ":" ? "0" : "") + Time + "] " + 
+            Song_data["name1Array", table][I, array]:string(1) + " - " + 
+            Song_data["name2Array", table][I, array]:string(1)
+        )
+    }
+    
+    dArray("Song list", Info)
+    exit()
+}
+
+if(first()) 
+{ 
+    runOnHTTP(1)
+    Color = vec(255, 0, 0)
+    
+    entity():setColor(Color)
+    entity():setMass(1000)
+    
+    entity():propGravity(0)
+    
+    
+    #[ Holos ]#
+    for(I = 1, 5) 
+    { 
+        holoCreate(1, entity():pos() + vec(0, 0, -1 * 12 + 6), vec(0.02, 0.02, 1))
+        holoDisableShading(1, 1)
+        holoColor(1, vec())
+        holoShadow(1, 1)
+        
+        holoCreate(1 + 5, entity():pos() + vec(0, 0, -1 * 12 + 12), vec(0.1)):setAlpha(0)
+        
+        holoParent(1 + 5, 1 == 1 ? entity() : holoEntity(I - 1))
+        holoParent(1, 1 + 5)
+    }
+    
+    
+    #[ Derma panel ]#
+    dPanel("Music baloon", vec2(50, 240), vec2(300, 400))
+    dShowCloseButton("Music baloon", 0)
+    dShow("Music baloon", 0)
+    
+    dColor("Music baloon", Color:x(), Color:y(), Color:z(), 150)
+    
+    dTabHolder("tabs", "Music baloon", vec2(5, 29), vec2(290, 366))
+    dTab("Music", "tabs")
+    dTab("Color", "tabs")
+    
+        # Music tab
+    dTextBox("song", "Music", vec2(5, 6), 189)
+    dButton("Search", "Music", vec2(197, 6), vec2(72, 20))
+    
+    dListBox("Song list", "Music", vec2(5, 30), vec2(264, 262))
+    
+    dButton("Play", "Music", vec2(5, 295), vec2(131, 30))
+    dButton("Stop", "Music", vec2(138, 295), vec2(131, 30))
+    dSlider("Volume","Menu", vec2(8, 295) ,131,0,100)
+    dSetNval("Volume", 100)
+    
+        # Color tab
+    dSlider("Red", "Color", vec2(30, 35), 250, 0, 255)
+    dSlider("Green", "Color", vec2(30, 65), 250, 0, 255)
+    dSlider("Blue", "Color", vec2(30, 95), 250, 0, 255)
+    
+    dSetNval("Red", Color:x())
+    dSetNval("Green", Color:y())
+    dSetNval("Blue", Color:z())
+    
+    
+    #[ Button functions ]#
+    Buttons = table( 
+        "Search" = "song_search", 
+        "Play"   = "song_play", 
+        "Stop"   = "song_stop"
+    )
+    
+    function song_search() 
+    { 
+        if(Wait) 
+        { 
+            print("Wait until the searching is done...")
+            return
+        }
+        
+        local Song_name = dSval("song")
+        
+        if(!Song_name:length()) 
+        { 
+            print("Cant search without a song name!")
+            return
+        } 
+        
+        httpRequest("http://music-pesni.ru/mp3-music/" + httpUrlEncode(Song_name))
+        Wait = 1
+    }
+    
+    function song_stop() 
+    { 
+        soundURLpause("bp")
+    }
+    
+    function song_play() 
+    { 
+        local Id   = dSval("Song list"):explode("."):string(1):toNumber()
+        local Url  = Song_data["urlArray", table][Id, array]:string(1)
+        
+        if(!Url:length()) 
+        { 
+            print("No song selected")
+            return
+        }
+        
+        song_stop()
+        
+        printTable(
+            table(
+                "name1" = Song_data["name1Array", table][Id, array]:string(1),
+                "name2" = Song_data["name2Array", table][Id, array]:string(1),
+                "time"  = Song_data["timeArray" , table][Id, array]:string(1),
+                "url"   = "https://music-pesni.ru" + Song_data["urlArray", table][Id, array]:string(1)
+            )
+        )
+        soundURLload("bp", "https://music-pesni.ru" + Url, 1, 0, entity())
+        print("Playing " + Song_data["name1Array", table][Id, array]:string(1) + " - " + Song_data["name2Array", table][Id, array]:string(1) + "...")
+    }
+}
+
+
+#[ Menu open / close ]#
+local MenuButton = owner():keyPressed("T")
+
+if(changed(MenuButton) & MenuButton) 
+{ 
+    Menu = !Menu
+    
+    dShow("Music baloon", Menu)
+    enableMouse(Menu)
+    
+    exit()
+}
+
+
+#[ Moves & appearance ]#
+local Vel = clamp(entity():vel() / 10, vec(-20), vec(20))
+
+for(I = 1, 5) 
+{ 
+    holoAng(I + 5, ang(Vel:x(), 0, -Vel:y()) * (1 + I / 2))
+}
+
+entity():applyTorque((entity():toLocal(rotationVector(quat(ang()) / quat(entity())) + entity():pos()) * 200 - entity():angVelVector() * 20) * entity():inertia())
+
+local Need = owner():pos() + vec(0, 0, 90) + (entity():pos() - owner():pos() - vec(0, 0, 90)):normalized() * 100
+entity():applyForce((Need - entity():pos()) * 1000 - entity():mass() * entity():vel())
+
+if(!Light & dLightCanSet()) 
+{ 
+    Light = 1
+    entity():setdLight(Color, 2, 300)
+}
+
+
+#[ Color ]#
+local Red = dNval("Red")
+local Grn = dNval("Green")
+local Blu = dNval("Blue")
+
+if(changed(Red + Grn + Blu)) 
+{ 
+    Color = vec(Red, Grn, Blu)
+    
+    dColor("Music baloon", Red, Grn, Blu, 150)
+    entity():dLightColor(Color)
+    entity():setColor(Color)
+}
+
+soundURLvolume("bp", dNval("Volume") / 100)
+
+
+timer("timer",1000)
+    timer("color",100)
+    if(clk("color")){
+        T++
+        if(T>360){T=0}
+        entity():setColor(hsv2rgb(T,1,1))
+        holoColor(1,hsv2rgb(T,1,1))
+        #holoColor(2,hsv2rgb(T,1,1))
+       # holoColor(3,hsv2rgb(T,1,1))
+        #particle(0,0,0,"",hsv2rgb(T,0,0),entity():toWorld(vec()),randvec(0,0)*0)
+    }

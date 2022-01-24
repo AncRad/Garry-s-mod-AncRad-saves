@@ -1,0 +1,556 @@
+@name rpg_ACF_bgm71e_002
+
+@inputs 
+@outputs Debug:string
+
+@persist [E O]:entity
+@persist [Q]:table
+
+#- swep
+@persist [SWEP_GT]:gtable [SWEP_time SWEP_playerFindLockTime]:number
+@persist [SWEP_user]:entity [SWEP_status]:string
+@persist [SWEP_user_chest_e SWEP_body_e]:entity
+@persist [SWEP_user_chest_i SWEP_body_i]:number
+
+@persist [SWEP_dropFind_a]:array
+@persist [SWEP_weapon_grab SWEP_weapon_grabLock]:number
+@persist [SWEP_weapon_anim_0_V SWEP_weapon_anim_1_V SWEP_weapon_anim_2_V]:vector [SWEP_weapon_anim_0_A SWEP_weapon_anim_1_A SWEP_weapon_anim_2_A]:angle
+@persist [SWEP_weapon_anim_0and1 SWEP_weapon_anim_1and2]:number
+
+#- find obj
+@persist [FIND_lockTime]:number [FIND_excludeEnt]:array
+@persist [FIND_forAnalysis]:array [FIND_analysisCache]:table
+@persist [FIND_objects]:table [FIND_lockAngle]:number
+@persist [FIND_fireArmTime]:number
+
+#- acf
+@persist [FIND_ammo_allowedModels]:table
+@persist [AcfTube_e AcfAmmo_e AcfMissle_e]:entity
+@persist [AcfTube_w AcfAmmo_w AcfMissle_w]:wirelink
+@persist [AcfAmmoSteal_w]:wirelink
+
+#- AddHolo
+@persist [AddHolo]:table [AddHolo_queye]:array [AddHolo_lastName]:string [AddHolo_counter AddHolo_noNameCounter]
+
+@trigger 
+#@model models/missiles/bgm_71e_round.mdl
+
+
+
+if(changed(0)) {
+    ################
+    #
+    #- functions
+    #
+    #ifdef entity:drawShadow(number)
+    #else
+        function entity:drawShadow(N) {}
+    #endif
+    #ifdef entity:setVel(vector)
+    #else
+        function entity:setVel(V:vector) {}
+    #endif
+    #ifdef entity:unConstrain()
+    #else
+        function entity:unConstrain() {}
+    #endif
+    #ifdef entity:noCollideAll(number)
+    #else
+        function entity:noCollideAll(N:number) {noCollideAll(This, N)}
+    #endif
+    ################
+    #
+    #- model
+    #
+    function number modelPhysicsToggle(Status) {
+        AcfTube_e:drawShadow(255*Status)
+        AcfTube_e:setAlpha(255*Status)
+        AcfTube_e:propFreeze(!Status)
+        AcfTube_e:propNotSolid(!Status)
+        return !!AcfTube_e
+    }
+    #
+    function number smooth(Value:number) {
+        return 0.5-sin(90 + clamp(Value,0,1) * 180)/2
+    }
+    #
+    function number modelAnimate([A0and1 A1and2]:number) {
+        local A1and2 = smooth(clamp(A1and2,0,1))
+        local A1and2_ = 1-A1and2
+        local Vec_1or2 = SWEP_weapon_anim_1_V * A1and2_ + SWEP_weapon_anim_2_V * A1and2
+        local Ang_1or2 = SWEP_weapon_anim_1_A * A1and2_ + SWEP_weapon_anim_2_A * A1and2
+        local A0and1 = smooth(clamp(A0and1,0,1))
+        local A0and1_ = 1-A0and1
+        local Vec = SWEP_weapon_anim_0_V * A0and1_ + Vec_1or2 * A0and1
+        local Ang = SWEP_weapon_anim_0_A * A0and1_ + Ang_1or2 * A0and1
+        holoPos(SWEP_body_i, SWEP_user_chest_e:toWorld(Vec))
+        holoAng(SWEP_body_i, SWEP_user_chest_e:toWorld(Ang))
+        return 1
+    }
+    #
+    #- swep
+    #
+    function number entity:swep(NeedStatus:string) {
+        if(!This:isPlayer() | !This | NeedStatus == SWEP_status) {return 0}
+        if(!This) {NeedStatus = "drop"}
+        #chest rhand drop
+        
+        local SID = This:steamID()
+        local Ent = SWEP_GT[SID + "/" + NeedStatus + "/entity", entity]
+        if(Ent & Ent != AcfTube_e) {return 0}
+        
+        if(NeedStatus == "drop") {
+            AcfAmmo_w["Active", number] = 0
+            
+            AcfTube_e:setAng(SWEP_body_e:angles())
+            AcfTube_e:setPos(SWEP_body_e:pos())
+            AcfTube_e:setVel(This:vel())
+            holoPos(SWEP_body_i, vec())
+            holoAng(SWEP_body_i, ang())
+            holoParent(SWEP_body_i, noentity())
+            
+            modelPhysicsToggle(1)
+            
+            #modelAnimate(0)
+            SWEP_weapon_anim_0and1 = 0
+            SWEP_weapon_anim_1and2 = 0
+            SWEP_weapon_grab = 0
+            
+            SWEP_GT:removeEntity(SID + "/" + SWEP_status + "/entity")
+            SWEP_status = NeedStatus
+            SWEP_user = noentity()
+            return 1
+        }
+        
+        SWEP_user = This
+        
+        if(!SWEP_body_e) {
+            while(!!holoEntity(SWEP_body_i)) {SWEP_body_i++}
+            SWEP_body_e = holoCreate(SWEP_body_i,vec(),vec(-0.4),ang())
+            if(!SWEP_body_e) {This:swep("drop") print("error SWEP_body_e") return 0}
+        }
+        
+        if(NeedStatus == "chest") {
+            if(!SWEP_user_chest_e) {
+                while(!!holoEntity(SWEP_user_chest_i)) {SWEP_user_chest_i++}
+                SWEP_user_chest_e = holoCreate(SWEP_user_chest_i,vec(),vec(-0.4),ang())
+                if(!SWEP_user_chest_e) {This:swep("drop") print("error SWEP_user_chest_e") return 0}
+            }
+            holoPos(SWEP_user_chest_i, SWEP_user:attachmentPos("chest"))
+            holoAng(SWEP_user_chest_i, SWEP_user:attachmentAng("chest"))
+            holoParentAttachment(SWEP_user_chest_i, SWEP_user, "chest")
+            holoPos(SWEP_body_i, SWEP_user_chest_e:toWorld(SWEP_weapon_anim_0_V))
+            holoAng(SWEP_body_i, SWEP_user_chest_e:toWorld(SWEP_weapon_anim_0_A))
+            holoParent(SWEP_body_i, SWEP_user_chest_e)
+            
+            modelPhysicsToggle(0)
+            
+            SWEP_GT[SID + "/" + NeedStatus + "/entity", entity] = AcfTube_e
+            SWEP_GT:removeEntity(SID + "/" + SWEP_status + "/entity")
+            SWEP_status = NeedStatus
+            return 1
+        }
+        return 0
+    }
+    ################
+    #
+    #- DATA
+    #
+    ################
+    #
+    E = entity()
+    O = owner()
+    #
+    AcfTube_e = E:isWeldedTo()
+    if(!AcfTube_e) {AcfTube_e = E:parent()}
+    if(!AcfTube_e | AcfTube_e:type() != "acf_rack" | AcfTube_e:model() != "models/missiles/bgm_71e_round.mdl") {
+        printColor("[",vec(255,50,0),"BGM-71E",vec(255),"] ","Лепи чип на \"1x BGM-71E Missle\" из ACF!")
+        selfDestruct() exit()
+    }
+    #
+    AcfTube_w = AcfTube_e:wirelink()
+    AcfTube_e:unConstrain()
+    E:unConstrain()
+    E:parentTo(AcfTube_e)
+    E:setAlpha(0)
+    E:drawShadow(0)
+    E:noCollideAll(1)
+    modelPhysicsToggle(1)
+    AcfTube_w["Fire", number] = 0
+    AcfTube_w["Reload", number] = 0
+    AcfTube_w["Target Pos", vector] = vec()
+    AcfTube_w["Target Ent", entity] = noentity()
+    #
+    FIND_lockAngle = 15
+    #
+    SWEP_GT = gTable("ancrad_swep01")
+    SWEP_time = curtime()
+    SWEP_status = "drop"
+    SWEP_body_i = 1
+    SWEP_body_e = holoCreate(SWEP_body_i,vec(),vec(1),ang(),vec(255),"models/missiles/bgm_71e_round.mdl")
+    if(!holoModelAny()) {
+        #ifdef entity:setModel(string)
+            SWEP_body_e:setModel("models/missiles/bgm_71e_round.mdl")
+        #endif
+    }
+    SWEP_user_chest_i = 2
+    SWEP_user_chest_e = holoCreate(SWEP_user_chest_i,vec(),vec())
+    SWEP_weapon_anim_0_V = vec(-10,-4,-4)
+    SWEP_weapon_anim_0_A = toWorldAng(vec(),ang(0,-5,0),vec(),ang(-80,0,0))
+    SWEP_weapon_anim_1_A = toWorldAng(vec(),ang(-35,0,0),vec(),ang(0,22,0))
+    SWEP_weapon_anim_1_V = vec(-3,-6,8)-SWEP_weapon_anim_1_A:forward()*10
+    SWEP_weapon_anim_2_A = toWorldAng(vec(),ang(-55,0,0),vec(),ang(0,22,0))
+    SWEP_weapon_anim_2_V = vec(-3,-6,8)-SWEP_weapon_anim_2_A:forward()*10
+    FIND_ammo_allowedModels = invert(table("models/ammocrates/ammo_1x1x2.mdl","models/ammocrates/ammo_1x1x4.mdl","models/ammocrates/ammo_1x1x6.mdl"))
+    #
+    if(1) {
+        local Last_SWEP_user = SWEP_GT["rpg_ACF_bgm71e/last_SWEP_user" + AcfTube_e:creationID() + E:creationID(), entity]
+        (O:keyUse() | Last_SWEP_user) & (Last_SWEP_user ? Last_SWEP_user : O):swep("chest")
+        SWEP_GT["rpg_ACF_bgm71e/last_SWEP_user" + AcfTube_e:creationID() + E:creationID(), entity] = noentity()
+    }
+    #
+    AcfAmmo_e = SWEP_GT["rpg_ACF_bgm71e/ammoBox" + AcfTube_e:creationID() + E:creationID(), entity]
+    AcfAmmo_w = AcfAmmo_e:wirelink()
+    #
+    ################
+    
+    timer("swep", 1)
+    timer("acf", 1)
+    runOnLast(1)
+    exit()
+}
+
+if(clk("swep")) {
+    timer("swep", 50)
+    
+    local Curtime = curtime()
+    local Interval = Curtime-SWEP_time
+    SWEP_time = Curtime
+    
+    if(SWEP_status == "drop") {
+        if(Curtime>SWEP_playerFindLockTime & findCanQuery()) {
+            SWEP_playerFindLockTime = Curtime + 1/2
+            findClearBlackList()
+            findClearWhiteList()
+            findIncludeClass("player")
+            findInSphere(AcfTube_e:pos(),100)
+            SWEP_dropFind_a = findToArray()
+        }
+        foreach(C, Player:entity = SWEP_dropFind_a) {
+            if(Player:keyUse() & Player:aimEntity() == AcfTube_e & Player:shootPos():distance(Player:aimPos()) < 85 & !AcfTube_e:isPlayerHolding()) {
+                if(Player:swep("chest")) {break}
+            }
+        }
+    }
+    elseif(SWEP_status == "chest") {
+        if(!SWEP_weapon_grab) {
+            local Key_grab = SWEP_user:keyReload()
+            if(changed(Key_grab) & Key_grab & SWEP_weapon_grabLock<Curtime & SWEP_user:weapon():type()=="weapon_crowbar" & !SWEP_user:inVehicle()) {
+                SWEP_weapon_grab = 1
+                SWEP_weapon_grabLock = Curtime+0.06
+            }
+        }
+        
+        if(SWEP_weapon_anim_0and1!=SWEP_weapon_grab | SWEP_weapon_anim_1and2!=SWEP_user:keyDuck()) {
+            SWEP_weapon_anim_0and1 = clamp(SWEP_weapon_anim_0and1 + Interval/0.5 * (SWEP_weapon_grab ? 1 : -1) ,0,1)
+            SWEP_weapon_anim_1and2 = clamp(SWEP_weapon_anim_1and2 + Interval/0.1 * (SWEP_user:keyDuck() ? 1 : -1) ,0,1)
+            modelAnimate(SWEP_weapon_anim_0and1,SWEP_weapon_anim_1and2)
+        }
+        
+        
+        if(SWEP_weapon_anim_0and1 == 1) {
+            if(findCanQuery() & FIND_lockTime<Curtime) { AcfTube_e:setPos(owner():pos())
+                FIND_lockTime = Curtime + 1/2
+                
+                local Find_p = SWEP_user:shootPos()
+                local Find_d = SWEP_user:eyeAngles():forward()
+                findClearWhiteList()
+                findClearBlackList()
+                findIncludeClass("prop*")
+                findIncludeClass("acf*")
+                findIncludeClass("wire*") findExcludeClass("wire_hologram")
+                findIncludeClass("vehicle*")
+                findInCone(Find_p,Find_d,52.5*350,45)
+                local Find_c = findClipFromEntities(FIND_excludeEnt) if(!SWEP_user:keyUse()) {Find_c = findClipToPlayerProps(O)}
+                findSortByDistance(Find_p)
+                local Find_a = findToArray()
+                
+                local Perf = 100 while(perf(Perf)) {Perf--} Perf = min(Perf+80,95)
+                local C = 0
+                while(perf(Perf) & Find_c > C) {
+                    C++
+                    local Ent = Find_a:removeEntity(C)
+                    local Ent_constraints = Ent:getConstraints()
+                    if(Ent_constraints:count() > 5) {
+                        FIND_excludeEnt = FIND_excludeEnt:add(Ent_constraints):add(array(Ent))
+                        Find_c = findClipFromEntities(FIND_excludeEnt)
+                        Find_a = findToArray()
+                        C = 0
+                        FIND_forAnalysis:pushEntity(Ent)
+                        continue
+                    }
+                    FIND_excludeEnt:pushEntity(Ent)
+                }
+                local FIND_forAnalysis_count = FIND_forAnalysis:count()
+                if(changed(FIND_forAnalysis_count) & FIND_forAnalysis_count) {timer("FIND_forAnalysis", 1)}
+            }
+            
+            if(FIND_objects:exists(1)) {
+                local Sort_minAcos = 180
+                local Sort_minAcos_index = 0
+                local SWEP_user_shootPos = SWEP_user:shootPos()
+                local SWEP_user_eye = SWEP_user:eyeAngles():forward()
+                local FIND_objects_count = FIND_objects:count()
+                local C = 0
+                while(perf(99) & C < FIND_objects_count) {
+                    C++
+                    local Obj_T = FIND_objects[C, table]
+                    local Obj_e = Obj_T["massEntity", entity]
+                    local Obj_p = Obj_T["boxCenter" , vector]
+                    local Acos = acos(SWEP_user_eye:dot((Obj_e:toWorld(Obj_p)-SWEP_user_shootPos):normalized()))
+                    if(Acos < FIND_lockAngle & Acos < Sort_minAcos) {
+                        Sort_minAcos = Acos
+                        Sort_minAcos_index = C
+                    }
+                }
+                
+                if(Sort_minAcos_index) {
+                    if(AcfMissle_e) {
+                        local Obj_T = FIND_objects[Sort_minAcos_index, table]
+                        local Obj_e = Obj_T["massEntity", entity]
+                        local Obj_P = Obj_e:toWorld(Obj_T["boxCenter" , vector]) + Obj_e:vel() * 0.3
+                        
+                        local AcfMissle_P = AcfMissle_e:pos()
+                        local Dist = AcfMissle_P:setZ(0):distance(Obj_P:setZ(0))
+                        local Target_P = Obj_P + Obj_e:vel() * 0.3 * Dist / 52.5 / 200
+                        
+                        #Target_P = AcfMissle_P - AcfMissle_e:up():rotateAroundAxis(AcfMissle_e:forward(), AcfMissle_e:toLocal(Obj_P):rotate(-90,0,0):toAngle()[2]) * 2000
+                        if(Dist > 70 * 52.5) {
+                            Target_P = Target_P + ((AcfMissle_P-Target_P):setZ(0):normalized() * Dist/1.4):setZ(35*52.5)
+                        }
+                        AcfTube_w["Target Pos", vector] = Target_P
+                    }
+                    
+                    if(SWEP_user:keyAttack2() & !FIND_fireArmTime & AcfTube_w["Ready", number]) {
+                        foreach(C, Ent:entity = AcfTube_e:children()) {
+                            if(Ent:type() == "acf_missile" & Ent:model() == "models/missiles/bgm_71e.mdl") {
+                                AcfMissle_e = Ent
+                                AcfMissle_w = AcfMissle_e:wirelink()
+                                AcfTube_e:setAng(SWEP_body_e:angles())
+                                AcfTube_e:setPos(SWEP_body_e:pos())
+                                FIND_fireArmTime = Curtime
+                                break
+                            }
+                        }
+                    }
+                }
+                
+                if(changed(Sort_minAcos_index) & 0) {
+                    if(Sort_minAcos_index) {
+                        if(!holoEntity(1234)) {
+                            holoCreate(1234, vec(), vec(-20), ang(), vec(50), "hq_sphere")
+                            holoMaterial(1234, "models/wireframe")
+                            #holoAlpha(1234, 255)
+                        }
+                        local Obj_T = FIND_objects[Sort_minAcos_index, table]
+                        local Obj_e = Obj_T["massEntity", entity]
+                        local Obj_p = Obj_T["boxCenter" , vector]
+                        holoParent(1234, Obj_e)
+                        holoPos(1234, Obj_e:toWorld(Obj_p))
+                        holoVisible(1234, O, 1)
+                    }
+                    else {
+                        holoUnparent(1234)
+                        holoVisible(1234, O, 0)
+                    }
+                }
+            }
+            
+            if(!AcfAmmo_e) {
+                local Key_grab = SWEP_user:keyUse()
+                if(changed(Key_grab) & Key_grab) {
+                    local AimEntity = SWEP_user:aimEntity()
+                    if(AimEntity:type() == "acf_ammo" & FIND_ammo_allowedModels:exists(AimEntity:model()) & AimEntity:acfNameShort() == "BGM-71E ASM" & SWEP_user:shootPos():distance(SWEP_user:aimPos()) < 85 & !AimEntity:isPlayerHolding()) {
+                        local Parent = SWEP_GT["AcfAmmo_e"+AimEntity:creationID(), entity]
+                        if(!Parent | E == Parent) {
+                            AcfAmmo_e = AimEntity
+                            AcfAmmo_w = AcfAmmo_e:wirelink()
+                            
+                            AcfAmmo_e:unConstrain()
+                            AcfAmmo_e:parentTo(holoCreate(123213132,AcfAmmo_e:pos(),vec(),AcfAmmo_e:angles()))
+                            holoPos(123213132, AcfTube_e:pos())
+                            holoAng(123213132, AcfTube_e:angles())
+                            AcfAmmo_e:setAlpha(0)
+                            AcfAmmo_e:drawShadow(0)
+                            AcfAmmo_e:noCollideAll(1)
+                            AcfAmmo_e:parentTo(AcfTube_e)
+                            AcfTube_e:acfLinkTo(AcfAmmo_e, 0)
+                            SWEP_GT["AcfAmmo_e"+AcfAmmo_e:creationID(), entity] = E
+                            SWEP_GT["rpg_ACF_bgm71e/ammoBox" + AcfTube_e:creationID() + E:creationID(), entity] = AcfAmmo_e
+                        }
+                    }
+                }
+            }
+        }
+        
+        !SWEP_user:isAlive() & SWEP_user:swep("drop")
+    }
+    else {
+        SWEP_user:swep("drop")
+    }
+    
+    if(SWEP_weapon_grab) {
+        local Key_grab = SWEP_user:keyReload()
+        if(changed(Key_grab) & Key_grab & SWEP_weapon_grabLock<Curtime | SWEP_user:inVehicle()) {
+            SWEP_weapon_grab = 0
+            SWEP_weapon_grabLock = Curtime+0.06
+        }
+        (SWEP_user:weapon():type()!="weapon_crowbar") & SWEP_user:swep("drop")
+    }
+    
+    setName("rpg_ACF_bgm71e_002\nOPS: " + ops() + "\nCPU: " + round(cpuUsage()*1e6))
+    
+    exit()
+}
+
+if(clk("acf")) {
+    timer("acf", 200)
+    
+    if(FIND_fireArmTime) {
+        AcfTube_w["Fire", number] = FIND_fireArmTime != -1
+        FIND_fireArmTime = FIND_fireArmTime == -1 ? 0 : -1
+    }
+    
+    local Tube_ShotsLeft = AcfTube_w["Shots Left", number]
+    if(changed(Tube_ShotsLeft) & Tube_ShotsLeft) {
+        AcfTube_w["Reload", number] = 0
+        AcfAmmo_w["Active", number] = 0
+        AcfMissle_e = noentity()
+        AcfMissle_w = nowirelink()
+        if(AcfAmmoSteal_w) {
+            AcfAmmoSteal_w["Active", number] = 0
+            AcfTube_e:acfUnlinkFrom(AcfAmmoSteal_w:entity(), 0)
+            AcfAmmoSteal_w = nowirelink()
+        }
+    }
+    if(!Tube_ShotsLeft & SWEP_weapon_anim_0and1 > 0.3) {
+        local Key_reload = SWEP_user:keyAttack2()
+        if(changed(Key_reload) & Key_reload) {
+            local AimEntity_e = SWEP_user:aimEntity()
+            if(AimEntity_e:type() == "acf_ammo") {
+                if(AimEntity_e!=AcfAmmo_e & AimEntity_e:acfNameShort()=="BGM-71E ASM" & AimEntity_e:acfRounds() & SWEP_user:shootPos():distance(SWEP_user:aimPos())<85) {
+                    AcfTube_e:acfLinkTo(AimEntity_e, 0)
+                    AcfAmmoSteal_w = AimEntity_e:wirelink()
+                    AcfTube_e:setPos(AimEntity_e:pos())
+                    AcfTube_w["Reload", number] = 1
+                    AcfAmmoSteal_w["Active", number] = 1
+                }
+            }
+            elseif(AcfAmmo_e:acfRounds()) {
+                AcfTube_e:acfLinkTo(AcfAmmo_e, 0)
+                AcfTube_w["Reload", number] = 1
+                AcfAmmo_w["Active", number] = 1
+            }
+        }
+    }
+    
+    exit()
+}
+
+if(clk("FIND_forAnalysis")) {
+    
+    local EntA = FIND_forAnalysis[1, entity]
+    if(!FIND_analysisCache:exists("Constraints")) {
+        Constraints_a = array(EntA):add(EntA:getConstraints())
+        FIND_analysisCache["Constraints", array] = Constraints_a
+    }
+    local Constraints_a = FIND_analysisCache["Constraints", array]
+    local Constraints_c = Constraints_a:count()
+    local Mass_max = FIND_analysisCache["Mass_max", number]
+    local Pos_sum = FIND_analysisCache["Pos_sum", vector]
+    local Pos_count = FIND_analysisCache["Pos_count", number]
+    
+    local Perf = 100 while(perf(Perf)) {Perf--} Perf = min(Perf+35,95)
+    local C = 0
+    while(perf(Perf) & Constraints_c) {
+        local Ent = Constraints_a:removeEntity(1) Constraints_c--
+        local Ent_P = Ent:boxCenterW()
+        if(Ent_P != vec()) {
+            Pos_sum+=Ent_P
+            Pos_count++
+            local Ent_m = Ent:mass()
+            if(Ent_m > Mass_max) {
+                Mass_max = Ent_m
+                FIND_analysisCache["Mass_maxEntity", entity] = Ent
+            }
+        }
+    }
+    FIND_analysisCache["Pos_sum", vector] = Pos_sum
+    FIND_analysisCache["Pos_count", number] = Pos_count
+    
+    if(!Constraints_c) {
+        local Obj = FIND_analysisCache["Mass_maxEntity", entity]
+        local Obj_boxCenter = Obj:toLocal(Pos_sum/Pos_count)
+        FIND_objects:pushTable(table(
+             "massEntity" = Obj
+            ,"boxCenter" = Obj_boxCenter
+        ))
+        
+        FIND_forAnalysis:remove(1)
+        FIND_analysisCache:clear()
+    }
+    
+    if(FIND_forAnalysis:count()) {timer("FIND_forAnalysis", 150)}
+    
+    exit()
+}
+
+if(last()) {
+    if(SWEP_status == "chest") {
+        SWEP_GT["rpg_ACF_bgm71e/last_SWEP_user" + AcfTube_e:creationID() + E:creationID(), entity] = SWEP_user
+        SWEP_user:swep("drop") | modelPhysicsToggle(1)
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

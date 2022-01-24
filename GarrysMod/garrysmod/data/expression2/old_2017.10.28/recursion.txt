@@ -1,0 +1,19 @@
+@name recursion
+
+Arr = array()
+
+N = 0
+Max = 3000
+
+function fill(Max) {
+    Arr:pushNumber(N)
+    N++
+    if(N <= Max) {
+        fill(Max)   
+    }
+}
+
+fill(Max)
+
+printTable(Arr)
+

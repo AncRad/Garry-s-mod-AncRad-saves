@@ -1,0 +1,22 @@
+@name stopsound
+@inputs 
+@outputs 
+@persist 
+@trigger 
+
+
+
+findIncludeClass("trigger_soundscape")
+findIncludeClass("env_soundscape_triggerable")
+findInSphere(vec(), 9e9)
+F = findToArray()
+
+foreach(C, E:entity = F) {
+    E:remove()
+}
+
+
+
+W = entity():isWeldedTo():wirelink()
+W:egpClear()
+W:egpTextLayout(1, F:concat("\n"), vec2(0,-500),vec2(1000,1000))

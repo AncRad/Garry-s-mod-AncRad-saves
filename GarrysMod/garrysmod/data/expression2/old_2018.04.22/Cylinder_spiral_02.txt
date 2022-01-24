@@ -1,0 +1,143 @@
+@name Cylinder_spiral_02
+
+@inputs 
+@outputs Time Cucle
+@persist [E O]:entity [Q]:table
+
+@trigger 
+
+if(changed(0)) {
+    
+    E = entity()
+    O = owner()
+    
+    Q["id/need", number] = 180
+    local Rad = 30
+    local Color = vec( 20 , 0 , 100 )
+    local Alpha = 6
+    
+    holoCreate(1000, E:toWorld(vec()), vec( -Rad       ), E:toWorld(ang()), vec(), "hq_sphere") holoMaterial(1000, "models/light"    ) holoParent(1000, E)
+    holoCreate(1001, E:toWorld(vec()), vec( -Rad + 0.2 ), E:toWorld(ang()), Color, "hq_sphere") holoMaterial(1001, "models/wireframe") holoParent(1001, E)
+    holoAlpha(1001, Alpha)
+    
+    
+    E:setAlpha(0)
+    
+    
+    
+    
+    timer("", 1)
+}
+
+
+if(clk("")) {
+        timer("", 75)
+    
+    if(Q["id", number] < Q["id/need", number]) {
+        timer("", 10)
+        
+        local Pos = E:pos()
+        local DDD = 0
+        while((DDD < 5) & holoCanCreate() & (Q["id", number] < Q["id/need", number])) {
+            DDD++
+            local ID = 0
+            ID = Q["id", number] = Q["id", number] + 1
+            local ColorA = ID / 180
+            local Color = vec( ColorA ^ 0.75 , 1 - ColorA ^ 0.75 , 0 ) * 255
+            
+            local Holo = holoCreate(ID, Pos + vec(0,0,ID * 1), vec(), ang(), vec(), "tetra")
+            Holo:setTrails(1.5, 0, 3, "trails/laser", Color, 255)
+            #entity:setTrails(number startSize,number endSize,number length,string material,vector color,number alpha)
+            
+            Q["holos/entList", array] = Q["holos/entList", array]:add(array( Holo ))
+        }
+        
+    }
+    elseif(!Q["d", number]) {
+        findIncludeClass("env_spritetrail")
+        findInSphere(E:pos(), 200)
+        findSortByDistance(E:pos())
+        local Find = findToArray()
+        Q["trails", array] = Find
+        Q["d", number] = 1
+    }
+     else {
+        
+        if(changed(0)) {
+            printColor(vec( 200 , 255 , 255 ), "Created " + Q["id", number] + " in " + Q["id/need", number] + " holos")
+            
+            Q["time", number] = -20000
+        }
+        
+        Time = Q["time", number]
+        Cucle = floor(Time / 360,3)
+        
+        local Trails = Q["trails", array]
+        local T = 0
+        T = Q["time", number] = Q["time", number] + 1.0
+        local EP = E:pos()
+        local R = 90
+        foreach(C, Holo:entity = Q["holos/entList", array]) {
+            
+            #local A = T + C * 2 + C * T / 45
+            local A = T + C * 2 + (abs(C-90) * T / 30) #local A = T + C * 2 + (abs(90-C) * T / 60)
+            local B = 180 - C
+            
+            local X = sin( A ) * sin( T ) * (B / 180)^0.5*1.5
+            local Y = cos( A ) * sin( T ) * (B / 180)^0.5*1.5
+            local Z = cos( T + C * 2 ) #sin
+            
+            local Pos = vec( X , Y , Z ) * R
+            holoPos(C, EP + Pos)
+            
+            Trails[C, entity]:setColor(hsv2rgb((T/7/2*5) % 360, 1, 1))
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,171 @@
+@name zalipalka square in circle 001
+
+@inputs 
+@outputs 
+@persist [E O]:entity [Q]:table
+
+@trigger 
+
+if(changed(0)) {
+    
+    E = entity()
+    O = owner()
+    
+    Q["need"    , number] = 160
+    Q["half"    , number] = Q["need", number] / 2
+    Q["radius"  , number] = 100
+    Q["diagonal", number] = 90
+    
+    
+    local Color = vec( 20 , 0 , 100 )
+    local Alpha = 6
+    
+    #holoCreate(1000, E:toWorld(vec()), (-vec(vec2(Q["radius"  , number]), 4)+vec(0.0))/6, E:toWorld(ang()), vec(), "hq_cylinder") holoMaterial(1000, "models/light"    ) holoParent(1000, E)
+    #holoCreate(1001, E:toWorld(vec()), (-vec(vec2(Q["radius"  , number]), 4)+vec(0.2))/6, E:toWorld(ang()), Color, "hq_cylinder") holoMaterial(1001, "models/wireframe") holoParent(1001, E)
+    #holoAlpha(1001, Alpha)
+    
+    
+    E:setAlpha(0)
+    
+    
+    
+    timer("", 1)
+}
+
+
+if(clk("")) {
+        timer("", 75)
+    
+    
+    local Need = Q["need", number]
+    local Real = Q["real", number]
+    local Half = Q["half", number]
+    
+    if(Real < Need) {
+        
+        local EPos     = E:pos()
+        local Radius   = Q["radius" , number]
+        local Diagonal = Q["diagonal", number]
+        
+        while(holoCanCreate() & (Real < Need) & perf(80)) {
+            Real = Q["real", number] = Real + 1
+            
+            local Yaw = 720/Need*Real
+            local Pos = EPos + vec(cos(Yaw), sin(Yaw), 0) * (Yaw <= 360 ? Radius : Diagonal)
+            
+            local Holo = holoCreate(Real, Pos, vec(0.1), ang(), vec(255), "hq_sphere") holoMaterial(Real, "lights/white") holoParent(Real, E)
+            
+            #[
+            if(Half < Real) {
+                local Beam = Holo:drawBeam("trails/laser", Pos, holoEntity(Real-Half), vec(255), 255, 10, 1, 1)
+                Q["beams", array] = Q["beams", array]:add(array( Beam ))
+            }
+            ]#
+            #local Color = vec( Real / 180 , 1 - Real / 180 , 0 ) * 255
+            #Holo:setTrails(1.5, 0, 3, "trails/laser", Color, 255)
+            #entity:setTrails(number startSize,number endSize,number length,string material,vector color,number alpha)
+            #Q["holos/entList", array] = Q["holos/entList", array]:add(array( Holo ))
+        }
+    }
+    elseif(Q["beams", array]:count() < Half) {
+        local Count = Q["beams", array]:count()
+        while((Count < Half) & perf(80)) {
+            local ID = Count + 1
+            local Holo = holoEntity(ID)
+            local Beam = Holo:drawBeam("trails/laser", Holo:pos(), holoEntity(ID+Half), vec(255), 255, 10, 1, 1)
+            if(Beam) {
+                Count++
+                Q["beams", array] = Q["beams", array]:add(array( Beam ))
+            }
+        }
+    }
+    else {
+        
+        if(changed(0)) {
+            printColor(vec( 200 , 255 , 255 ), "Created " + Q["real", number] + " in " + Q["need", number] + " holos")
+            
+            Q["time", number] = 0
+        }
+        
+        
+        local T = Q["time", number] = Q["time", number] + 5
+        
+        local EP = E:pos()
+        local Diagonal = Q["diagonal", number]
+        local Length = Diagonal * cos(45)
+        local Rad = (Diagonal - Length)/4
+        local Length = Length - Rad/2
+        local Beams = Q["beams", array]
+        for(ID = 1, Half) {
+            
+            local Yaw = 360/Half*ID
+            
+            #local A = 0
+            #local B = 0
+            #local C = 0
+            
+            local X = cos(Yaw) * (Length+Rad) #+ cos(T) * Rad
+            local Y = sin(Yaw) * (Length+Rad) #+ sin(T) * Rad
+            
+            local Pos = vec( X , Y , 0 )
+            holoPos(ID, EP + Pos)
+            
+            #local Color = hsv2rgb((-T + Yaw) % 360, 1, 1)
+            Color = vec(255) * abs(cos(Yaw*2)^0.2)
+            
+            holoColor(ID     , Color)
+            holoColor(ID+Half, Color)
+            local Beam = Beams[ID, entity]
+            if(Beam) {
+                Beam:setColor(Color)
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,18 @@
+@name p2_chell.mdl
+@inputs 
+@outputs 
+@persist 
+@trigger 
+
+W = entity():isWeldedTo()
+
+
+
+
+H = holoCreate(1, W:toWorld(vec(0,2.5,7)), vec(1), W:toWorld(ang(0,90,0)))
+
+H:setModel("models/player/p2_chell.mdl")
+holoParent(1, W)
+
+holoAnim(1, "sit")
+holoMaterial(1, "models/wireframe")

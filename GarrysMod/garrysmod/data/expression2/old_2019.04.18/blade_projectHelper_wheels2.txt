@@ -1,0 +1,31 @@
+@name blade_projectHelper_wheels2
+@inputs [P1]:entity
+@persist [P2]:entity [Color]:vector
+@model models/sprops/rectangles/size_1/rect_3x24x3.mdl
+
+
+if(changed(0)) {
+    
+    Color = vec(255,150,0)
+    
+    P2 = entity()
+    P2:unConstrain()
+    P2:setColor(Color)
+    
+    holoCreate(1, vec(), vec(1), ang(), Color, "models/sprops/trans/wheel_b/wheel40.mdl")
+    holoCreate(2, vec(), vec(1), ang(), Color, "models/sprops/trans/wheel_b/wheel50.mdl")
+}
+
+interval(100)
+
+Pos1 = P1:massCenter()
+Pos2 = P2:massCenter():setY(Pos1[2])
+Dif = Pos1-Pos2
+if(changed(Dif)) {
+    
+    local Pos = Pos1 + Dif/2
+    holoPos(1, Pos)
+    
+    local Pos = Pos2 - Dif:toAngle():up() * (50-40)
+    holoPos(2, Pos)
+}

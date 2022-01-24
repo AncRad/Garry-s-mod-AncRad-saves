@@ -1,0 +1,120 @@
+@name GI
+
+@inputs 
+@outputs 
+
+@persist 
+
+@trigger none
+
+
+
+if(changed(0)) {
+    
+    
+    
+    timer("GI", 1)
+}
+
+if(clk("GI")) {
+        timer("GI", 50)
+    
+    
+    
+    
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+#[
+if(changed(0)) {
+    
+    #include "EGPS"
+    
+    
+    egpSelect( entity():isWeldedTo():wirelink() )
+    egpClear()
+    
+    
+    egpAddBox("rt", v( 960 , 540 ) , v(), "")
+    
+    
+    
+    egpAddCircle("cursor", v() , v(), "o")
+    egpAddText("cursorPos", "", v())
+    egpSetSize(13)
+    
+    
+}
+
+
+
+
+timer("", 100)
+
+O = owner()
+
+#####
+##
+Eye        = O:eye()
+EyeAngles  = O:eyeAngles()
+EyeA       = EyeAngles:forward()
+EgpScrSize = egpScrSize(O)
+
+holoAng(0, EyeAngles)  ##  **
+
+Cos = Eye[1] * EyeA[1] + Eye[2] * EyeA[2] + Eye[3] * EyeA[3]
+CursorV = (holoEntity(0):toLocal( Eye / Cos ) / vec( 1 , -1.332 , -0.75 ) + vec( 0 , 1 , 1 )) / 2  ##  **
+##
+
+Cursor = vec2( CursorV[2] , CursorV[3] ) * EgpScrSize
+#####
+
+
+egpSetPos("cursor", Cursor)
+egpSetPos("cursorPos", clamp( Cursor + v( 15 , 5 ), vec2(), EgpScrSize - v( 65 , 15 )))
+egpSetText("cursorPos", floor(Cursor):toString())
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

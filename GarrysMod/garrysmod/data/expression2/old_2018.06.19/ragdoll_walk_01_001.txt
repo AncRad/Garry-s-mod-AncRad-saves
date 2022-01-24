@@ -1,0 +1,213 @@
+@name ragdoll_walk_01_001
+
+@inputs 
+@outputs Bone_i [Bone_a  B8_0]:angle L
+@persist [E O R]:entity [Q]:table
+
+@trigger 
+
+
+
+if(changed(0)) {
+    
+    function entity entity:holoBone(B_i:number) {
+        local H_e = holoEntity(B_i)
+        if(!H_e) {
+            H_e = holoCreate(B_i,vec(),vec())
+        }
+        local B_b = This:bone(B_i)
+        
+        holoPos(B_i, B_b:pos())
+        holoAng(B_i, B_b:angles())
+        
+        switch(B_i) {
+            case 0,
+                holoAng(B_i, H_e:toWorld(ang(-90,-90,0)))
+            break
+            case 8,
+                holoAng(B_i, H_e:toWorld(ang(0,0,90)))
+                holoAng(B_i, H_e:toWorld(ang(-90,0,0)))
+            break
+            case 11,
+                holoAng(B_i, H_e:toWorld(ang(0,0,90)))
+                holoAng(B_i, H_e:toWorld(ang(-90,0,0)))
+            break
+        }
+        
+        return H_e
+    }
+    
+    
+    
+    
+    E = entity()
+    O = owner()
+    R = E:isWeldedTo()
+    
+    holoCreate(41000,vec(),vec(1.5,1,1),ang()) holoModel(41000, "models/editor/axis_helper.mdl")
+    holoCreate(41001,vec(10,5,5),vec(0.3),ang(),vec(0,0,255)) holoParent(41001,41000)
+    
+    
+    R:setMaterial("models/wireframe")
+    R:setAlpha(30)
+    
+    Bone_i = 8
+    
+}
+
+
+local LastCurtime = Q["curtime", number]
+local Curtime = curtime() Q["curtime", number] = Curtime
+local Interval = Curtime - LastCurtime
+local Loop = Interval / 0.015625
+
+
+
+M45 = O:keyPressed("mouse_4")-O:keyPressed("mouse_5")
+if(changed(M45) & M45) {
+    Bone_i = clamp(Bone_i + M45,0,14)
+}
+
+holoPos(41000, R:holoBone(Bone_i):pos())
+holoAng(41000, R:holoBone(Bone_i):angles())
+Bone_a = angnorm(R:holoBone(Bone_i):angles())
+
+
+B8_0 = R:holoBone(0):toLocal(R:holoBone(Bone_i):angles())
+
+L = R:holoBone(8):pos():distance(R:holoBone(14):pos())
+
+
+
+
+
+
+
+H8 = R:holoBone(8)
+
+rangerFilter(R)
+Rang = rangerOffset(34,H8:pos(),vec(0,0,-1))
+if(Rang:hit()) {
+    
+    local B14 = R:bone(14)
+    
+    
+    local TP = Rang:pos() + Rang:hitNormal() * 5
+    local V = (TP-B14:pos()) * 3 - B14:vel() / 8
+    B14:applyForce(V * B14:mass() * Loop * 9)
+}
+
+timer("", 10)
+
+
+
+
+
+
+
+
+
+#[
+ 8 to 0   -80  45
+11 to 0   -80  45
+14 to 8    15  34
+
+]#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName("ragdoll_walk_01_001" + "\n" + Bone_i)
+

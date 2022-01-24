@@ -1,0 +1,57 @@
+@name ulx ragdoll
+@inputs 
+@outputs 
+@persist [E O Ragdoll]:entity
+@trigger 
+
+
+
+if(changed(0)) {
+    
+    E = entity()
+    O = owner()
+    
+}
+
+interval(50)
+
+Use = O:keyUse()
+if(changed(Use) & Use) {
+    
+    if(O:playerIsRagdoll()) {
+        concmd("ulx unragdoll " + O:name())
+        concmd("ulx god")
+    }
+    else {
+        concmd("ulx ragdoll " + O:name())
+    }
+}
+
+if(O:playerIsRagdoll() & !Ragdoll) {
+    findClearWhiteList()
+    findClearBlackList()
+    findIncludeClass("prop_ragdoll")
+    Pos = O:boxCenterW()
+    findInSphere(Pos, 30)
+    Ragdoll = find()
+}
+if(changed(Ragdoll) & Ragdoll) {
+    local B1 = Ragdoll:bone(1)
+    #print(B1)
+    Ragdoll:applyForce(O:eyeAngles():forward() * 30000)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

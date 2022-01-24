@@ -1,0 +1,266 @@
+@name blade_test_acfMobility_02
+
+@inputs [Base]:entity
+@persist [Wheels]:table
+@persist [Wheels_yglovie]:table
+@persist [Wheels_rotaryFriction]:table
+@persist [Wheels_rotaryFrictionLeft Wheels_rotaryFrictionRight]:table
+
+@outputs Throttle Active
+
+
+@persist Gear
+@outputs GearL GearR GearT1 GearT2
+@outputs ClutchR ClutchL
+@outputs WeldL WeldR
+
+@persist O:entity
+
+@trigger none
+@model models/maxofs2d/button_05.mdl
+
+
+if(duped()) {exit()}
+if(dupefinished()) {reset()}
+
+if(changed(0)) {
+    if(Base) {
+        
+        local Grid = vec(46.268,31.363,18.378)
+        local Models = invert(table(
+             "models/sprops/trans/wheel_d/t_wheel40.mdl"
+            ,"models/sprops/trans/wheel_b/wheel50.mdl"
+        ))
+        foreach(C, Ent:entity = Base:getConstraints()) {
+            if(Models:exists(Ent:model())) {
+                
+                local LP = Base:toLocal(Ent:massCenter())
+                local LP = round((round(LP/Grid))*Grid)
+                
+                local X = LP[1]
+                local Y = LP[2]
+                local Z = LP[3]
+                
+                local X = round(X/Grid[1])
+                local Y = (abs(Y) == 125 ? 2 : 1) * sign(Y)
+                local Z = 1 + (Z >= -1) + (Z >= 17) #+ (Z >= 36)
+                Wheels[X+"#"+Y+"#"+Z, entity] = Ent
+                
+                Ent:propPhysicalMaterial("jeeptire")
+                Ent:setColor(255,255,255) Ent:setMaterial("")
+                #- Wheels_yglovie
+                if(Z==3) {
+                    if(abs(Y)==2) {
+                        Wheels_yglovie:pushEntity(Ent)
+                        Ent:propPhysicalMaterial("rubber")
+                        #Ent:setColor(vec(50,0,150)*0.3) Ent:setMaterial("lights/white")
+                    }
+                }
+                #- 
+                if(Z==1) {
+                    if(!(abs(Y)==2 & inrange(X,-1,1) | X==0)) {
+                        #Ent:setColor(vec(0,100,200)*0.8) Ent:setMaterial("lights/white")
+                        if(Y>0) {Wheels_rotaryFrictionLeft:pushEntity(Ent)}
+                        else {Wheels_rotaryFrictionRight:pushEntity(Ent)}
+                        Wheels_rotaryFriction[X+"#"+Y+"#"+1, entity] = Ent
+                    }
+                }
+            }
+        }
+    }
+    
+    
+    O = owner()
+    
+    runOnKeys(O,1)
+    
+    Gear = 1
+    GearL = GearR = GearT1 = GearT2 = 1
+    ClutchL = ClutchR = 0
+}
+
+
+local W = O:keyPressed("pad_8")
+local S = O:keyPressed("pad_5")
+local A = O:keyPressed("pad_4")
+local D = O:keyPressed("pad_6")
+GearT1 = 1 + O:keyPressed("pad_0")
+GearT2 = 1 + O:keyPressed("pad_enter")
+#ClutchL = ClutchR = O:keyPressed("pad_plus")*0.8
+
+
+local GearPM = O:keyPressed("pad_9")-O:keyPressed("pad_7")
+if(changed(GearPM) & GearPM & !S) {
+    Gear = clamp(Gear + GearPM,1,7)
+}
+if(S) {Gear = 1}
+GearL = GearR = S ? 8 : Gear
+
+WeldL = ClutchL = WeldR = ClutchR = 0
+if(A | D) {
+    if((W | S)) {
+        if(Gear==8 | Gear==1 | 1) {
+            WeldL = ClutchL = A
+            WeldR = ClutchR = D
+        }
+        else {
+            GearL = clamp(Gear + (D-A)*2,1,7)
+            GearR = clamp(Gear - (D-A)*2,1,7)
+        }
+    }
+    else {
+        if(Gear == 1) {
+            GearL = A ? 8 : 1
+            GearR = A ? 1 : 8
+        }
+        else {
+            if(A) {GearL = 8}
+            if(D) {GearR = 8}
+        }
+    }
+}
+local AD = A-D
+if(changed(AD)) {
+    #Wheels_rotaryFriction Wheels_rotaryFrictionLeft Wheels_rotaryFrictionRight
+    foreach(C, Wheel:entity = Wheels_rotaryFriction) {
+        #Wheel:setColor(vec(0,100,200)* (AD ? 1.2 : 0.8))
+        Wheel:propPhysicalMaterial(AD ? "rubber" : "jeeptire")
+    }
+}
+
+Throttle = Active = (W|S|A|D)*100
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

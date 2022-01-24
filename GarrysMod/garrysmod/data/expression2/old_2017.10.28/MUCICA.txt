@@ -1,0 +1,97 @@
+@name MUCICA
+@persist O:entity  FFT
+@model models/holograms/hq_cylinder.mdl
+
+interval(100)
+
+if( first() | dupefinished()) {
+    runOnChat( 1 )
+    runOnHTTP( 1 )   
+    
+    O = owner()
+    FFT=1
+    
+    entity():propDraw(0)
+    
+    holoCreate(0 ,  entity():toWorld(vec()), vec(0.8,0.8,0.6), entity():toWorld(ang()),vec(200,0,0) , "hq_cylinder") holoParent(0, entity())
+    holoCreate(1,  holoEntity(0):toWorld(vec(0,0,-4.1)), vec(0.8,0.8,0.080), entity():toWorld(ang()), vec(40), "hq_cylinder")
+    holoCreate(2,  holoEntity(0):toWorld(vec(0,0,3.6)), vec(0.7,0.7,0.020), entity():toWorld(ang()), vec(40), "hq_cylinder")
+    holoCreate(3,  holoEntity(0):toWorld(vec(0,0,3.7)), vec(0.4,0.4,0.020), entity():toWorld(ang()), vec(255), "hq_cylinder")
+    holoCreate(4,  holoEntity(0):toWorld(vec(0,0,4)), vec(0.2,0.015,0.2), entity():toWorld(ang(0,185,-90)), vec(223,182,212), "models/sprops/misc/alphanum/alphanum_p.mdl")
+    
+    #ifdef entity:soundFFT(string)
+        if( FFT ) {
+            for(I=5, 40){
+                holoCreate(I,  holoEntity(0):toWorld(vec(    sin(360 * I / 36) * 36 / 8 , cos(360 * I / 36) * 36 / 8 ,4)), vec(0.065,0.01,0.1))   
+                holoAng(I, entity():toWorld(ang(0,  180 - 360 * I / 36, 0)))
+                holoColor(I ,  vec(20))
+                holoMaterial(I, "lights/white")
+            } 
+        }
+    #endif
+
+    
+    for(I = 1,  40){
+        holoParent(I, 0)   
+    }
+    holoColor(0,  hsv2rgb( randint(30, 360), 1 , 1  ))
+}
+
+if( !entity():isFrozen()) {
+    Vec = (owner():pos()/2 - entity():pos()/2 + vec(0,0,100))
+    
+    entity():applyForce(Vec)
+}
+
+
+if( chatClk( O )) {
+    local LS=O:lastSaid()
+    
+    if( LS:left(1) == "#") {
+        hideChat( 1 )
+        
+        
+        printColor(vec(255,255,0), "Search.. " , vec(255,0,0), LS:sub(2, LS:length()))
+        
+        httpRequest("http://mp3cc.com/search/f/"+LS:sub(2)+"/")
+        soundURLPurge() 
+    } 
+} if( httpClk()) {
+    local Data = httpData()
+    local Req = Data:matchFirst("http:\/\/storage.mp3cc.com\/listen\/[0-9]+\/[A-Za-z0-9\-\_]+\/[A-Za-z0-9\-_]+")
+    local Url = Req + "(mp3.cc).mp3"
+
+    if( Data:find("/listen/")){
+        soundURLload("lulz",Url,100,0,entity())
+    } else{
+        printColor( vec(200,0,0), "Song not found :(")
+    } 
+}
+
+#ifdef entity:soundFFT(string)
+    if( entity():soundFFT("lulz"):count() > 0){
+        for(I = 1, 40){
+             holoScale(I+4, vec(0.065,0.01,entity():soundFFT( "lulz" )[I, number]/60%0.9 ))
+             holoColor(I+4,  hsv2rgb( 360 / 40 * I ,  1 , 1))
+        }    
+    } else{
+        for(I = 1, 40){
+             holoScale(I+4, vec(0.065,0.01,0.1))
+             holoColor(I+4,  vec(0))
+        }
+    }
+#endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+

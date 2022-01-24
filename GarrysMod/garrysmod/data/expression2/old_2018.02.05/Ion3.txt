@@ -1,0 +1,602 @@
+@name Ion3
+
+@inputs 
+@outputs 
+@persist [E O]:entity [Q]:table [G]:gtable
+
+@persist [User Driver Passenger]:entity
+
+
+@trigger none
+@model models/sprops/rectangles/size_2/rect_12x18x3.mdl
+
+
+
+if(changed(0)) {
+    
+    
+    #ifdef entity:noCollideAll(number)
+        
+    #else
+        function entity:noCollideAll(A) {
+            noCollideAll(This,A)
+        }
+    #endif
+    #ifdef entity:isPhysics()
+        
+    #else
+        function number entity:isPhysics() {
+            return This:isValidPhysics()
+        }
+    #endif
+    ################
+    #
+    #- 
+    #
+    #- 
+    G = gTable("swep") G:clear()
+    
+    E = entity()
+    O = owner()
+    #
+    #- 
+    E:noCollideAll(1)
+    E:propFreeze(0)
+    E:propNotSolid(0)
+    E:setAlpha(255)
+    #
+    #- 
+    runOnLast(1)
+    timer("control", 1)
+    timer("flying", 1)
+    #
+    ################
+    
+    ################
+    #
+    #- functions
+    #
+    #- getUser
+    function entity:getUser() {
+        local LastUser = User
+        
+        local SID64 = This:steamID64()
+        local Control = G[SID64 + "/control", entity]
+        if(Control) {
+            
+        }
+        else {
+            User = This
+            G[SID64 + "/control", entity] = E
+            printColor(vec(255,80,30),"[Ion3] ",vec(255),"New user: ",vec(150,200,255),This:name())
+            
+            
+            if(LastUser) {
+                local LastUser_SID64 = User:steamID64()
+                G[LastUser_SID64 + "/control", entity] = noentity()
+            }
+        }
+    }
+    function entity:toChest() {
+        holoCreate(10,E:pos(),vec(1),E:angles()) holoParentAttachment(10,This,"chest")
+        E:propFreeze(1)
+        E:propNotSolid(1)
+        E:setAlpha(0)
+    }
+    function toDrop() {
+        local ChestHolo = holoEntity(10)
+        E:propFreeze(0)
+        E:propNotSolid(0)
+        E:setAlpha(255)
+        
+        E:setPos(ChestHolo:pos())
+        E:setAng(ChestHolo:angles())
+        E:setVel(Driver:vel())
+        
+        holoDelete(10)
+        Driver = noentity()
+        Passenger = noentity()
+    }
+    #
+    ################
+}
+
+
+
+
+
+################
+################- control
+################
+if(clk("control")) {
+        timer("control", User | Driver ? 50 : 100)
+    
+    if(changed(0)) {
+        
+        O:getUser()
+        #Q["flying/grab/entity", entity] = O
+        #Q["flying/target", string] = "grab"
+        
+    }
+    
+    #
+    #- findUser
+    if(!User) {
+        findIncludeClass("player")
+        findInSphere(E:pos(), 200)
+        foreach(C, P_e:entity = findToArray()) {
+            if(P_e:keyUse() & (P_e:aimEntity() == E)) {
+                P_e:getUser()
+                Q["flying/grab/entity", entity] = User
+                Q["flying/target", string] = "grab"
+                break
+            }
+        }
+    }
+    local User_changed = changed(User)
+    if(User_changed) {
+        runOnChat(User|0)
+    }
+    
+    if(User) {
+        if(Driver != User) {
+            local Key_grabOrder = User:keyUse()
+            local Key_grabOrderAnother = User:keyReload()
+            if(changed(Key_grabOrder) & Key_grabOrder | User_changed) {
+                Q["grabOrderStartTime", number] = curtime()
+                Q["grabOrderTarget", entity] = noentity()
+            }
+            if(Key_grabOrder) {
+                if(Key_grabOrderAnother) {
+                    if(!Q["grabOrderTarget", entity] & User:aimEntity()) {
+                        local AE = User:aimEntity()
+                        if(AE:isPlayer() | AE:isNPC()) {
+                            Q["grabOrderTarget", entity] = AE
+                        }
+                    }
+                }
+                if(curtime()-Q["grabOrderStartTime", number] >= 1.2) {
+                    if(Driver & Driver != User) {
+                        toDrop()
+                        Driver = noentity()
+                    }
+                    local CallTarget = Q["grabOrderTarget", entity]
+                    Q["flying/grab/entity", entity] = CallTarget ? CallTarget : User
+                    Q["flying/target", string] = "grab"
+                    
+                    Q["grabOrderStartTime", number] = curtime()
+                }
+            }
+        }
+    }
+    
+    #- drive
+    if(Driver) {
+        if(Driver:keyReload() & Driver:keyUse()) {
+            toDrop()
+            Driver = noentity()
+        }
+    }
+}
+#
+#- chatCommands
+if(chatClk(User)) {
+    local LS = User:lastSaid()
+    if(LS:index(1) == "!") {
+        hideChat(1)
+        local LS = LS:right(LS:length()-1)
+        local EX = LS:explode(" ")
+        
+        local Command = EX:removeString(1)
+        switch(Command) {
+            case "grab",
+                local Player_n = EX:concat(" ")
+                local Player_e = findPlayerByName(Player_n)
+                if(Player_e) {
+                    printColor(vec(255,80,30),"[Ion3] ",vec(255),"New grab target: ",vec(150,200,255),Player_e:name())
+                    
+                    Q["flying/grab/entity", entity] = Player_e
+                    Q["flying/target", string] = "grab"
+                    Q["flying/trip", number] = 0
+                    if(Driver) {
+                        toDrop()
+                        Driver = noentity()
+                    }
+                }
+            break
+            case "trip",
+                local Player_n = EX:concat(" ")
+                local Player_e = findPlayerByName(Player_n)
+                if(Player_e) {
+                    printColor(vec(255,80,30),"[Ion3] ",vec(255),"New trip target: ",vec(150,200,255),Player_e:name())
+                    
+                    Q["flying/grab/entity", entity] = Player_e
+                    Q["flying/target", string] = "grab"
+                    Q["flying/trip", number] = 1
+                    
+                    if(Driver | Passenger) {
+                        toDrop()
+                        Driver = noentity()
+                    }
+                }
+            break
+            default,
+                
+            break
+        }
+    }
+}
+################
+################- flying
+################
+if(clk("flying")) {
+    timer("flying", 20)
+    
+    
+    if(changed(0)) {
+        holoCreate(1,E:pos(),vec(2),E:toWorld(ang(0,0,0)),vec(255),"models/editor/axis_helper.mdl") holoParent(1,E)
+        Q["lastCurtime", number] = curtime()
+    }
+    local LastCurtime = Q["lastCurtime", number]
+    local Curtime = Q["lastCurtime", number] = curtime()
+    local Interval = Curtime-LastCurtime
+    local Loop = Interval / 0.015625
+    
+    
+    local RealPos = E:pos()
+    
+    local NeedPos = vec()
+    local PY_need = vec(1,0,0)
+    local R_need  = vec(0,0,1)
+    
+    
+    local Target = Q["flying/target", string]
+    if(Target == "grab") {
+        
+        local Grab_e = Q["flying/grab/entity", entity]
+        #local Grab_t = Grab_e:isPhysics() ? "phys" : Grab_e:isPlayer() ? "player" : ""
+        if(Grab_e:isPhysics()) {
+            Q["flying/target", string] = ""
+        }
+        elseif(Grab_e:isPlayer() | Grab_e:isNPC()) {
+            
+            local AP = Grab_e:attachmentPos("chest")
+            local AA = Grab_e:attachmentAng("chest")
+            
+            if(AP) {
+                #- grab zone
+                local GrabZoneRadius = 52.5 * 1.0
+                local GrabZoneCenter = AP - AA:forward()*(GrabZoneRadius-52.5*0.1+7) #holoCreate(2,GrabZoneCenter,vec(-GrabZoneRadius/6),ang(),vec(255),"hq_sphere") holoMaterial(2,"models/wireframe")
+                
+                if(RealPos:distance(GrabZoneCenter) > GrabZoneRadius) {
+                    #letim v grabZone, ne zadevaem grabTarget
+                    rangerFilter(E)
+                    local R = rangerOffsetHull(RealPos,GrabZoneCenter,vec(2),vec(5))
+                    if(R:entity()==Grab_e) {
+                        NeedPos = GrabZoneCenter + vec(0,0,50)
+                    }
+                    else {
+                        NeedPos = GrabZoneCenter
+                        local DIF = NeedPos-RealPos
+                        PY_need = DIF
+                        R_need = vec(0,0,1)
+                    }
+                }
+                else {
+                    PY_need = AA:up()
+                    R_need  = -AA:forward()
+                    NeedPos = AP-AA:up()*4-AA:forward()*8
+                    if((NeedPos:distance(RealPos) <= 2) & (E:up():dot(R_need) >= 0.85) & (E:forward():dot(PY_need) >= 0.85)) {
+                        
+                        if(Q["flying/trip", number]) {
+                            Passenger = Grab_e
+                        }
+                        else {
+                            Driver = Grab_e
+                        }
+                        Grab_e:toChest()
+                        Q["flying/target", string] = ""
+                    }
+                }
+            }
+            else {
+                Q["flying/target", string] = ""
+            }
+        }
+        else {
+            Q["flying/target", string] = ""
+        }
+    }
+    else {
+        
+    }
+    
+    
+    
+    if(Driver | Passenger) {
+        ##############
+        #
+        #
+        #
+        ##############
+        local Water = E:isUnderWater()
+        if(!Water) {
+            
+            if(Driver) {
+                local Vel = Driver:vel()
+                local Yaw = Driver:eyeAngles():yaw()
+                
+                local KeyW = Driver:keyForward()
+                local KeyA = Driver:keyLeft()
+                local KeyS = Driver:keyBack()
+                local KeyD = Driver:keyRight()
+                local KeyDuck = Driver:keyDuck()
+                local KeySpace = Driver:keyJump()
+                local KeyShift = Driver:keySprint()
+                
+                if(KeyDuck) {
+                    local Move = Q["move", vector]
+                    local NeedMove = vec( KeyW - KeyS , KeyA - KeyD , KeySpace - KeyShift ):rotate( 0 , Yaw , 0 ) * 600
+                    local NeedMove = (NeedMove - Vel) / 7 + vec( 0 , 0 , 11.3 )
+                    Q["move", vector] = Move + (NeedMove - Move) / 6 * Loop
+                    Acc = clamp(Move ,-vec(50), vec(50))
+                } else {
+                    local VL = Vel:length()
+                    local Mul = 5 + clamp(VL / 100 ,0,40)
+                    local Norm = vec( KeyW - KeyS , KeyA - KeyD , KeySpace ):rotate( 0 , Yaw , 0 )
+                    Acc = Norm * vec( Mul , Mul , clamp(19.8 + VL / 50 ,10,35) )
+                    if(!KeyShift) {Acc = Acc + vec( 0 , 0 , clamp(-Vel[3] / 20 ,0,25) )}
+                }
+                
+                Driver:setVel(Acc)
+                #Length = Acc:length()
+            }
+            if(Passenger) {
+                
+                local PosZ = Passenger:pos()[3]
+                local StartPosZ = Q["flying/trip/posZ", number]
+                if(!StartPosZ) {
+                    Q["flying/trip/posZ", number] = PosZ
+                }
+                
+                local Acc = vec(0,0,50)
+                Passenger:setVel(Acc * Loop)
+                
+                if(PosZ-StartPosZ >= 52.5 * 30) {
+                    Q["flying/trip/posZ", number] = 0
+                    toDrop()
+                }
+            }
+        }
+    }
+    else {
+        #
+        #- forces
+        #
+        local Mass = E:mass() + E:isWeldedTo():mass()
+        #- move
+        local V = vec(0,0,7.5)
+        if(NeedPos) {
+            local NeedVel = NeedPos-E:boxCenterW()
+            V+= (NeedVel*5-E:vel())/1.5
+        }
+        else {
+            V+= -E:vel()/3
+        }
+        E:applyForce(V*Mass*Loop)
+        
+        #- root
+        local RootPY = angnorm(E:toLocal(RealPos+PY_need):toAngle())
+        local RootR  = asin(   E:toLocal(RealPos-R_need )[2])
+        local Root   = RootPY:setRoll(RootR)
+        
+        local A = Root-E:angVel()/7
+        #local V = -E:angVelVector()*2
+        E:applyAngForce(A*Mass*Loop)
+    }
+}
+
+
+setName("Ion3\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage() * 1e6))
+if(last()) {
+    if(Driver) {
+        toDrop()
+    }
+}
+
+#[
+if(clk("")) {
+        timer("", 30)
+    
+    if(changed(0)) {
+        
+        holoCreate(1,E:pos(),vec(2),E:toWorld(ang(0,0,0)),vec(255),"models/editor/axis_helper.mdl") holoParent(1,E)
+        
+        Q["lastCurtime", number] = curtime()
+    }
+    local LastCurtime = Q["lastCurtime", number]
+    local Curtime = Q["lastCurtime", number] = curtime()
+    local Interval = Curtime-LastCurtime
+    local Loop = Interval / 0.015625
+    
+    
+    local Key_M4 = O:keyPressed("mouse_4")
+    if(changed(Key_M4) & Key_M4) {
+        if(Q["move/targetType", string] == "player") {
+            
+            Q["move/targetType", string] = "zadan"
+            
+            local AP = O:aimPos()
+            local AN = O:aimNormal()
+            local AE = O:aimEntity()
+            Q["move/target/pos"   , vector] = AE ? AE:toLocal(AP         ) : AP
+            Q["move/target/norm"  , vector] = AE ? AE:toLocal(AN+AE:pos()) : AN
+            Q["move/target/entity", entity] = AE
+        }
+        else {
+            Q["move/targetType", string] = "player"
+        }
+    }
+    
+    
+    
+    
+    local NeedPos = vec()
+    local PY_need = vec(1,0,0)
+    local R_need = vec(0,0,1)
+    
+    local Targte_t = Q["move/targetType", string]
+    if(Targte_t == "player") {
+        local AP = O:attachmentPos("chest")
+        local AA = O:attachmentAng("chest")
+        
+        NeedPos = AP - AA:forward()*25 #Q["", vector]
+        PY_need = AA:up()#vec(0,0,1)
+        R_need = -AA:forward()#vec(-1,0,0)
+    }
+    elseif(Targte_t == "zadan") {
+        local T_p = Q["move/target/pos"   , vector]
+        local T_n = Q["move/target/norm"  , vector]
+        local T_e = Q["move/target/entity", entity]
+        if(T_e) {
+            NeedPos = T_e:toWorld(T_p)
+            
+            rangerFilter(E)
+            local R = rangerOffset(E:pos(),NeedPos)
+            if(R:entity() == T_e & R:pos():distance(NeedPos)<=3) {
+                
+                NeedPos+= T_n*1.5
+                T_n = T_n:rotate(T_e:angles())
+            }
+            else {
+                rangerFilter(E)
+                local T_P = T_e:boxCenterW()
+                local R = rangerOffset(E:pos(),T_P)
+                if(R:entity() == T_e) {
+                    T_n = R:hitNormal()
+                    NeedPos = R:pos()
+                }
+            }
+        }
+        else {
+            NeedPos = T_p + T_n*1.5
+        }
+        PY_need = T_n:rotateAroundAxis(vec(0.000175,0,-1):cross(T_n),90)
+        R_need  = T_n #T_n:rotateAroundAxis(vec(0,0,1):cross(T_n),90)
+        
+        if(NeedPos:distance(E:pos())<=7) {
+            if(E:up():dot(T_n) >= 0.85) {
+                if(T_e) {
+                    T_e:weldTo(E,0)
+                }
+                else {
+                    #T_e:propFreeze(1)
+                }
+            }
+        }
+    }
+    else {
+        
+    }
+    
+    
+    
+    #
+    #- forces
+    #
+    local Mass = E:mass() + E:isWeldedTo():mass()
+    #- move
+    local V = -E:vel()/3+vec(0,0,7.5)
+    if(NeedPos) {
+        V+= NeedPos-E:boxCenterW()
+    }
+    E:applyForce(V*Mass*Loop)
+    
+    #- root
+    local RootPY = angnorm(E:toLocal(E:pos()+PY_need):toAngle())
+    local RootR  = asin(   E:toLocal(E:pos()-R_need )[2])
+    local Root   = RootPY:setRoll(RootR)
+    
+    local A = Root-E:angVel()/7
+    #local V = -E:angVelVector()*2
+    E:applyAngForce(A*Mass*Loop)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

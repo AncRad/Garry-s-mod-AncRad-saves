@@ -1,0 +1,179 @@
+@name desant
+@inputs 
+@outputs Step Dropped DroppedNe
+@persist [E O W RT]:entity [Q]:table 
+
+
+
+if(changed(0)) {
+    
+    E = entity()
+    W = E:isWeldedTo()
+    O = owner()
+    
+    
+    timer("", 1)
+}
+
+
+if(clk("")) {
+        timer("", 50)
+    
+    switch(Step) {
+        default,
+            if(O:keyPressed("mouse_4")) {
+                Step = 1
+            }
+        break
+        case 1,
+            
+            local Constraints = Q["constraints", array] = W:getConstraints()
+            foreach(C, E:entity = Constraints) {
+                E:propFreeze(1)
+                E:parentTo(W)
+            }
+            
+            RT = holoCreate(12352,W:boxCenterW(),vec(2),ang(),vec(255),"models/editor/axis_helper.mdl") holoParent(12352,W)
+            
+            W:propFreeze(1)
+            W:setPos(vec())
+            W:setAng(W:toLocal(RT:angles()))
+            
+            #Q["vel", vector] = vec()
+            Q["pos", vector] = O:pos():setZ(0)
+            Q["ang", angle ] = ang()
+            Q["start", number] = curtime()
+            
+            E:soundPlay("fly", 0, "Phx.Afterburner5") soundVolume("fly", 0.03) soundPitch("fly", 255)
+            
+            Step = 2
+        break
+        case 2,
+            
+            local Curtime = curtime()
+            local Start = Q["start", number]
+            if(changed(Start)) {
+                Q["time", number] = 0
+                Q["v", number] = 52.5 * 50
+            }
+            local LastTime = Q["time", number]
+            local Time = Q["time", number] = Curtime-Start
+            local Interval = Time-LastTime
+            
+            if(Time > 0.5) {
+                soundVolume("fly", 1)
+                soundPitch("fly", 255*clamp(1.275-Time/4,0.275,1))
+            }
+            
+            
+            
+            local Pos = Q["pos", vector]
+            
+            local LastV = Q["v", number]
+            local V = Q["v", number] = LastV + 10*52.5*Interval #print(V/52.5)
+            local V = (V+LastV)/2*Interval
+            
+            rangerFilter(Q["constraints", array]:add(array(W)))
+            local R = rangerOffset(V,Pos,vec(0,0,-V))
+            
+            
+            if(!R:hit()) {
+                
+                Pos = Q["pos", vector] = R:pos()
+                W:setPos(Pos)
+                W:setAng(W:toWorld(ang(0,360*Interval*0.5,0)))
+            }
+            else {
+                
+                        
+                Pos = Q["pos", vector] = R:pos() + vec(0,0,20)
+                W:setPos(Pos)
+                
+                Step = 3
+                effectSpawn("ThumperDust", R:pos(), 1000)
+                #effectSpawn("Explosion", R:pos(), 10)
+                E:soundPlay("explode", 5, "explode_1") #1  #9
+                R:drawPaint("Scorch")
+            }
+        break
+        case 3,
+            
+            foreach(C, E:entity = Q["constraints", array]) {
+                E:propFreeze(1)
+                #ifdef entity:deparent()
+                    E:deparent()
+                #else
+                    print("ERROR: \"entity:deparent()\"")
+                #endif
+            }
+            soundStop("fly")
+            
+            Step = 0
+        break
+        case 4,
+            
+            
+            #Step = 0
+            
+        break
+    }
+    Dropped   = Step == 4 ? 1 : 0
+    DroppedNe = !Dropped
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+if(dupefinished()) {reset()}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#soundPlay("", 0, "Phx.Afterburner5")
+#soundPlay("", 0, "explode_1") #1  #9
+#soundPlay("", 0, "PortableThumper.ThumpSound")
+#soundPlay("", 0, "ambient.whoosh_huge_incoming1")
+#soundPlay("", 0, "PortableThumper.ThumpSound")

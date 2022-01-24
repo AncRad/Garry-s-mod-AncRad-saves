@@ -1,0 +1,15 @@
+@name QResource
+
+@inputs 
+@outputs 
+@persist [QR]:table
+
+
+
+if(changed(0)) {
+    
+    function qResource() {
+        
+    }
+    
+}

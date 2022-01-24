@@ -1,0 +1,444 @@
+@name EGPS_extended_01
+@outputs 
+@persist 
+
+
+
+if(changed(0)) {
+    if(entity():getName() == "EGPS_extended_01") {
+        #include "EGPS"
+    }
+    
+    function table egpGetTable(E_n:string) {
+        return EGPS[E_n + "/table", table]
+    }
+    
+    function egpBuildElement(E_n:string) {
+        local E_T = EGPS[E_n + "/table", table]
+        local E_t = E_T["type", string]
+        
+        if(E_t == "textLayout" | E_t == "box") {
+            local P_n = E_T["build/parent", string]
+            local P_s = egpGetSize(P_n)
+            
+            local B_size  = E_T["build/size" , vector2]
+            local B_sizeS = E_T["build/sizeS", vector2]
+            if(B_size!=v()|B_sizeS!=v()) {
+                local E_s = B_size + B_sizeS * P_s
+                egpSetSize(E_n,E_s)
+            }
+            
+            local B_pos   = E_T["build/pos"  , vector2]
+            local B_posS  = E_T["build/posS" , vector2]
+            local P_posSS = E_T["build/posSS", vector2]
+            if(B_pos!=v()|B_posS!=v()|P_posSS!=v()) {
+                local E_p = B_pos + B_posS * P_s + P_posSS * (P_posSS!=v() ? egpGetSize(E_n) : v())
+                egpSetPos(E_n,E_p)
+            }
+        }
+        foreach(C, E_n:string = E_T["buildChild", array]) {egpBuildElement(E_n)}
+    }
+    function egpBuildElement(E_n:string,BuildData:table) {
+        local E_T = EGPS[E_n + "/table", table]
+        local P_n = E_T["position/parent", string]
+        EGPS[P_n + "/table", table]["buildChild", array] = EGPS[P_n + "/table", table]["buildChild", array]:addNoAvailableValue(E_n)
+        EGPS[E_n + "/table", table] = E_T:add(BuildData)
+    }
+    function egpBuildElement(BuildData:table) {
+        egpBuildElement(EGPS["lastName",string],BuildData)
+    }
+    function egpBuildPanel(Panel_n:string) {
+        local Panel_T = EGPS[Panel_n + "/table", table]
+        local Parent_n = Panel_T["position/parent", string]
+        local Parent_T = EGPS[Parent_n + "/table", table]
+        
+        if(Parent_T["panelOrient", number] & 0) {
+        }
+        else {
+            local Panel_O_A = Panel_T["panelOrient", number]
+            local Panel_O_Sign = sign(Panel_O_A)
+            local Panel_O = abs(Panel_O_A)
+            local Panel_H = Panel_O == 1 ? 2 : 1
+            local Panel_s = egpGetSize(Panel_n)
+            local Panel_L = Panel_s[Panel_O]
+            
+            local Panel_L_A = Panel_L
+            local Ar = array()
+            foreach(C, E_n:string = Panel_T["panelChild", array]) {
+                local E_T = EGPS[E_n + "/table", table]
+                local E_L = E_T["panelLength", number]
+                local E_s = v() #v(Panel_s[Panel_H])
+                local E_p = v()
+                
+                if(E_L < 1) {
+                    Ar:pushString(E_n)
+                }
+                else {
+                    E_p[Panel_O] = (E_L-Panel_L_A)/2*Panel_O_Sign
+                    if(Panel_O==1) {E_s = v(E_L,Panel_s[Panel_H])} else {E_s = v(Panel_s[Panel_H],E_L)}
+                    Panel_L_A -= E_L*2
+                    egpSetSize(E_n, E_s)
+                    egpSetPos(E_n, E_p)
+                }
+            }
+            local E_L = (Panel_L_A+(Panel_L-Panel_L_A)/2)/Ar:count()
+            foreach(C, E_n:string = Ar) {
+                local E_s = v()
+                local E_p = v()
+                E_p[Panel_O] = (E_L-Panel_L_A)/2*Panel_O_Sign
+                if(Panel_O==1) {E_s = v(E_L,Panel_s[Panel_H])} else {E_s = v(Panel_s[Panel_H],E_L)}
+                Panel_L_A -= E_L*2
+                egpSetSize(E_n, E_s)
+                egpSetPos(E_n, E_p)
+            }
+            foreach(C, E_n:string = Panel_T["buildChild", array]) {egpBuildElement(E_n)}
+            foreach(C, E_n:string = Panel_T["panelChild", array]) {egpBuildPanel(E_n)}
+        }
+    }
+    function egpAddPanel(Element_n:string,[Element_s Element_p]:vector2,Panel_O:number) {
+        
+        if(egpAddBox(Element_n,Element_s,Element_p)) {
+            EGPS[Element_n + "/table", table] = EGPS[Element_n + "/table", table]:add(table(
+                "panelChild" = array(),
+                "panelOrient" = Panel_O
+            ))
+        }
+    }
+    function egpAddPanel([Element_n Panel_n]:string,[Side Element_L Panel_O]:number) {
+        
+        if(egpAddBox(Element_n,v(),v())) {
+            EGPS[Element_n + "/table", table] = EGPS[Element_n + "/table", table]:add(table(
+                "panelChild" = array(),
+                "panelOrient" = Panel_O,
+                "panelLength" = Element_L
+            ))
+            
+            
+            Panel_T = EGPS[Panel_n + "/table", table]
+            if(Side == 1) {
+                Panel_T["panelChild", array] = array(Element_n):add(Panel_T["panelChild", array])
+                #Panel_T["panelChild", array]:unshiftString(Element_n)
+            }
+            elseif(Side == -1) {
+                Panel_T["panelChild", array] = Panel_T["panelChild", array]:add(array(Element_n))
+                #Panel_T["panelChild", array]:pushString(Element_n)
+            }
+            egpSetParent(Panel_n)
+        }
+    }
+    
+    
+    
+}
+
+switch(EGPS["step", number]) {
+    case 0,
+        
+        
+        egpSelect()
+        egpClear()
+        
+        local FontSize = EGPS["fontSize", number] = 15
+        
+        function egpAddColorText(E_n:string,[E_s E_p]:vector2, Color_a:array) {
+            
+            local Color_c = Color_a:count()
+            if(Color_c) {
+                EGPS[E_n + "/colorText/data", number] = Color_c
+                
+                local FontSize = EGPS["fontSize", number]
+                for(C = 1, Color_c) {
+                    
+                    local Color3 = Color_a[C, vector]
+                    local Color4 = Color_a[C, vector4]
+                    
+                    local T_n = E_n + "_" + C
+                    egpAddText(T_n,"",E_s,E_p)
+                    egpSetSize(FontSize)
+                    if(Color4 != vec4()) {
+                        egpSetColor(Color4)
+                    }
+                    else {
+                        egpSetColor(Color3)
+                    }
+                    
+                    if(C > 1) {
+                        egpSetPos(T_n, v())
+                        egpSetParent(E_n + "_1")
+                    }
+                    
+                    EGPS[E_n + "/colorText/data" + C, array] = array()
+                }
+                EGPS["lastName" , string] = E_n + "_1"
+                EGPS["lastIndex", number] = EGPS[E_n + "_1/index", number]
+            }
+            else {
+                print("error#egpAddColorText#" + E_n)
+            }
+        }
+        function egpSetColorTextData([E_n E_st]:string, [E_si E_ci]:number) {
+            local Data = EGPS[E_n + "/colorText/data", number]
+            for(C = 1, Data) {
+                if(C == E_ci) {
+                    EGPS[E_n + "/colorText/data" + C, array][E_si, string] = E_st
+                }
+                else {
+                    EGPS[E_n + "/colorText/data" + C, array][E_si, string] = "\n"
+                }
+            }
+        }
+        function egpSetColorText(E_n:string, [Start End]:number) {
+            local Data = EGPS[E_n + "/colorText/data", number]
+            for(C = 1, Data) {
+                egpSetText(E_n + "_" + C, EGPS[E_n + "/colorText/data" + C, array]:concat("\n",Start,End))
+            }
+        }
+        function egpSetColorText(E_n:string) {
+            local Data = EGPS[E_n + "/colorText/data", number]
+            for(C = 1, Data) {
+                egpSetText(E_n + "_" + C, EGPS[E_n + "/colorText/data" + C, array]:concat("\n"))
+            }
+        }
+        
+        egpAddColorText("text", v(512), v(50), array(vec(50),vec(255),vec(0,120,255)))
+        local Players_a = players()
+        local Players_a = Players_a:concat("\n"):replace("Player",""):explode("\n") #
+        foreach(C, P_e:entity = players()) {
+            local P_n = P_e:name()
+            egpSetColorTextData("text", P_n, C, (P_e:isSuperAdmin() ? 3 : (P_e:isSteamFriend(owner()) ? 2 : 1)))
+        }
+        
+        
+        egpSetColorText("text")
+        
+        
+        
+        #[
+        egpAddPanel("box",v(200,300),v(256),2) egpSetColor(0)
+        
+        egpAddPanel("miniBox1","box"     , 1,FontSize,1) egpSetColor(20)
+        egpAddPanel("miniBox2","box"     ,-1,FontSize,1) egpSetColor(40)
+        egpAddPanel("miniBox3","box"     ,-1,       0,1) egpSetColor(0)
+        egpAddPanel("leftText","miniBox3",-1,FontSize/15*9*2,1) egpSetColor(60)
+        egpAddPanel("righText","miniBox3",-1,       0,1) egpSetColor(80)
+        
+        
+        egpAddText("playerName"," ",v(),v())
+        egpSetSize(FontSize)
+        egpSetColor(200)
+        egpSetParent("miniBox1")
+        egpBuildElement(table(
+            "build/parent" = "miniBox1",
+            "build/pos" = v(1,0),
+            "build/posS" = v(-0.5),
+            "build/size" = v(-1,0),
+            "build/sizeS" = v(-0.5)
+        ))
+        
+        
+        local T = "" for(C = 1,30) {T+=C + "\n"}
+        egpAddText("textLeft1",T,v(),v())
+        egpSetSize(FontSize)
+        egpSetColor(120)
+        egpSetAlign(2,0)
+        egpSetParent("leftText")
+        egpBuildElement(table(
+            "build/parent" = "leftText",
+            "build/pos" = v(-0.5,0),
+            "build/posS" = v(-0.5),
+            "build/size" = v(-1),
+            "build/sizeS" = v(1)
+        ))
+        egpAddText("textLeft2","",v(),v())
+        egpSetSize(FontSize)
+        egpSetColor(255)
+        egpSetAlign(2,0)
+        egpSetParent("textLeft1")
+        egpBuildElement(table(
+            "build/parent" = "textLeft",
+            "build/sizeS" = v(1)
+        ))
+        local T = "" for(C = 1,30) {T+=".element" + C + "\n"}
+        egpAddText("textRight1",T,v(),v())
+        egpSetSize(FontSize)
+        egpSetColor(120)
+        egpSetParent("righText")
+        egpBuildElement(table(
+            "build/parent" = "righText",
+            "build/pos" = v(-0.5,0),
+            "build/posS" = v(-0.5),
+            "build/size" = v(-1),
+            "build/sizeS" = v(1)
+        ))
+        egpAddText("textRight2","",v(),v())
+        egpSetSize(FontSize)
+        egpSetColor(255)
+        egpSetParent("textRight1")
+        egpBuildElement(table(
+            "build/parent" = "textRight",
+            "build/sizeS" = v(1)
+        ))
+        
+        
+        ]#
+        EGPS["step", number] = EGPS["step", number] + 1
+    break
+    case 1,
+        #[
+        local FontSize = EGPS["fontSize", number]
+        
+        egpAddText("boneListMode"," ",v(),v())
+        egpSetSize(FontSize)
+        egpSetColor(200)
+        egpSetParent("miniBox2")
+        egpBuildElement(table(
+            "build/parent" = "miniBox2",
+            "build/pos" = v(1,0),
+            "build/posS" = v(-0.5),
+            "build/size" = v(-1,0),
+            "build/sizeS" = v(-0.5)
+        ))
+        
+        egpAddBox("scrollBase",v(),v())
+        egpSetColor(200,50)
+        egpSetParent("righText")
+        egpBuildElement(table(
+            "build/parent" = "righText",
+            "build/pos" = v(-FontSize*0.75/2,0),
+            "build/posS" = v(0.5,0),
+            "build/size" = v(FontSize*0.75,0),
+            "build/sizeS" = v(0,1)
+        ))
+        egpAddBox("scrollBase_scroll",v(),v())
+        egpSetColor(200,75)
+        egpSetParent("scrollBase")
+        egpBuildElement(table(
+            "build/parent" = "scrollBase",
+            "build/pos" = v(),
+            "build/posS" = v(0,-0.5),
+            "build/posSS" = v(0,0.5),
+            "build/size" = v(),
+            "build/sizeS" = v(1,0.2)
+        ))
+        #egpAddPanel("miniMiniBox1","miniBox3"  ,1,15,1) egpSetColor(50,50,150)
+        #egpAddPanel("miniMiniBox2","miniBox3"  ,1,0,1) egpSetColor(50,50,200)
+        
+        
+        Element_T = egpGetTable("box")
+        #print("###############") printTable(Element_T) print("###############")
+        
+        ]#
+        EGPS["step", number] = EGPS["step", number] + 1
+    break
+    default,
+        
+    break
+}
+
+
+timer("", 50)
+O = owner()
+local MM = O:keyPressed("mouse_5")-O:keyPressed("mouse_4")
+if(MM) {
+    
+    #[
+    EGPS["leftText/table", table]["panelLength",number] = max(EGPS["leftText/table", table]["panelLength",number] + MM / 1,1)
+    #MM*= 6
+    
+    #local S = v(MM * 1,1 * MM)
+    #egpSetSize("box", egpGetSize("box")+S)
+    egpBuildPanel("miniBox3")
+    ]#
+}
+
+if(clk("")) {
+    if(changed(0)) {
+        #egpBuildPanel("box")
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

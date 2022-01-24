@@ -1,0 +1,139 @@
+@name desant_01_001
+
+@inputs 
+@outputs 
+@persist [E O H]:entity [Q]:table
+
+@trigger 
+
+
+
+if(changed(0)) {
+    
+    E = entity()
+    O = owner()
+    
+    H = holoCreate(1, vec(), vec(10,3,3),ang())
+    H:setTrails(1.5, 0, 30, "trails/smoke", vec(255), 255)
+    
+    
+    timer("", 1)
+}
+
+if(clk("")) {
+        timer("", 50)
+    
+    if(changed(0)) {
+        Q["cur", number] = curtime()
+    }
+    
+    local LastCurtime = Q["cur", number]
+    local Curtime = Q["cur", number] = curtime()
+    local Interval = Curtime - LastCurtime
+    
+    local S = Q["S", number] = Q["S", number] + Interval * 52.5 * 10
+    
+    local V = H:pos() + (E:pos()-H:pos()):normalized() * S * Interval
+    holoPos(1, V)
+    
+    
+    
+    
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

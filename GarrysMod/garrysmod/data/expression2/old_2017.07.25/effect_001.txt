@@ -1,0 +1,134 @@
+@name effect 001
+
+@inputs 
+@outputs 
+@persist [E O]:entity [Q]:table
+
+@trigger none
+
+
+
+if(changed(0)) {
+    
+    E = entity()
+    O = owner()
+    
+    
+    local Pos = E:toWorld(vec(0,0,30))
+    local H = Q["holo", entity] = holoCreate(0, Pos, vec(-10/6)*0, ang(), vec(), "icosphere2") holoMaterial(0, "models/wireframe")
+    holoParent(0, E)
+    
+    local S1 = Q["sprite1", entity] = H:drawSprite("sprites/heatwave", Pos, vec(255), 255, 20, 20)
+    local S2 = Q["sprite2", entity] = H:drawSprite("sprites/light_glow01", Pos, vec(0,100,255), 255, 300, 300)
+    local S3 = Q["sprite3", entity] = H:drawSprite("sprites/light_glow01", Pos, vec(0,0,255), 255, 300, 300)
+    local S4 = Q["sprite4", entity] = H:drawSprite("sprites/light_glow01", Pos, vec(100,100,255), 255, 1200, 15)
+    
+    #[
+    sprites/heatwave
+    sprites/light_glow01
+    
+    
+    ]#
+    
+    
+    timer("", 1)
+}
+
+
+if(clk("")) {
+        timer("", 50)
+    
+    local H  = Q["holo"   , entity]
+    local S1 = Q["sprite1", entity]
+    local S2 = Q["sprite2", entity]
+    local S3 = Q["sprite2", entity]
+    
+    local S1_s = 150
+    local S1_sx = S1_s + random(-10,10)
+    local S1_sy = S1_s / 2 + random(-10,10)
+    S1:spriteSize(S1_sx*2, S1_sy)
+    S2:spriteSize(S1_sy, S1_sx * 2)
+    
+    
+    #local VecZ = Q["VecZ", number]
+    #local VecZ = Q["VecZ", number] = VecZ + (sin(curtime()*1500*(1 + cos(curtime() * 180)*0.5))*180 - VecZ) / 5
+    local VecZ = sin(curtime() * 1500)
+    local Vec = vec(0,0,VecZ * 2)
+    local Pos = H:toWorld(Vec)
+    S1:setPos(Pos)
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

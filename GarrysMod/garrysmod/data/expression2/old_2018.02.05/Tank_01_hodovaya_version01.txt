@@ -1,0 +1,15 @@
+@name Tank_01_bashnya_version01
+
+@inputs [Base]:entity
+@inputs [Pod]:entity [Cam]:wirelink
+
+@outputs 
+@persist 
+
+@trigger 
+
+
+
+if(changed(0)) {
+    
+}

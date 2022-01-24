@@ -1,0 +1,458 @@
+@name Turret_01_001_model
+
+@inputs 
+@outputs 
+@persist Q_turret:table   T_Scale T_Radius T_Height [T_lapaLenght T_lapaOffset]:array T_lapaFingertipHeight
+
+@persist 
+
+#@persist [Indexes Entityes Positions]:array
+
+
+#include "AddHolo"
+
+
+
+if(changed(0)) {
+    function addHoloBone(Name:string, Pos:vector, Ang:angle, INTO:string) {
+        addHolo(Name,Pos,vec(),Ang,vec(),"cube","",INTO)
+        AddHolo[Name + "/offset/pos", vector] = Pos
+    }
+    function addHoloBone(Name:string, [Pos Size]:vector, Ang:angle, Color:vector, [Model Material INTO]:string) {
+        addHolo(Name,Pos,Size,Ang,Color,Model,Material,INTO)
+        AddHolo[Name + "/offset/pos", vector] = Pos
+    }
+    function number smooth(Value:number) {
+        return 0.5-sin(90 + clamp(Value,0,1) * 180)/2
+    }
+    function number smooth([Value IN TO]:number) {
+        local Min = (IN < TO ? IN : TO)
+        local Max = (TO > IN ? TO : IN)
+        Value = clamp(Value,Min,Max)
+        Value = clamp((Value-Min)/(Max-Min),0,1)
+        return 0.5-sin(90 + Value * 180)/2
+    }
+    
+    
+    ##############
+    #            #
+    #- constants #
+    #            #
+    ##############
+    ################
+    #
+    #- scales
+    T_Scale = 5
+    T_Height = 1 *T_Scale
+    T_Radius = 6 *T_Scale
+    #
+    #- colormater
+    local Color1 = vec(130)
+    local Mater1 = ""
+    #
+    ################
+    
+    ################
+    #
+    #- nijnya chast
+    #
+    #- tolshina dna nijnih bortov
+    local Dno_h = T_Height*0.05
+    #
+    #- shirina razreza nijnih bortov
+    local Clip = T_Height
+    #
+    ####
+    #
+    #- lapki
+    #
+    #- shirini sekcii
+    local Height0 = T_Height+Dno_h*1.5
+    local Height1 = Height0*0.75
+    local Height2 = Height1*0.75
+    local Height3 = Height2*0.75
+    local Height4 = Height3*0.75
+    #
+    #- dlini sekcii
+    local Radius0 = T_Radius/2 * sin(acos(Clip/T_Radius))*0.995
+    local Radius4 = Radius0 #*1.0-Height4/2
+    local Radius3 = Radius0 #*1.0+Height4/4
+    local Radius2 = Radius0 #*0.95
+    local Radius1 = Radius0
+    Q_turret["Radius0",number] = Radius0*2
+    #
+    #- glavnaya os vrasheniya lapki
+    local DrosselR = Height1*2
+    local DrosselH = Height1 #Height1-AxisR
+    #
+    #-
+    #array(Radius0,Radius1,Radius2,Radius3,Radius4,DrosselH)
+    #
+    ################
+    
+    
+    addHolo("rt"  ,vec(0,0,5),vec(),ang(),vec(),"cube","",  "") addHoloINTO(entity())
+    addHolo("base",vec(     ),vec(),ang(),vec(),"cube","","rt")
+    
+    
+    
+    ################
+    #
+    #- Verh i niz nijnego borta
+    #
+    addHolo("",vec(0,0,(-Dno_h-T_Height)),vec(T_Radius,T_Radius,Dno_h),ang(),Color1,"hq_cylinder",Mater1,"base")
+    addHolo("",vec(0,0,(+Dno_h+T_Height)),vec(T_Radius,T_Radius,Dno_h),ang(),Color1,"hq_cylinder",Mater1,"base")
+    #
+    ################
+    
+    
+    for(Lapki_i = 1,3) {
+        
+        local LapaRT0   = "lapaRT0"   + Lapki_i
+        local LapaRT1   = "lapaRT1"   + Lapki_i
+        local LapaRT2   = "lapaRT2"   + Lapki_i
+        local LapaRT3   = "lapaRT3"   + Lapki_i
+        local LapaRT4   = "lapaRT4"   + Lapki_i
+        local Fingertip = "fingertip" + Lapki_i
+        local Drossel   = "drossel"   + Lapki_i
+        
+        local F = Lapki_i - 1
+        local A = 120 * F
+        
+        ################
+        #
+        #- Nijniy bort
+        #
+        addHolo("", vec(),vec(T_Radius,T_Radius,T_Height),ang(),Color1, "hq_tube_thin", Mater1, "base")
+        addHolo_clip(vec(),ang(0,A+30,0),Clip)
+        addHolo_clip(vec(),ang(0,A+90,0),Clip)
+        local Rad = T_Radius-T_Radius/6*0.02
+        addHolo("dverka" + Lapki_i, vec(),vec(Rad,Rad,T_Height+Dno_h),ang(),Color1*1.5, "hq_tube_thin", Mater1, "base")
+        addHolo_clip(vec(),ang(0,A+90,0),-Clip*1.1)
+        addHolo_clip(vec(),ang(0,A-90,0),-Clip*1.1)
+        addHolo_clip(vec(),ang(0,A,0),Rad*0.95)
+        #
+        ################
+        
+        XX = 0
+        ################
+        #
+        #- LAPKI
+        #
+        #- LapaRT0
+        addHolo(LapaRT0,vec(0,0,0),vec(Height0,Height0,Radius0*2),ang(90,A,0),Color1,"hq_stube_thin",Mater1,"base") #addHoloClip(vec(),ang(0,45,0),-0.8)
+        addHolo_clip(vec(),ang(-90,0,0),0)
+        #
+        #- LapaRT1
+        addHoloBone(LapaRT1,vec(DrosselH,0,Radius0-Radius1+XX)                              ,ang()                     ,LapaRT0       )
+        addHolo("",vec(-DrosselH,0, Radius1),vec(Height1,Height1,Radius1),ang(),Color1,"cube",Mater1,LapaRT1)
+        local BoxL = Height1*0.5
+        addHolo("",vec(-DrosselH,0,BoxL*0.8),vec(Height1,Height1,   BoxL),ang(),Color1,"rcube"        ,Mater1,LapaRT1)
+        addHolo_clip(vec(),ang(90,0,0),BoxL*0.8)
+        #
+        #- LapaRT2
+        addHoloBone(LapaRT2,vec(-DrosselH,0,Radius2        +XX),vec(Height2,Height2,Radius2),ang(),Color1,"cube" ,Mater1,LapaRT1)
+        #
+        #- LapaRT3
+        addHoloBone(LapaRT3,vec(        0,0,Radius3-Radius2+XX),vec(Height3,Height3,Radius3),ang(),Color1,"hq_tube"    ,Mater1,LapaRT2)
+        #
+        #- LapaRT4
+        addHoloBone(LapaRT4,vec(        0,0,Radius4-Radius3+XX),vec(Height4,Height4,Radius4),ang(),Color1,"hq_cylinder",Mater1,LapaRT3)
+        #
+        #- LapaRT4
+        addHolo(Fingertip,vec(0,0,Radius4),vec(Height4),ang(0,0,0),Color1,"hq_sphere",Mater1,LapaRT4)
+        #
+        #
+        #
+        #- drossel
+        addHoloBone(Drossel,vec(),vec(0.01,Height1,DrosselR)*0.95,ang(),Color1*2,"cube",Mater1,LapaRT1)
+        addHolo_clip(vec(),ang(90,0,0),0)
+        addHolo("",vec(),vec(DrosselR,DrosselR,Height1)*0.95,ang(0,0,90),Color1,"hq_cylinder",Mater1,Drossel)
+        addHolo_clip(vec(),ang(0,180,0),0)
+        #
+        ################
+        
+    }
+    addHolo_timer("animation")
+    
+    
+    #array(6.15,5.5,5.3,5.6)
+    T_lapaFingertipHeight = Radius4
+}
+
+
+if(clk("animation")) {
+        timer("animation", 50)
+    
+    if(changed(0)) {
+        Q_turret["lastCurtime", number] = curtime()
+        
+        print("Использованно голограмм: " + AddHolo_counter)
+        
+        for(Lapki_i = 1,3) {
+            
+            local Indexes   = array()
+            local Entityes  = array()
+            local Positions = array()
+            
+            for(Element = 1,5) {
+                local LapaRT_n = "lapaRT" + (Element-1) + Lapki_i
+                
+                local LapaRT_i = AddHolo[LapaRT_n + "/index"     , number] #if(!LapaRT_i) {printColor(vec(255,70,0), "[Turre_01_001] ", vec(255,20,20),"ERROR ", vec(255), "Ошибка извлечения индекса голограммы \"", vec(0,100,255), LapaRT_n,vec(255),"\"")}
+                local LapaRT_e = AddHolo[LapaRT_n + "/entity"    , entity] #if(!LapaRT_e) {printColor(vec(255,70,0), "[Turre_01_001] ", vec(255,20,20),"ERROR ", vec(255), "Ошибка извлечения ентити голограммы \"", vec(0,100,255), LapaRT_n,vec(255),"\"")}
+                local LapaRT_p = AddHolo[LapaRT_n + "/offset/pos", vector]
+                
+                Indexes:pushNumber(  LapaRT_i)
+                Entityes:pushEntity( LapaRT_e)
+                Positions:pushVector(LapaRT_p)
+            }
+            
+            Q_turret["lapki/listIndex"     + Lapki_i, array] = Indexes
+            Q_turret["lapki/listEntity"    + Lapki_i, array] = Entityes
+            Q_turret["lapki/listPositions" + Lapki_i, array] = Positions
+        }
+    }
+    local LastCurtime = Q_turret["lastCurtime", number]
+    local Curtime = Q_turret["lastCurtime", number] = curtime()
+    local Interval = Curtime - LastCurtime
+    #local Loop = Interval / 0.015625
+    
+    
+    
+    
+    local O = owner()
+    local M45 = O:keyPressed("mouse_4")-O:keyPressed("mouse_5")
+    
+    if(changed(M45) & M45) {
+        
+        Q_turret["AnimLapki_need", number] = clamp(Q_turret["AnimLapki_need", number] + M45,0,3)
+        Q_turret["AnimLapki_changed", number] = 1
+    }
+    
+    if(Q_turret["AnimLapki_changed", number]) {
+        local Lapki_need = Q_turret["AnimLapki_need", number]
+        local Anim = Q_turret["AnimLapki_process", number]
+        
+        
+        if(Anim == Lapki_need) {
+            Q_turret["AnimLapki_changed", number] = 0
+        }
+        else {
+            #
+            #- 1
+            if(Anim <= 1 & Anim!=Lapki_need) {
+                Anim = Q_turret["AnimLapki_process", number] = clamp(Anim + (Anim<=Lapki_need>0 ? 1 : -1)*Interval*2 ,0,1)
+                
+                local Base_e = AddHolo["base/entity", entity]
+                for(C = 1,3) {
+                    local Dverka_i = AddHolo["dverka" + C + "/index", number]
+                    holoAng(Dverka_i, Base_e:toWorld(ang(0,smooth(Anim)*20,0)))
+                }
+            }
+            #
+            #- 2
+            if(Anim >= 1 & Anim <= 3 & Anim!=Lapki_need) {
+                Anim = Q_turret["AnimLapki_process", number] = clamp(Anim + (Anim<=Lapki_need ? 1 : -1)*Interval*0.5 ,1,2 + (Lapki_need>2|Anim>2))
+                
+                local LapakiAnim = Anim-1
+                for(Lapki_i = 1,3) {
+                    
+                    local Last = Q_turret["AnimLapka" + Lapki_i, number]
+                    Q_turret["AnimLapka" + Lapki_i, number] = Anim
+                    
+                    
+                    local Indexes   = Q_turret["lapki/listIndex"     + Lapki_i, array]
+                    local Entityes  = Q_turret["lapki/listEntity"    + Lapki_i, array]
+                    local Positions = Q_turret["lapki/listPositions" + Lapki_i, array]
+                    
+                    for(Element = 1,4) {
+                        local Add = smooth(min(LapakiAnim,1))
+                        local NeedLength = Q_turret["Radius0",number] #select(Element,0,0,0,0)*T_Scale
+                        
+                        
+                        local Cell_i = Element+1
+                        
+                        local LapaRTBase_e = Entityes[Cell_i-1, entity]
+                        
+                        local LapaRT_i = Indexes[  Cell_i, number]
+                        #local LapaRT_e = Entityes[ Cell_i, entity]
+                        local LapaRT_p = Positions[Cell_i, vector]
+                        
+                        local AddPos = vec(0,0,NeedLength*Add)
+                        local LapaRT_p = LapaRTBase_e:toWorld(AddPos+LapaRT_p)
+                        holoPos(LapaRT_i, LapaRT_p)
+                        
+                        if(Element == 1) {
+                            local Angle = smooth(clamp(LapakiAnim-1,0,1))*55
+                            local LapaRT_e = Entityes[ Cell_i, entity]
+                            holoAng(LapaRT_i, LapaRTBase_e:toWorld(ang(Angle,0,0)))
+                            holoAng(AddHolo["drossel" + Lapki_i + "/index", number], LapaRT_e:toWorld(ang(-Angle,0,0)))
+                        }
+                    }
+                }
+            }
+            #
+            #- 3
+            if(Anim >= 2 & Anim!=Lapki_need) {
+                
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName("Turret_01_001_model\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage() * 1e6))

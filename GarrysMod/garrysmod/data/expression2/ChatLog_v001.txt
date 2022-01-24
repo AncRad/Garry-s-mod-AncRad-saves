@@ -1,0 +1,91 @@
+@name ChatLog_v001
+
+@persist [ChatLog_PrintList]:array
+@persist [ChatLog_IntervalMin ChatLog_IntervalMax]:number [ChatLog_PrintTimer ChatLog_LastPrintTime]:number
+
+@persist 
+
+if(!changed(0) & changed(0)) {
+    printColor("[",vec(255,50,0),entity():getName():explode("\n")[1, string],vec(255),"] ","Повторный вызов библиотеки \"",vec(),"ChatLog_v001",vec(255),"\"")
+}
+
+ChatLog_IntervalMin = 50
+ChatLog_IntervalMax = 250
+
+
+
+function chatLog(PrintList1:array) {
+    ChatLog_PrintList = ChatLog_PrintList:add(array(ChatLog_PrintList:count() ? "\n" : ""):add(PrintList1))
+    if(!ChatLog_PrintTimer) {ChatLog_PrintTimer = 1 timer("chatLog", clamp(250 - (curtime()-ChatLog_LastPrintTime)*1000,ChatLog_IntervalMin,ChatLog_IntervalMax))}
+}
+function chatLog([PrintList1 PrintList2]:array) {
+    ChatLog_PrintList = ChatLog_PrintList:add(array(ChatLog_PrintList:count() ? "\n" : ""):add(PrintList1)):add(PrintList2)
+    if(!ChatLog_PrintTimer) {ChatLog_PrintTimer = 1 timer("chatLog", clamp(250 - (curtime()-ChatLog_LastPrintTime)*1000,ChatLog_IntervalMin,ChatLog_IntervalMax))}
+}
+function chatLog([PrintList1 PrintList2 PrintList3]:array) {
+    ChatLog_PrintList = ChatLog_PrintList:add(array(ChatLog_PrintList:count() ? "\n" : ""):add(PrintList1)):add(PrintList2):add(PrintList3)
+    if(!ChatLog_PrintTimer) {ChatLog_PrintTimer = 1 timer("chatLog", clamp(250 - (curtime()-ChatLog_LastPrintTime)*1000,ChatLog_IntervalMin,ChatLog_IntervalMax))}
+}
+function chatLog([PrintList1 PrintList2 PrintList3 PrintList4]:array) {
+    ChatLog_PrintList = ChatLog_PrintList:add(array(ChatLog_PrintList:count() ? "\n" : ""):add(PrintList1)):add(PrintList2):add(PrintList3):add(PrintList4)
+    if(!ChatLog_PrintTimer) {ChatLog_PrintTimer = 1 timer("chatLog", clamp(250 - (curtime()-ChatLog_LastPrintTime)*1000,ChatLog_IntervalMin,ChatLog_IntervalMax))}
+}
+
+function number chatLog() {
+    if(clk("chatLog")) {
+        if(playerCanPrint()) {
+            if(curtime() - ChatLog_LastPrintTime > ChatLog_IntervalMax/1000) {
+                printColor(ChatLog_PrintList)
+                ChatLog_PrintList:clear()
+                ChatLog_PrintTimer=0
+                return 1
+            }
+            
+            timer("chatLog", clamp(250 - (curtime()-ChatLog_LastPrintTime)*1000,ChatLog_IntervalMin,ChatLog_IntervalMax))
+            ChatLog_PrintTimer = 1
+            return 0
+        }
+        else {
+            timer("chatLog", 50)
+        }
+    }
+    return 0
+}
+
+
+
+
+
+#[
+function array       lIO_pC([C T]:string) {return array(ChatLog_PrintColorList[C,vector],T)}
+function array array:lIO_pC([C T]:string) {return This:add(array(ChatLog_PrintColorList[C,vector],T))}
+function array       lIO_pC([R G B]:number, T:string) {return array(vec(R,G,B),T)}
+function array array:lIO_pC([R G B]:number, T:string) {return This:add(array(vec(R,G,B),T))}
+function array       lIO_pC(    RGB:vector, T:string) {return array(RGB,T)}
+function array array:lIO_pC(    RGB:vector, T:string) {return This:add(array(RGB,T))}
+function array:lIO_addPrint() {
+    ChatLog_PrintList = ChatLog_PrintList:add(array(ChatLog_PrintList:exists(1) ? "\n" : "",vec(255),"[",vec(255,50,0),"BGM-71E",vec(255),"] "):add(This))
+    if(!ChatLog_PrintTimer) {PrintTimer=1 timer("chatLog", 1)}
+}
+function lIO_addPrint(This:array) {
+    ChatLog_PrintList = ChatLog_PrintList:add(array(ChatLog_PrintList:exists(1) ? "\n" : "",vec(255),"[",vec(255,50,0),"BGM-71E",vec(255),"] "):add(This))
+    if(!ChatLog_PrintTimer) {ChatLog_PrintTimer=1 timer("chatLog", 1)}
+}
+function lIO_addPrint(T:string) {
+    ChatLog_PrintList = ChatLog_PrintList:add(array(ChatLog_PrintList:exists(1) ? "\n" : "",vec(255),"[",vec(255,50,0),"BGM-71E",vec(255),"] " + T))
+    if(!ChatLog_PrintTimer) {ChatLog_PrintTimer=1 timer("chatLog", 1)}
+}
+]#
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,139 @@
+@name watermelon_gun
+
+@inputs 
+@outputs 
+
+#- base
+@persist [E]:entity [Gate_name]:string
+
+#- 
+@persist [O]:entity X:entity
+
+#- 
+@persist 
+
+
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+
+if(changed(0)) {
+    #if(!isSinglePlayer()) {noDuplications()}
+    
+    #- base
+    E = entity()
+    E:setSkin(1)
+    Gate_name = E:getName():explode("\n"):string(1)
+    
+    #- 
+    O = owner()
+    
+    
+    
+    
+    
+    
+    
+    
+    timer("", 1)
+}
+
+
+if(clk("")) {
+        timer("", 50)
+    
+    local Key_fire = O:keyPressed("3")
+    if(changed(Key_fire) & (Key_fire | 0)) {
+        local Model = select(1, "models/props_junk/watermelon01.mdl", "models/props_junk/glassjug01.mdl", "models/props_c17/oildrum001_explosive.mdl", "models/props_phx/ww2bomb.mdl")
+        
+        local P = propSpawn(Model, E:toWorld(vec(20,0,0)), ang(), 0)
+        P:setMass(100)
+        P:applyForce(P:mass()*E:forward()*52.5*65)
+        P:applyAngForce(P:mass()*ang(randvec(100,100)))
+        #local P = entitySpawn("rpg_missile", E:toWorld(vec(20,0,0)),0) P:setVel(E:forward()*52.5*10)
+    }
+    
+    
+    
+    local Key_fire2 = O:keyPressed("4") & !X
+    if(changed(Key_fire2) & Key_fire2) {
+        local Model = select(1, "models/props_junk/watermelon01.mdl", "models/props_junk/glassjug01.mdl", "models/props_c17/oildrum001_explosive.mdl")
+        
+        local P = propSpawn(Model, E:toWorld(vec(20,0,0)), ang(), 0)
+        P:setMass(100)
+        P:applyForce(P:mass()*E:forward()*52.5*65)
+        #P:applyAngForce(P:mass()*ang(randvec(100,100)))
+        
+        holoCreate(1,vec(),vec(),ang())
+        X = holoCreate(2,vec(-150,0,0),vec(),ang()) holoParent(2,1)
+        
+        holoParent(1, P)
+        holoPos(1, P:pos())
+    }
+    
+    if(changed(X)) {
+        if(X) {
+            X:setViewEntity()
+        }
+        else {
+            O:setViewEntity()
+        }
+    }
+    if(X) {
+        holoAng(1, O:eyeAngles())
+        if(O:keyPressed("")) {
+            X = noentity()
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName(Gate_name + "\nOP--S: " + ops() + "\nCPU: " + int(cpuUsage()*1e6))
+if(dupefinished()) {reset()}

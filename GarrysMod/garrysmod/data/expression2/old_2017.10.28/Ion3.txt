@@ -1,0 +1,220 @@
+@name Ion3
+
+@inputs 
+@outputs DD
+@persist [E O MathHelper]:entity [Q]:table
+
+@trigger none
+@model models/sprops/rectangles/size_2/rect_12x18x3.mdl
+
+
+
+#include "AddHolo"
+if(changed(0)) {
+    
+    E = entity()
+    O = owner()
+    
+    E:setAlpha(255)
+    
+    timer("spawn", 1)
+}
+
+if(clk("spawn")) {
+        timer("spawn", 130)
+    
+    if(changed(0)) {
+        
+        function entity:toChest() {
+            
+            local Driver = Q["driver", entity] = This
+            local Chest_i = 1000
+            local Chest_e = holoCreate(Chest_i, Driver:attachmentPos("chest"), vec(0.1), Driver:attachmentAng("chest"))
+            holoParentAttachment(Chest_i, Driver, "chest")
+            holoPos(Chest_i, Chest_e:toWorld(vec(-8.0,0,-2.5)))
+            holoAng(Chest_i, Chest_e:toWorld(ang(-10,0,0)))
+            
+            local Base_i = AddHolo["base/id", number]
+            local Base_e = AddHolo[Base_i + "/entity", entity]
+            holoUnparent(Base_i)
+            holoPos(Base_i, Chest_e:pos())
+            holoAng(Base_i, Chest_e:angles())
+            holoParent(Base_i, Chest_i)
+        }
+        function drop() {
+            
+            local Driver = Q["driver", entity]
+            local Base_i = AddHolo["base/id", number]
+            local Base_e = AddHolo[Base_i + "/entity", entity]
+            
+            holoUnparent(Base_i)
+            
+            E:setPos(Base_e:pos())
+            E:setAng(Base_e:angles())
+            E:propFreeze(0)
+            E:propNotSolid(0)
+            E:setVel(Driver:vel())
+            
+            local PropRT_i = AddHolo["propRT/id", number]
+            local PropRT_e = AddHolo[PropRT_i + "/entity", entity]
+            holoParent(Base_i, PropRT_e)
+            holoPos(Base_i, PropRT_e:pos())
+            holoAng(Base_i, PropRT_e:angles())
+            print(E:toLocal(PropRT_e:angles()))
+            
+            Q["driver", entity] = noentity()
+        }
+    }
+    
+    local Step = max(Q["step", number],1)
+    switch(Step) {
+        case 1,
+            
+            addHolo("mathHelper", vec(), vec(), ang(), vec(), "cube", "", "")
+            
+            #[
+            local Emitation = 0
+            if(Emitation) {
+                addHolo("playerEmitation", O:pos(), vec(1), ang(0,O:angles()[2],0), vec(255), O:model(), "", "")
+                addHoloAnim("idle_all_01") #addHoloAnim("menu_walk")
+            }
+            addHolo("propRT", vec( 5.0 , 0.0 , -1.0 ), vec(), ang(), vec(255), "cube", "", "")
+            if(Emitation) {
+                addHoloParent("propRT", "playerEmitation", "chest")
+            }
+            else {
+                addHoloINTO("propRT", E)
+            }
+            ]#
+            
+            addHolo("propRT", vec( 5.0 , 0.0 , -1.0 ), vec(), ang(), vec(255), "cube", "", "")
+            addHoloINTO("propRT", E)
+            addHolo("base", vec( 0.0 , 0.0 , 0.0 ), vec(), ang( 80 , 0 , 0 ), vec( 255 , 0 , 0 ), "cube", "", "propRT") # vec( -2.0 , 0.0 , 1.0 )
+            addHoloTimer("", 1)
+            
+            Q["step", number] = Step + 1
+        break
+        case 2,
+            
+            local M1 = "phoenix_storms/OfficeWindow_1-1"
+            local C1 = vec(255)
+            local A = 0
+            local Ang = ang()
+            local V = vec()
+            
+            ###   ###   ###[
+            local InnerStep = Q["innerStep", number] = Q["innerStep", number] + 1
+                    if(InnerStep == 1) {V = vec( 1.1 , -2.5 ,  3.0 ) Ang = ang( -80 ,  20 , 0 ) A =    0  M =  1}
+                elseif(InnerStep == 2) {V = vec( 1.1 ,  2.5 ,  3.0 ) Ang = ang( -80 , -20 , 0 ) A =    0  M = -1}
+                elseif(InnerStep == 3) {V = vec( 0.9 ,  1.4 , -0.0 ) Ang = ang( -70 ,  -7 , 0 ) A =  2.5  M =  1}
+                elseif(InnerStep == 4) {V = vec( 0.9 , -1.4 , -0.0 ) Ang = ang( -70 ,   7 , 0 ) A = -2.5  M = -1}
+                
+                #local F = InnerStep - 1
+                local N1 = "fly " + InnerStep
+                local N2 = N1 + " " + "axis " + InnerStep
+                addHolo(N1, V, vec( 0.3 ) * 0, Ang, vec( 255 , 0 , 0 ), "cube", "", "base")
+                addHolo(N2, vec( 0.0 ,  0.0 , 0.0 ), vec( 0.2 , 0.2 , 1.0 ) * 0, ang( 0 , A , 0 ), vec( 200 ), "cube", "", N1)
+                Z = 0.1
+                R = 1.5
+                addHolo("", vec( 0.0 ,  0.0 , Z ), vec( R , R , Z ), ang( 0 , 0 , 0 ), C1, "hq_cylinder", M1, N1)
+                Z2 = 0.3
+                addHolo("", vec( 0.0 ,  0.0 , Z2 + Z * 2 ), vec( R , R , Z2 ), ang( 0 , 0 , 0 ), C1, "hq_tube_thin", M1, N1)
+                R1 = R - 0.15
+                Z3 = Z2
+                addHolo("", vec( 0.0 ,  0.0 , Z3 + Z * 2 ), vec( R1 , R1 , Z3 ), ang( 0 , 0 , 0 ), C1 / 2, "hq_cylinder", M1, N2)
+                addHolo("", vec( 0.0 ,  0.0 , 1.1 ), vec( R , R , 0.4 ), ang( 0 , 0 , 0 ), C1, "hq_cylinder", M1, N2)
+                
+                Len = 8
+                NN1 = "_" + InnerStep
+                addHolo(NN1, vec( -Len / 2 - 1 ,  -0.45 * M , 1.2 ), vec( Len , 1.0 , 0.2 ), ang( 0 , 0 , 0 ), C1, "rcube_thick", M1, N2)
+                addHoloClip(ang( 0 ,   0 , 0 ), -Len * 0.66)
+                addHoloClip(ang( 0 , 180 , 0 ), -Len * 0.66)
+                NN2 = "__" + InnerStep
+                addHolo(NN2, vec( -10.24 , -0.45 * M , 1.2 ), vec( 3 , 0.7 , 0.2 ), ang( 0 , -45 * M , 0 ), C1, "rcube_thick", M1, N2)
+                addHoloClip(ang( 0 , -135 * M , 0 ), 0)
+            ###   ###   ###]
+            if(InnerStep == 4) {
+                Q["C1", vector] = C1
+                Q["innerStep", number] = 1
+                Q["step", number] = Step + 1
+            }
+        break
+        case 3,
+            ###   ###   ###[
+            local InnerStep = Q["innerStep", number]
+                local N1 = "fly " + InnerStep
+                local N2 = N1 + " " + "axis " + InnerStep
+                ###   ###   ###[
+                local InnerStep2 = Q["innerStep2", number] = Q["innerStep2", number] + 1
+                    NNN = InnerStep + "light " + InnerStep2
+                    addHolo(NNN, vec( -10 + InnerStep2 / 2 , 0.45 * (mod(InnerStep,2) ? -1 : 1) , 1.2 ), vec( 0.15 , 0.5 , 0.25 ), ang( 0 , 0 , 0 ), vec( 0 , 0 , 0 ), "rcube_thick", "lights/white", N2)
+                    if(InnerStep2 == 9) {
+                        Q["innerStep2", number] = 0
+                        InnerStep = Q["innerStep", number] = InnerStep + 1
+                        if(InnerStep == 5) {
+                            local C1 = Q["C1", vector]
+                            addHolo("", vec( 1.4 ,  0.0 , 0.5 ), vec( 0.8 , 0.8 , 0.8 ), ang( -135 , 0 , 45 ), C1 / 2, "models/gibs/scanner_gib02.mdl", "", "base")
+                            
+                            stoptimer("spawn")
+                        }
+                    }
+                ###   ###   ###]
+            ###   ###   ###]
+        break
+    }
+}
+
+if(clk("")) {
+        timer("", 1)
+    
+    if(changed(0)) {
+        
+        #E:setAlpha(0)
+        MathHelper = AddHolo["mathHelper/entity", entity]
+        
+        local PE_i = AddHolo["playerEmitation/id", number]
+        local PE_e = AddHolo[PE_i + "/entity", entity]
+        #O:toChest()
+    }
+    if(changed(O:keyPressed("e")) & O:keyPressed("e")) {
+        if(Q["driver", entity]) {
+            drop()
+        }
+        else {
+            O:toChest()
+        }
+    }
+    
+    #[
+    local AttAng = O:attachmentAng("chest")
+    local AttPos = O:attachmentPos("chest") - AttAng:forward() * 8 - AttAng:up() * 3
+    DD = AttPos:distance(E:pos())
+    
+    MathHelper:setAng(angnorm(AttAng-ang(90,0,0)))
+    local LAng = Q["ang", angle]
+    local Ang = Q["ang", angle] = MathHelper:toLocal(E:angles())
+    local VAng = Ang - LAng
+    
+     OV = O:vel()
+    
+    
+    local A = -VAng*10-Ang
+    local A = ang(A[1],A[2],A[3])
+    E:applyAngForce(A * E:mass())
+    
+    local V = (OV + $OV * 0 - E:vel()) / 6 + (AttPos-E:pos()) * 1
+    E:applyForce((V * 10 + vec(0,0,9)) * E:mass())
+    ]#
+}
+
+
+
+
+
+
+
+
+
+
+
+

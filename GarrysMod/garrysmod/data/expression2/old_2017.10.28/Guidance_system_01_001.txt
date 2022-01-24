@@ -1,0 +1,136 @@
+@name Guidance system 01 001
+
+@inputs 
+@outputs Yaw
+@persist [E O  Base_e Yaw_e Pitch_e  RootBase RootYaw RootPitch T]:entity [Q]:table
+
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+
+if(changed(0)) {
+    E = entity() E:setSkin(1)
+    
+    foreach(C, E:entity = E:getConstraints()) {
+        local Model = E:model()
+        
+        if(Model == "models/sprops/geometry/fdisc_60.mdl") {
+            Base_e = E
+            RootBase = holoCreate(1, Base_e:pos(), vec(), Base_e:toWorld(ang(0,0,-90))) holoParent(1, Base_e)
+        }
+        elseif(Model == "models/sprops/geometry/fdisc_48.mdl") {
+            Yaw_e = E
+            RootYaw = holoCreate(2, Yaw_e:pos(), vec(), Yaw_e:toWorld(ang(0,0,-90))) holoParent(2, Yaw_e)
+        }
+        elseif(Model == "models/sprops/cuboids/height12/size_1/cube_12x18x12.mdl") {
+            Pitch_e = E
+            RootPitch = holoCreate(3, Pitch_e:pos(), vec(), Pitch_e:angles()) holoParent(3, Pitch_e)
+        }
+    }
+    
+    
+    
+    
+    timer("", 1)
+}
+
+if(clk("")) {
+        timer("", 1)
+    
+    TV = T:vel()
+    
+    local LNA = Q["na", angle]
+    local NA = Q["na", angle] = angnorm(RootBase:toLocal(T:boxCenterW() - RootPitch:boxCenterW() + RootBase:boxCenterW()):toAngle())
+    local VNA = angnorm(NA - LNA)
+    
+    local LPitch = Q["p", number]
+    local Pitch = Q["p", number] = RootBase:toLocal(RootPitch:angles()-NA-VNA*0.5)[1]
+    local VPitch = angnorm(Pitch - LPitch)
+    
+    local A = clamp(-Pitch * 10 * (T | 0) ,-100,100) - clamp(VPitch ,-5,5) * 50
+    Pitch_e:applyAngForce(ang(A * Pitch_e:mass(),0,0))
+    
+    local LYaw = Q["y", number]
+    local Yaw = Q["y", number] = RootBase:toLocal(RootYaw:angles()-NA-VNA*0.5)[2]
+    local VYaw = angnorm(Yaw - LYaw)
+    
+    local A = clamp(-Yaw * 10 * (T | 0) ,-200,200) - clamp(VYaw,-5,5) * 150
+    Yaw_e:applyAngForce(ang(A * Yaw_e:mass() * 1.8,0,0))
+    
+    holoPos(10, T:boxCenterW())
+    holoAng(10, NA)
+    holoPos(20, Pitch_e:toWorld(vec(T:boxCenterW():distance(RootPitch:boxCenterW()),0,0)))
+    holoAng(20, NA)
+    
+    
+    if(!T) {
+        findClearWhiteList()
+        findClearBlackList()
+        findIncludeModel("models/props_junk/watermelon01.mdl")
+        findInSphere(vec(), 9999999)
+        T = find()
+    }
+    if(changed(T)) {
+        
+        holoCreate(10, Pitch_e:toWorld(vec(6500,0,0)), -vec(2), ang(), vec(200), "models/editor/axis_helper.mdl") holoParent(10, T) holoMaterial(10, "lights/white")
+        holoCreate(20, Pitch_e:toWorld(vec(6500,0,0)), -(vec(2)-vec(0.2)), ang(), vec(255,0,0), "models/editor/axis_helper.mdl") holoParent(20, T) holoMaterial(20, "lights/white")
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

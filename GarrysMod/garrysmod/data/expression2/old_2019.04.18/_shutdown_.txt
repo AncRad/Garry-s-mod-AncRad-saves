@@ -1,0 +1,135 @@
+@name 
+@inputs 
+@outputs 
+@persist F:array E:entity Helper:table
+@persist [Way WayA WayB]:array
+@trigger 
+
+if(changed(0)) {
+    
+    ################{
+    #
+    #- helper
+    #
+    function entity helper_point(Point_n:string, [Point_p]:vector, [Point_s]:number) {
+        local StartHolo_e = Helper[Point_n + "/entity", entity]
+        if(!StartHolo_e) {
+            if(holoCanCreate()) {
+                local StartHolo_i = 0
+                StartHolo_i = Helper[Point_n + "/index" , number] = Helper["indexCounter", number] = max(Helper["indexCounter", number] + 1 ,2281448)
+                StartHolo_e = Helper[Point_n + "/entity", entity] = holoCreate(StartHolo_i, Point_p, vec(Point_s/6), ang(), vec(255), "models/editor/axis_helper.mdl")
+            } else {return noentity()}
+        } elseif(Point_p) {holoPos(Helper[Point_n + "/index", number], Point_p)}
+        return StartHolo_e
+    }
+    function entity helper_beam([Beam_n PointStart_n PointEnd_n]:string, [Helper_color]:vector, Width:number) {
+        local PointStart_e = Helper[PointStart_n + "/entity", entity]
+        local PointEnd_e   = Helper[PointEnd_n   + "/entity", entity]
+        if(PointStart_e & PointEnd_e & !Helper[Beam_n + "/beam/entity", entity]) {
+            local Helper_e = PointStart_e:drawBeam("trails/physbeam",PointStart_e:pos(),PointEnd_e:pos(),Helper_color,254,Width)
+            Helper_e:setBeamEndEnt(PointEnd_e)
+            Helper[Beam_n + "/beam/entity", entity] = Helper_e
+            return Helper_e
+        }
+        else {
+            return noentity()
+        }
+    }
+    #
+    ################}
+    
+    E = entity()
+    
+    findIncludeModel("models/sprops/rectangles/size_1/rect_3x3x3.mdl")
+    findInSphere(E:pos(),9e9)
+    findSortByDistance(vec(9e9))
+    F = findToArray()
+    
+}
+
+
+timer("",50)
+
+Shir = 12
+Count = F:count()
+Z = E:pos()[3]
+
+for(C=1,Count)
+{
+    local Pos = F:entity(C):pos():setZ(Z)
+    helper_point("C"+C,Pos,5)
+    
+    Way[C,vector] = Pos
+}
+
+
+for(C=1,Count-1)
+{
+    if(C==Count-1) {
+        WayA[C,vector]=WayA[C-1,vector]
+        WayB[C,vector]=WayB[C-1,vector]
+        break
+    }
+    local P1=Way[C,vector]
+    local P2=Way[C+1,vector]
+    
+    local V1=P2-P1
+    local V2=P3-P2
+    local V3=(V2-V1):normalized()
+    WayA[C,vector]=P2+V3*Shir/2
+    WayB[C,vector]=P2-V3*Shir/2
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

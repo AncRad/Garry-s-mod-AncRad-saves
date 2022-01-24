@@ -1,0 +1,328 @@
+@name Waaat_Its_a_bomb_remaster
+
+@inputs 
+@outputs 
+@persist Itialization
+
+#- bombs
+@persist [Bomb_list]:table [Bomb_noNameCounter]:number
+@persist [Walk_time Count]:number
+
+@trigger none
+
+
+
+switch(clkName()) {
+    default,
+        if(duped()) {reset()}
+        if(!Itialization & (first() | dupefinished())) {
+            #include "AddHolo_v01"
+            
+            function string entity:addBombModel([Bomb_n]:string, [Legs_width Legs_length]:number,[Legs_offset]:vector, [Bomb_T]:table) {
+                while(AddHolo:exists(Bomb_n) & Bomb_n) {
+                    Bomb_noNameCounter++
+                    Bomb_n = "noNameBomb"+Bomb_noNameCounter
+                }
+                
+                Legs_length/=2
+                local Scale = Legs_length/25
+                
+                local Mater1 = ""
+                local Color1 = vec(255)
+                
+                #addHolo(Bomb_n,vec(0,0,0),vec(1),ang(),vec(255),"models/props_phx/oildrum001_explosive.mdl","","") addHolo_INTO(This)
+                local Legs_n = Bomb_n+"/legs"
+                addHolo(Legs_n,Legs_offset,vec(),ang(),vec(),"cube","",Bomb_n) addHolo_INTO(This)
+                
+                local ToEnd = array()
+                for(C = 1,2) {
+                    local Leg_n = Legs_n+select(C,"/left","/right")
+                    
+                    local F = C-1
+                    local F_ = !F
+                    local Storona = C==1 ? 1 : -1
+                    
+                    local W = 2*Scale
+                    local H = 2.5*Scale
+                    local S = Legs_length+H*2
+                    local Offset = 0.095*W
+                    
+                    local Bone=0
+                    local Bone1 = Leg_n+"/bone1"
+                    local Bone2 = Leg_n+"/bone2"
+                    local Bone3 = Leg_n+"/bone3"
+                    addHolo(Bone1,vec(0,Legs_width * Storona,0),vec(0.4,0.4,Legs_length)*Bone,ang(),vec(150),"cube","",Legs_n) addHolo_clip(vec(),ang(90,0,0),0)
+                    addHolo(Bone2,vec(0,0,-Legs_length),vec(0.4,0.4,Legs_length)*Bone,ang(),vec(100),"cube","",Bone1) addHolo_clip(vec(),ang(90,0,0),0)
+                    addHolo(Bone3,vec(0,0,-Legs_length),vec(2,2,0.3)*Bone,ang(),vec(50),"cube","",Bone2)
+                    
+                    addHolo("",vec(0,-Offset*Storona,H-S/2),vec(S/72,W/12,S/72),ang(90,180*!F,0),Color1,"models/Mechanics/robotics/c2.mdl",Mater1,Bone1) ToEnd:pushString(AddHolo_lastName)
+                    addHolo("",vec(0,Offset*Storona,H-S/2),vec(S/72,W/12,S/72),ang(90,180*!F,0),Color1,"models/Mechanics/robotics/h2.mdl",Mater1,Bone2) ToEnd:pushString(AddHolo_lastName)
+                    addHolo("",vec(0,(Offset*2-5.56/2/72*S)*Storona,0)+vec(5.896,0,-11.927)/72*S,vec(S/72),ang(),Color1,"models/mechanics/articulating/foot_s.mdl",Mater1,Bone3) ToEnd:pushString(AddHolo_lastName)
+                }
+                foreach(C, Name:string = ToEnd) {AddHolo_queye:remove(invert(AddHolo_queye)[Name, number]) AddHolo_queye:pushString(Name)}
+                
+                
+                local Bomb_T = Bomb_T:merge(table(
+                     "name" = Bomb_n
+                    ,"legsWidth" = Legs_width
+                    ,"legsLength" = Legs_length*2
+                    ,"bomb_e" = This
+                ))
+                addHolo_callFunc("addBomb", Bomb_T)
+                return Bomb_n
+            }
+            
+            timer("spawner", 1)
+            timer("brain", 1)
+            timer("walk", 1) Walk_time = curtime()
+            addHolo_start()
+        }
+        function addBomb(Bomb_T:table) {
+            local Bomb_T = Bomb_T:clone()
+            local Bomb_n = Bomb_T["name", string]
+            local Legs_n = Bomb_n+"/legs"
+            local Legs_e = AddHolo[Legs_n+"/entity", entity]
+            
+            local Bomb_e = Bomb_T["bomb_e", entity]
+            Bomb_e:removeOnDelete(Legs_e)
+            Bomb_e:propFreeze(0)
+            
+            local Leg1_bone1_i = AddHolo[Legs_n+"/left" +"/bone1", number]
+            local Leg1_bone2_i = AddHolo[Legs_n+"/left" +"/bone2", number]
+            local Leg1_bone3_i = AddHolo[Legs_n+"/left" +"/bone3", number]
+            local Leg2_bone1_i = AddHolo[Legs_n+"/right"+"/bone1", number]
+            local Leg2_bone2_i = AddHolo[Legs_n+"/right"+"/bone2", number]
+            local Leg2_bone3_i = AddHolo[Legs_n+"/right"+"/bone3", number]
+            if(Leg1_bone1_i==Leg1_bone2_i-1&
+               Leg1_bone1_i==Leg1_bone3_i-2&
+               Leg1_bone1_i==Leg2_bone1_i-3&
+               Leg1_bone1_i==Leg2_bone2_i-4&
+               Leg1_bone1_i==Leg2_bone3_i-5)
+            {
+                Bomb_T["legs_index", number] = Leg1_bone1_i-1
+            }
+            Bomb_list[Bomb_n, table] = Bomb_T:merge(table(
+                 "legs_e" = Legs_e
+                #,"legs_e" = Legs_e
+            ))
+        }
+    break
+    case "spawner",
+        
+        #propSpawn("models/props_junk/glassjug01.mdl",entity():pos()+vec(0,0,10),ang(),1):addBombModel("glassjug",3.05,20,vec(0,0,-5), table())
+        #local Prop = propSpawn("models/props_junk/watermelon01.mdl",entity():pos()+vec(0,0,10),ang(),1)
+        #Prop:addBombModel("glassjug",Prop:boxSize()[2]/2,20,Prop:boxCenter(), table())
+        #local Prop = propSpawn("models/props_combine/breenbust.mdl",entity():pos()+vec(0,0,10),ang(),1)
+        #Prop:addBombModel("glassjug",Prop:boxSize()[2]/2,Prop:boxSize()[3]*0.9,Prop:boxCenter(), table())
+        local Prop = propSpawn("models/props_c17/oildrum001_explosive.mdl",entity():pos()+vec(0,0,10),ang(),1)
+        Prop:addBombModel("oildrum",Prop:boxSize()[2]/2,Prop:boxSize()[3]*1.2,Prop:boxCenter()+vec(0,0,10), table())
+        
+        #[
+        if(Count<15 & 0) {
+            timer("spawner",50)
+            if(propCanSpawn()) {
+                Count++
+                if(Count < 5) {
+                    propSpawn("models/props_junk/propane_tank001a.mdl"   ,entity():pos()+vec(Count*20,  0,40),ang(),1):addBombModel("a"+Count, 5.3 , 40,vec(0,0,-5), table())
+                }
+                elseif(Count < 10) {
+                    propSpawn("models/props_c17/oildrum001_explosive.mdl",entity():pos()+vec((Count-5)*40, 50,40),ang(),1):addBombModel("b"+Count, 16  , 50,vec(0,0, 8), table())
+                }
+                elseif(Count < 15) {
+                    propSpawn("models/props_junk/gascan001a.mdl"         ,entity():pos()+vec((Count-10)*40,100,40),ang(),1):addBombModel("c"+Count, 10.4, 40,vec(0,0,-5), table())
+                }
+            }
+        }
+        ]#
+        
+    break
+        #
+        #- bomb
+        #
+    case "brain",
+        
+    break
+    case "walk",
+            timer("walk", 50)
+        local Walk_lastTime = Walk_time
+        Walk_time = curtime()
+        local Interval = Walk_time-Walk_lastTime
+        
+        
+        
+        foreach(Bomb_n, Bomb_T:table = Bomb_list) {
+            local Bomb_e = Bomb_T["bomb_e", entity]
+            if(!Bomb_e) {
+                Bomb_list:remove(Bomb_n)
+                continue
+            }
+            local LegsLength = Bomb_T["legsLength", number]
+            local LegsRangerOffset = LegsLength/10
+            
+            local Legs_n = Bomb_n+"/legs"
+            local Legs_i = Bomb_T["legs_index", number]
+            local Legs_e = AddHolo[Legs_n+"/entity", entity]
+            
+            local D1=D2=0
+            for(C = 1,2) {
+                local F = C-1
+                local Leg_n = Legs_n+select(C,"/left","/right")
+                
+                local Bone1_i = Legs_i +1+F*3
+                local Bone2_i = Bone1_i+1
+                local Bone3_i = Bone2_i+1
+                
+                local Bone1_e = holoEntity(Bone1_i)
+                local Bone2_e = holoEntity(Bone2_i)
+                
+                rangerFilter(Bomb_e)
+                local R = rangerOffsetHull(LegsLength+LegsRangerOffset,Bone1_e:pos(),-Legs_e:up(),vec(LegsLength/15):setZ(0.2))
+                local R_d = R:distance()-LegsRangerOffset
+                local Ang = clamp(acos(R_d/LegsLength),0,82)
+                holoAng(Bone1_i,Legs_e:toWorld(ang(Ang,0,0)))
+                holoAng(Bone2_i,Legs_e:toWorld(ang(-Ang,0,0)))
+                local Bone3_pitch = 0
+                if(R:hit()) {
+                    Bone3_pitch = Bone2_e:toLocal(R:hitNormal():toAngle())[1]+90
+                    if(C==1) {D1=R_d} else {D2=R_d}
+                }
+                holoAng(Bone3_i,Bone2_e:toWorld(ang(Bone3_pitch,0,0)))
+            }
+            if(D1&D2) {
+                local A = (-Bomb_e:angVel()-Bomb_e:angles()*ang(1,0,1)*10)*ang(1,0.5,1)*5
+                Bomb_e:applyAngForce(A*Bomb_e:mass()*Interval)
+                
+                local Dist = min(D1,D2)/LegsLength
+                local LastDist = Bomb_T["lastDist", number]
+                local Dist_V = Dist-LastDist
+                Bomb_T["lastDist", number] = Dist
+                local HC = 1+(0.8-Dist)-clamp(Dist_V*5,-0.5,0.5)
+                
+                local V = vec(0,0,Bomb_e:up()[3]*HC*600)-Bomb_e:vel():setZ(0)*10
+                Bomb_e:applyForce(V*Bomb_e:mass()*Interval)
+            }
+        }
+    break
+    case "AddHolo", addHolo() break
+}
+
+setName("Waaat? It's a bomb! (remaster)\nOPS: "+ops()+"\nCPU: "+round(cpuUsage()*1e6))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,183 @@
+@name Waaat_Its_a_bomb_remaster
+
+@inputs 
+@outputs 
+@persist Itialization
+
+@trigger none
+
+
+
+switch(clkName()) {
+    default,
+        
+        if(duped()) {reset()}
+        if(!Itialization & (first() | dupefinished())) {
+            #include "AddHolo_v01"
+            
+            function addBombModel() {
+                local Size = 1
+                local Width = 16 *Size
+                local Length = 25 *Size
+                
+                local Mater1 = ""
+                local Color1 = vec(255)
+                
+                addHolo("base",vec(0,0,10),vec(1),ang(),vec(255),"models/props_phx/oildrum001_explosive.mdl","","") addHolo_INTO(entity())
+                addHolo("legs",vec(0,0,3),vec(),ang(),vec(),"cube","","base")
+                
+                for(C = 1,2) {
+                    local F = C-1
+                    local F_ = !F
+                    local Storona = C==1 ? 1 : -1
+                    local Width = Width * Storona
+                    
+                    local Bone1 = C+"leg.bone1"
+                    local Bone2 = C+"leg.bone2"
+                    local Bone3 = C+"leg.bone3"
+                    addHolo(Bone1,vec(0,Width,0),vec(0.4,0.4,Length),ang(),vec(150),"cube","","legs")
+                    addHolo_clip(vec(),ang(90,0,0),0)
+                    addHolo(Bone2,vec(0,0,-Length),vec(0.4,0.4,Length),ang(),vec(100),"cube","",Bone1)
+                    addHolo_clip(vec(),ang(90,0,0),0)
+                    addHolo(Bone3,vec(0,0,-Length),vec(6,2,0.3),ang(),vec(50),"cube","",Bone2)
+                }
+            }
+            
+            timer("spawner", 1)
+            timer("brain", 1)
+            addHolo_start()
+            
+            addBombModel()
+        }
+    break
+    case "spawner",
+        
+    break
+    case "brain",
+        
+        
+        
+    break
+    case "AddHolo", addHolo() break
+}
+
+setName("Waaat? It's a bomb! remaster\nOPS: "+ops())
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

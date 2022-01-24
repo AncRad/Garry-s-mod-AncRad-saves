@@ -1,0 +1,207 @@
+@name Phys_sphere___fail
+
+@inputs 
+@outputs Debug:string
+@persist [E O]:entity [Q]:table [Prop_a]:array RotationAngle
+
+
+
+if(changed(0)) {
+    
+    
+    E = entity()
+    O = owner()
+    
+    
+    timer("", 1)
+}
+
+
+
+if(clk("")) {
+        timer("", 50)
+    
+    if(changed(0)) {
+        
+        Q["lastCurtime", number] = curtime()-0.015625
+        RotationAngle = 0
+    }
+    
+    local LastCurtime = Q["lastCurtime", number]
+    local Curtime = curtime()
+    Q["lastCurtime", number] = Curtime
+    local Interval = Curtime - LastCurtime
+    local Loop = Interval / 0.015625
+    
+    
+    
+    Debug="#####################"
+    
+    local E_p = E:pos()
+    #RotationAngle+= 10*Interval
+    
+    findIncludePlayerProps(O)
+    findInSphere(E:pos(), 52.5*20*10)
+    findClipFromEntities(Prop_a)
+    findClipToClass("prop")
+    findClipToModel("models/props_phx/construct/metal_plate1.mdl")
+    foreach(C, Find_e:entity = findToArray()) {
+        
+        if(Find_e:isPlayerHolding() | Find_e:isFrozen()) {
+            continue
+        }
+        local Find_ang = 180+angnorm(vec2(Find_e:pos()-E_p):rotate(-RotationAngle):toAngle()-180)
+        Prop_a:insertEntity(clamp(round(Find_ang/360 * (Prop_a:count()+1)),1,Prop_a:count()), Find_e)
+        
+        #RotationAngle+= angnorm(vec2(Find_e:pos()-E_p):toAngle()) / max(Prop_a:count(),1)
+    }
+    
+    
+    local Prop_c = Prop_a:count()
+    local C = 0
+    while(C < Prop_c) {
+        C++
+        Prop_e = Prop_a[C, entity]
+        
+        if(!Prop_e | Prop_e:isPlayerHolding()) {
+            RotationAngle+= cos(180c/Prop_c*C)*180/(Prop_c-1)
+            Prop_a:remove(C)
+            C--
+            Prop_c--
+            continue
+        }
+        
+        Prop_e:propFreeze(0)
+        
+        local Prop_V = Prop_e:vel()
+        local Prop_P = Prop_e:boxCenterW()
+        local Prop_TP = E_p+vec(52.5*5+0*C,0,0):rotate(0,360/Prop_c*C+RotationAngle,0) #+RotationAngle*0
+        local Acc = Prop_TP-Prop_P
+        local Acc = vec(0,0,9) + Acc*3 - Prop_V / 4
+        Prop_e:applyForce(Acc * Prop_e:mass() * Loop)
+    }
+    
+    
+    
+    Debug+= "\nProp_c: " + Prop_c
+}
+
+
+
+
+
+
+setName("Phys_sphere\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1e6) + "\n")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

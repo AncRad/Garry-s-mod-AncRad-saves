@@ -1,0 +1,43 @@
+@name Turret_02_001_model
+
+@inputs 
+@outputs 
+
+
+@persist [T]:table
+
+
+#include "AddHolo"
+
+
+
+if(changed(0)) {
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName("Turret_model\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1e6))

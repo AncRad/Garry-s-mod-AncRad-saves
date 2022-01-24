@@ -1,0 +1,980 @@
+@name EGPS
+
+@inputs 
+@outputs 
+@persist [EGPS]:table
+
+
+
+if(changed(0)) {
+    
+    #EGPS = gTable(owner():steamElement_i() + "/EGPS")
+    
+    function vector2 v([X Y]:number) {
+        return vec2(X,Y)
+    }
+    function vector2 v(XY:number) {
+        return vec2(XY)
+    }
+    function vector2 v() {
+        return vec2()
+    }
+    function vector v([X Y Z]:number) {
+        return vec(X,Y,Z)
+    }
+    function vector4 v([R G B A]:number) {
+        return vec4(R,G,B,A)
+    }
+    function vector4 v([RG]:vector2, [B A]:number) {
+        return vec4(RG[1],RG[2],B,A)
+    }
+    function vector4 v([R G]:number, [BA]:vector2) {
+        return vec4(R,G,BA[1],BA[2])
+    }
+    function vector4 v([V1 V2]:vector2) {
+        return vec4(V1, V2)
+    }
+    
+    function vector2 s([X Y]:number) {
+        return vec2(X,Y) * EGPS["egp/scrResolution", vector2]
+    }
+    function vector2 s(XY:number) {
+        return vec2(XY) * EGPS["egp/scrResolution", vector2]
+    }
+    
+    function string toText000(Number, MaxNumber) {
+        local Text = ""
+        for(C = 1, MaxNumber - (Number + ""):length()) {Text = Text + "  "}
+        Text = Number + Text
+        
+        return Text
+    }
+    function number array:getIndex([Value Spacer]:string) {
+        
+        local Concat = This:concat(Spacer)
+        local Find = (Spacer + Concat + Spacer):find(Spacer + Value + Spacer)
+        if(Find) {
+            return Concat:left(Find):explode(Spacer):count()
+        }
+        else {
+            return 0
+        }
+    }
+    function number array:getIndex(Value:string) {
+        return This:getIndex(Value, "\n#\n")
+    }
+    
+    
+    
+    function egpSelect(EGP_w:wirelink) {
+        local EGP_e = EGP_w:entity()
+        local EGP_t = EGP_e:type()
+        EGPS["egp/wirelink", wirelink] = EGP_w
+        if(EGP_t == "gmod_wire_egp_hud") {
+            
+            EGPS["egp/scrResolution", vector2] = egpScrSize(owner())
+        }
+        else {
+            EGPS["egp/scrResolution", vector2] = v(512)
+        }
+    }
+    function egpClear() {
+        EGPS["egp/wirelink", wirelink]:egpClear()
+    }
+    function number giveFreeIndex() {
+        local Index = EGPS["freeIndexes", array][1, number]
+        if(Index) {
+            EGPS["freeIndexes", array]:remove(1)
+        }
+        elseif(EGPS["elementCounter", number] < egpMaxObjects()) {
+            Index = EGPS["elementCounter", number] = EGPS["elementCounter", number] + 1
+            
+            if(!Index & (curtime() - EGPS["printTime", number] >= 2)) {
+                EGPS["printTime", number] = curtime()
+                printColor(array(
+                    vec(255,120,  0), "[EGPS] ",
+                    vec(255, 30, 30), "Возникла проблема. ",
+                    vec(255,255,255), "Указана причина: достигнут передел колличества элементов этого EGP."
+                ))
+            }
+        }
+        return Index
+    }
+    
+    function number egpGetElement_i(Element_n:string) {
+        return EGPS[Element_n + "/index", number]
+    }
+    
+    function number egpHasObject(Element_n:string) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        return EGP_w:egpHasObject(EGPS[Element_n + "/index", number])
+    }
+    function egpRemoveElement(Element_i:number) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        
+        local Element_n = EGPS[Element_i + "/name", string]
+        EGPS:remove(Element_n + "/index")
+        
+        local Cells_a = array("/name", "/type", "/groups"):add(EGPS[Element_i + "/dataCellsList", array])
+        foreach(C, Cell_n:string = Cells_a) {
+            EGPS:remove(Element_i + Cell_n)
+        }
+        
+        EGPS["freeIndexes", array] = EGPS["freeIndexes", array]:add(array(Element_i))
+        
+        EGP_w:egpRemove(Element_i)
+    }
+    function number egpRemoveElement(Element_n:string) {
+        local Element_i = EGPS[Element_n + "/index", number]
+        return Element_i
+        egpRemoveElement(Element_i)
+    }
+    
+    function egpDrawTopLeft(Enable:number) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        
+        EGP_w:egpDrawTopLeft(Enable)
+    }
+    
+    
+    
+    #########
+    function egpOpenGroup(Group_n:string) {
+        local OpenGroups = EGPS["openGroups", array]
+        if(!OpenGroups:getIndex(Group_n)) {
+            EGPS["openGroups", array] = EGPS["openGroups", array]:add(array(Group_n))
+        }
+    }
+    function egpCloseGroup(Group_n:string) {
+        local OpenGroups = EGPS["openGroups", array]
+        local Group_C = OpenGroups:getIndex(Group_n)
+        if(Group_C) {
+            EGPS["openGroups", array]:remove(Group_C)
+        }
+    }
+    function array egpGetGroups(Element_n:string) {
+        local Element_i = EGPS[Element_n + "/index", number]
+        return EGPS[Element_i + "/groups", array]
+    }
+    function array egpGetGroupElements(Group_n:string) {
+        return EGPS[Group_n + "/elementList", array]
+    }
+    function egpClearGroup(Group_n:string) {
+        local Group_a = EGPS[Group_n + "/elementList", array]
+        foreach(C, Element_i:number = Group_a) {
+            local Element_C = EGPS[Element_i + "/groups" , array]:getIndex(Element_i + "")
+            if(Element_C) {
+                EGPS[Element_i + "/groups" , array]:remove(Element_C)
+            }
+        }
+        EGPS[Group_n + "/elementList", array] = array()
+    }
+    function egpRemoveGroup(Group_n:string) {
+        local Group_a = EGPS[Group_n + "/elementList", array]
+        foreach(C, Element_i:number = Group_a) {
+            foreach(C2, Group2_a:string = EGPS[Element_i + "/groups", array]) {
+                if(Group2_a == Group_n) {continue}
+                local Element_C = EGPS[Group2_a + "/elementList", array]:getIndex(Element_i + "")
+                if(Element_C) {
+                    EGPS[Group2_a + "/elementList", array]:remove(Element_C)
+                }
+            }
+            egpRemoveElement(Element_i)
+        }
+        EGPS[Group_n + "/elementList", array] = array()
+    }
+    #########
+    
+    
+    function number egpAddBox(Element_n:string, [Size Pos]:vector2, Type:string) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        if(!Element_i) {
+            Element_i = giveFreeIndex()
+        }
+        if(Element_i) {
+            EGPS[Element_n + "/index", number] = EGPS["lastIndex", number] = Element_i
+            EGPS[Element_i + "/name" , string] = EGPS["lastName", string] = Element_n
+            EGPS[Element_i + "/type", string] = "box"
+            
+            
+            foreach(C, Group_n:string = EGPS["openGroups", array]) {
+                if(!EGPS[Group_n + "/elementList", array]:getIndex(Element_i + "")) {
+                    EGPS[Group_n + "/elementList", array] = EGPS[Group_n + "/elementList", array]:add(array(Element_i))
+                    EGPS[Element_i + "/groups" , array] = EGPS[Element_i + "/groups" , array]:add(array(Group_n))
+                }
+            }
+            switch(Type) {
+                default  , EGP_w:egpBox(              Element_i, Pos, Size) break
+                case "r" , EGP_w:egpRoundedBox(       Element_i, Pos, Size) break
+                case "o" , EGP_w:egpBoxOutline(       Element_i, Pos, Size) break
+                case "ro", EGP_w:egpRoundedBoxOutline(Element_i, Pos, Size) break
+            }
+        }
+        return Element_i
+    }
+    function number egpAddBox(Element_n:string, [Size Pos]:vector2) {
+        return egpAddBox(Element_n, Size, Pos, "")
+    }
+    
+    function number egpAddCircle(Element_n:string, [Size Pos]:vector2, Type:string) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        if(!Element_i) {
+            Element_i = giveFreeIndex()
+        }
+        if(Element_i) {
+            EGPS[Element_n + "/index", number] = EGPS["lastIndex", number] = Element_i
+            EGPS[Element_i + "/name" , string] = EGPS["lastName" , string] = Element_n
+            EGPS[Element_i + "/type", string] = "circle"
+            
+            
+            foreach(C, Group_n:string = EGPS["openGroups", array]) {
+                if(!EGPS[Group_n + "/elementList", array]:getIndex(Element_i + "")) {
+                    EGPS[Group_n + "/elementList", array] = EGPS[Group_n + "/elementList", array]:add(array(Element_i))
+                    EGPS[Element_i + "/groups" , array] = EGPS[Element_i + "/groups" , array]:add(array(Group_n))
+                }
+            }
+            switch(Type) {
+                case "o", EGP_w:egpCircleOutline(Element_i, Pos, Size) break
+                default , EGP_w:egpCircle(       Element_i, Pos, Size) break
+            }
+        }
+        return Element_i
+    }
+    function number egpAddCircle(Element_n:string, [Size Pos]:vector2) {
+        return egpAddCircle(Element_n, Size, Pos, "")
+    }
+    
+    function number egpAddTriangle(Element_n:string, [Pos1 Pos2 Pos3]:vector2, Type:string) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        if(!Element_i) {
+            Element_i = giveFreeIndex()
+        }
+        if(Element_i) {
+            EGPS[Element_n + "/index", number] = EGPS["lastIndex", number] = Element_i
+            EGPS[Element_i + "/name" , string] = EGPS["lastName" , string] = Element_n
+            EGPS[Element_i + "/type", string] = "triangle"
+            
+            
+            foreach(C, Group_n:string = EGPS["openGroups", array]) {
+                if(!EGPS[Group_n + "/elementList", array]:getIndex(Element_i + "")) {
+                    EGPS[Group_n + "/elementList", array] = EGPS[Group_n + "/elementList", array]:add(array(Element_i))
+                    EGPS[Element_i + "/groups" , array] = EGPS[Element_i + "/groups" , array]:add(array(Group_n))
+                }
+            }
+            switch(Type) {
+                case "oc" , EGP_w:egpTriangleOutline(Element_i, Pos1, Pos2, Pos3) break
+                default   , EGP_w:egpTriangle(       Element_i, Pos1, Pos2, Pos3) break
+            }
+        }
+        return Element_i
+    }
+    function number egpAddTriangle(Element_n:string, [Pos1 Pos2 Pos3]:vector2) {
+        return egpAddTriangle(Element_n, Pos1, Pos2, Pos3, "")
+    }
+    
+    function number egpAddPoly(Element_n:string, PosList:array, Type:string) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        if(!Element_i) {
+            Element_i = giveFreeIndex()
+        }
+        if(Element_i) {
+            EGPS[Element_n + "/index", number] = EGPS["lastIndex", number] = Element_i
+            EGPS[Element_i + "/name" , string] = EGPS["lastName" , string] = Element_n
+            EGPS[Element_i + "/type", string] = "poly"
+            
+            
+            foreach(C, Group_n:string = EGPS["openGroups", array]) {
+                if(!EGPS[Group_n + "/elementList", array]:getIndex(Element_i + "")) {
+                    EGPS[Group_n + "/elementList", array] = EGPS[Group_n + "/elementList", array]:add(array(Element_i))
+                    EGPS[Element_i + "/groups" , array] = EGPS[Element_i + "/groups" , array]:add(array(Group_n))
+                }
+            }
+            switch(Type) {
+                case "o", EGP_w:egpPolyOutline(Element_i, PosList) break
+                default , EGP_w:egpPoly(        Element_i, PosList) break
+            }
+        }
+        return Element_i
+    }
+    function number egpAddPoly(Element_n:string, PosList:array) {
+        return egpAddPoly(Element_n, PosList, "")
+    }
+    
+    
+    function number egpAddLine(Element_n:string, [Pos1 Pos2]:vector2) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        if(!Element_i) {
+            Element_i = giveFreeIndex()
+        }
+        if(Element_i) {
+            EGPS[Element_n + "/index", number] = EGPS["lastIndex", number] = Element_i
+            EGPS[Element_i + "/name" , string] = EGPS["lastName" , string] = Element_n
+            EGPS[Element_i + "/type", string] = "line"
+            
+            
+            foreach(C, Group_n:string = EGPS["openGroups", array]) {
+
+                if(!EGPS[Group_n + "/elementList", array]:getIndex(Element_i + "")) {
+                    EGPS[Group_n + "/elementList", array] =EGPS[Group_n + "/elementList", array]:add(array(Element_i))
+                    EGPS[Element_i + "/groups" , array] = EGPS[Element_i + "/groups" , array]:add(array(Group_n))
+                }
+            }
+            EGP_w:egpLine(Element_i, Pos1, Pos2)
+        }
+        return Element_i
+    }
+    
+    function number egpAddLineStrip(Element_n:string, PosList:array) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        if(!Element_i) {
+            Element_i = giveFreeIndex()
+        }
+        if(Element_i) {
+            EGPS[Element_n + "/index", number] = EGPS["lastIndex", number] = Element_i
+            EGPS[Element_i + "/name" , string] = EGPS["lastName" , string] = Element_n
+            EGPS[Element_i + "/type", string] = "lineStrip"
+            
+            
+            foreach(C, Group_n:string = EGPS["openGroups", array]) {
+
+                if(!EGPS[Group_n + "/elementList", array]:getIndex(Element_i + "")) {
+                    EGPS[Group_n + "/elementList", array] =EGPS[Group_n + "/elementList", array]:add(array(Element_i))
+                    EGPS[Element_i + "/groups" , array] = EGPS[Element_i + "/groups" , array]:add(array(Group_n))
+                }
+            }
+            EGP_w:egpLineStrip(Element_i, PosList)
+        }
+        return Element_i
+    }
+    
+    
+    function number egpAddWedge(Element_n:string, [Size Pos]:vector2, Type:string) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        if(!Element_i) {
+            Element_i = giveFreeIndex()
+        }
+        if(Element_i) {
+            EGPS[Element_n + "/index", number] = EGPS["lastIndex", number] = Element_i
+            EGPS[Element_i + "/name" , string] = EGPS["lastName" , string] = Element_n
+            EGPS[Element_i + "/type", string] = "wedge"
+            
+            
+            foreach(C, Group_n:string = EGPS["openGroups", array]) {
+
+                if(!EGPS[Group_n + "/elementList", array]:getIndex(Element_i + "")) {
+                    EGPS[Group_n + "/elementList", array] =EGPS[Group_n + "/elementList", array]:add(array(Element_i))
+                    EGPS[Element_i + "/groups" , array] = EGPS[Element_i + "/groups" , array]:add(array(Group_n))
+                }
+            }
+            switch(Type) {
+                case "o", EGP_w:egpWedgeOutline(Element_i, Pos, Size) break
+                default , EGP_w:egpWedge(        Element_i, Pos, Size) break
+            }
+        }
+        return Element_i
+    }
+    function number egpAddWedge(Element_n:string, [Size Pos]:vector2) {
+        return egpAddWedge(Element_n, Size, Pos, "")
+    }
+    
+    function number egpAddText(Element_n:string, Text:string, Pos:vector2) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        if(!Element_i) {
+            Element_i = giveFreeIndex()
+        }
+        if(Element_i) {
+            EGPS[Element_n + "/index", number] = EGPS["lastIndex", number] = Element_i
+            EGPS[Element_i + "/name" , string] = EGPS["lastName" , string] = Element_n
+            EGPS[Element_i + "/type", string] = "text"
+            EGPS[Element_n + "/sizeNum", number] = 20
+            #EGPS[Element_i + "/dataCellsList", array] = EGPS[Element_i + "/dataCellsList", array]:add(array(Element_n + "/sizeNum"))
+            
+            
+            foreach(C, Group_n:string = EGPS["openGroups", array]) {
+
+                if(!EGPS[Group_n + "/elementList", array]:getIndex(Element_i + "")) {
+                    EGPS[Group_n + "/elementList", array] =EGPS[Group_n + "/elementList", array]:add(array(Element_i))
+                    EGPS[Element_i + "/groups" , array] = EGPS[Element_i + "/groups" , array]:add(array(Group_n))
+                }
+            }
+            EGP_w:egpText(Element_i, Text, Pos)
+            EGP_w:egpSize(Element_i, 20)
+        }
+        return Element_i
+    }
+    
+    function number egpAddTextLayout(Element_n:string, Text:string, [Size Pos]:vector2) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        if(!Element_i) {
+            Element_i = giveFreeIndex()
+        }
+        if(Element_i) {
+            EGPS[Element_n + "/index", number] = EGPS["lastIndex", number] = Element_i
+            EGPS[Element_i + "/name" , string] = EGPS["lastName" , string] = Element_n
+            EGPS[Element_i + "/type", string] = "textLayout"
+            EGPS[Element_n + "/sizeNum", number] = 20
+            #EGPS[Element_i + "/dataCellsList", array] = EGPS[Element_i + "/dataCellsList", array]:add(array(Element_n + "/sizeNum"))
+            
+            
+            foreach(C, Group_n:string = EGPS["openGroups", array]) {
+
+                if(!EGPS[Group_n + "/elementList", array]:getIndex(Element_i + "")) {
+                    EGPS[Group_n + "/elementList", array] =EGPS[Group_n + "/elementList", array]:add(array(Element_i))
+                    EGPS[Element_i + "/groups" , array] = EGPS[Element_i + "/groups" , array]:add(array(Group_n))
+                }
+            }
+            EGP_w:egpTextLayout(Element_i, Text, Pos, Size)
+            EGP_w:egpSize(Element_i, 20)
+        }
+        return Element_i
+    }
+    
+    function number egpAdd3DTracker(Element_n:string, Vector:vector) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        if(!Element_i) {
+            Element_i = giveFreeIndex()
+        }
+        if(Element_i) {
+            EGPS[Element_n + "/index", number] = EGPS["lastIndex", number] = Element_i
+            EGPS[Element_i + "/name" , string] = EGPS["lastName" , string] = Element_n
+            EGPS[Element_i + "/type", string] = "3DTracker"
+            
+            
+            foreach(C, Group_n:string = EGPS["openGroups", array]) {
+
+                if(!EGPS[Group_n + "/elementList", array]:getIndex(Element_i + "")) {
+                    EGPS[Group_n + "/elementList", array] =EGPS[Group_n + "/elementList", array]:add(array(Element_i))
+                    EGPS[Element_i + "/groups" , array] = EGPS[Element_i + "/groups" , array]:add(array(Group_n))
+                }
+            }
+            EGP_w:egp3DTracker(Element_i, Vector)
+        }
+        return Element_i
+    }
+    
+    function number egpAddVertices(Element_n:string, Array:array) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        if(!Element_i) {
+            Element_i = giveFreeIndex()
+        }
+        if(Element_i) {
+            EGPS[Element_n + "/index", number] = EGPS["lastIndex", number] = Element_i
+            EGPS[Element_i + "/name" , string] = EGPS["lastName" , string] = Element_n
+            EGPS[Element_i + "/type", string] = "vertices"
+            
+            
+            foreach(C, Group_n:string = EGPS["openGroups", array]) {
+
+                if(!EGPS[Group_n + "/elementList", array]:getIndex(Element_i + "")) {
+                    EGPS[Group_n + "/elementList", array] =EGPS[Group_n + "/elementList", array]:add(array(Element_i))
+                    EGPS[Element_i + "/groups" , array] = EGPS[Element_i + "/groups" , array]:add(array(Group_n))
+                }
+            }
+            EGP_w:egpAddVertices(Element_i, Array)
+        }
+        return Element_i
+    }
+    #[
+    wirelink:egpBox(number index,vector2 pos,vector2 size)
+    wirelink:egpBoxOutline(number index,vector2 pos,vector2 size)
+    wirelink:egpRoundedBox(number index,vector2 pos,vector2 size)
+    wirelink:egpRoundedBoxOutline(number index,vector2 pos,vector2 size)
+    
+    wirelink:egpCircle(number index,vector2 pos,vector2 size)
+    wirelink:egpCircleOutline(number index,vector2 pos,vector2 size)
+    
+    wirelink:egpTriangle(number index,vector2 v1,vector2 v2,vector2 v3)
+    wirelink:egpTriangleOutline(number index,vector2 v1,vector2 v2,vector2 v3)
+    
+    wirelink:egpPoly(number index,...)
+    wirelink:egpPoly(number index,array args)
+    wirelink:egpPolyOutline(number index,...)
+    wirelink:egpPolyOutline(number index,array args)
+    
+    wirelink:egpLine(number index,vector2 pos1,vector2 pos2)
+    wirelink:egpLineStrip(number index,array args)
+    wirelink:egpLineStrip(number index,...)
+    
+    wirelink:egpWedge(number index,vector2 pos,vector2 size)
+    wirelink:egpWedgeOutline(number index,vector2 pos,vector2 size)
+    
+    wirelink:egpText(number index,string text,vector2 pos)
+    wirelink:egpTextLayout(number index,string text,vector2 pos,vector2 size)
+    
+    wirelink:egpAddVertices(number index,array args)
+    ]#
+    
+    function egpSetParent([Element_n1 Element_n2]:string) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i1 = EGPS[Element_n1 + "/index", number]
+        local Element_i2 = EGPS[Element_n2 + "/index", number]
+        
+        if(Element_i1 & Element_i2) {
+            EGP_w:egpParent(Element_i1, Element_i2)
+        }
+        else {
+            #error
+            print("EGP's error: setParent \"" + Element_n1 + "\" " + Element_i1 + " and \"" + Element_n2 + "\" " + Element_i2)
+        }
+    }
+    function egpSetParent(Element_n2:string) {
+        local Element_n1 = EGPS["lastName", string]
+        egpSetParent(Element_n1, Element_n2)
+    }
+    
+    
+    function egpSetPos(Element_n:string, Pos:vector2) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        
+        if(Element_i) {
+            EGP_w:egpPos(Element_i, Pos)
+        }
+        else {
+            print("EGP's error: egpSetPos \"" + Element_n + "\"  " + Element_i)
+        }
+    }
+    function egpSetPos(Pos:vector2) {
+        local Element_n = EGPS["lastName", string]
+        egpSetPos(Element_n, Pos)
+    }
+    
+    function egpSetAng(Element_n:string, Ang:number) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        
+        EGP_w:egpAngle(Element_i, Ang)
+    }
+    function egpSetAng(Ang:number) {
+        local Element_n = EGPS["lastName", string]
+        egpSetAng(Element_n, Ang)
+    }
+    
+    function egpSetSize(Element_n:string, Size:number) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        
+        EGPS[Element_n + "/sizeNum", number] = Size
+        
+        EGP_w:egpSize(Element_i, Size)
+    }
+    function egpSetSize(Size:number) {
+        egpSetSize(EGPS["lastName", string], Size)
+    }
+    function egpSetSize(Element_n:string, Size:vector2) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        
+        EGP_w:egpSize(Element_i, Size)
+    }
+    function egpSetSize(Size:vector2) {
+        egpSetSize(EGPS["lastName", string], Size)
+    }
+    
+    
+    function egpSetMaterial([Element_n Material]:string) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        
+        EGP_w:egpMaterial(Element_i, Material)
+    }
+    function egpSetMaterial(Material:string) {
+        egpSetMaterial(EGPS["lastName", string], Material)
+    }
+    
+    function egpSetColor(Element_n:string, Color:vector) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        
+        EGP_w:egpColor(Element_i, Color)
+    }
+    function egpSetColor(Color:vector) {
+        egpSetColor(EGPS["lastName" , string], Color)
+    }
+    function egpSetColor(Element_n:string, [R G B]) {
+        egpSetColor(Element_n, vec(R,G,B))
+    }
+    function egpSetColor([R G B]) {
+        egpSetColor(EGPS["lastName", string], vec(R, G, B))
+    }
+    function egpSetColor(Element_n:string, RGB) {
+        egpSetColor(Element_n, vec(RGB))
+    }
+    function egpSetColor(RGB) {
+        egpSetColor(EGPS["lastName", string], vec(RGB))
+    }
+    function egpSetColor(Element_n:string) {
+        egpSetColor(Element_n, vec())
+    }
+    function egpSetColor() {
+        egpSetColor(EGPS["lastName", string], vec())
+    }
+    
+    function egpSetAlpha(Element_n:string, Alpha:number) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        
+        EGP_w:egpAlpha(Element_i, Alpha)
+    }
+    function egpSetAlpha(Alpha:number) {
+        egpSetAlpha(EGPS["lastName", string], Alpha)
+    }
+    function egpSetAlpha(Element_n:string) {
+        egpSetAlpha(Element_n, 0)
+    }
+    function egpSetAlpha() {
+        egpSetAlpha(EGPS["lastName", string], 0)
+    }
+    
+    
+    function egpSetColor(Element_n:string, [R G B A]) {
+        egpSetColor(Element_n, vec(R,G,B))
+        egpSetAlpha(Element_n, A)
+    }
+    function egpSetColor([R G B A]) {
+        local Element_n = EGPS["lastName", string]
+        egpSetColor(Element_n, vec(R,G,B))
+        egpSetAlpha(Element_n, A)
+    }
+    function egpSetColor(Element_n:string, [RGB A]:number) {
+        egpSetColor(Element_n, RGB)
+        egpSetAlpha(Element_n, A)
+    }
+    function egpSetColor([RGB A]:number) {
+        local Element_n = EGPS["lastName", string]
+        egpSetColor(Element_n, RGB)
+        egpSetAlpha(Element_n, A)
+    }
+    function egpSetColor(Element_n:string, RGB:vector, A:number) {
+        egpSetColor(Element_n, RGB)
+        egpSetAlpha(Element_n, A)
+    }
+    function egpSetColor(RGB:vector, A:number) {
+        local Element_n = EGPS["lastName", string]
+        egpSetColor(Element_n, RGB)
+        egpSetAlpha(Element_n, A)
+    }
+    function egpSetText([Element_n Text]:string) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        
+        EGP_w:egpSetText(Element_i, Text)
+    }
+    
+    function egpSetAlign(Element_n:string, H, V) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        
+        EGP_w:egpAlign(Element_i, H, V)
+    }
+    function egpSetAlign(H, V) {
+        egpSetAlign(EGPS["lastName", string], H, V)
+    }
+    
+    function egpSet3DTracker(Element_n:string, V:vector) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        
+        EGP_w:egp3DTracker(Element_i, V)
+    }
+    
+    function egpSetFont([Element_n Font]:string, FontSize:number) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        
+        EGP_w:egpFont(Element_i, Font, FontSize)
+    }
+    function egpSetFont(Font:string, FontSize:number) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS["lastIndex", number]
+        
+        EGP_w:egpFont(Element_i, Font, FontSize)
+    }
+    function egpSetFont(Font:string) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS["lastIndex", number]
+        
+        EGP_w:egpFont(Element_i, Font)
+    }
+    
+    function egpSetFidelity(Element_n:string, Fidelity:number) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        
+        EGP_w:egpFidelity(Element_i, Fidelity)
+    }
+    function egpSetFidelity(Fidelity:number) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS["lastIndex", number]
+        
+        EGP_w:egpFidelity(Element_i, Fidelity)
+    }
+    
+    function egpSetRadius(Element_n:string, Radius:number) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        
+        EGP_w:egpRadius(Element_i, Radius)
+    }
+    function egpSetRadius(Radius:number) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS["lastIndex", number]
+        
+        EGP_w:egpRadius(Element_i, Radius)
+    }
+    
+    
+    
+    function number egpGetOrder(Element_n:string) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        local Order = EGPS[Element_i + "/order", number]
+        if(!Order) {
+            Order = EGP_w:egpOrder(Element_i)
+        }
+        
+        return Order
+    }
+    function egpSetOrder(Element_n:string, Order:number) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        
+        EGPS[Element_i + "/order", number] = Order
+        
+        EGP_w:egpOrder(Element_i, Order)
+    }
+    function egpSetOrder([Element1_n Element2_n]:string, AddOrder:number) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element1_i = EGPS[Element1_n + "/index", number]
+        local Element2_i = EGPS[Element2_n + "/index", number]
+        local Order2 = EGPS[Element2_i + "/order", number]
+        if(!Order2) {
+            Order2 = EGP_w:egpOrder(Element2_i)
+        }
+        local Order1 = Order2 + AddOrder
+        
+        EGPS[Element1_i + "/order", number] = Order1
+        
+        EGP_w:egpOrder(Element1_i, Order1)
+    }
+    
+    function egpSetOrderAbove(Element_n:string, Above:number) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        
+        #ifdef wirelink:egpOrderAbove(number, number)
+            EGP_w:egpOrderAbove(Element_i, Element_i+Above)
+        #endif
+    }
+    function egpSetOrderAbove(Above:number) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS["lastIndex", number]
+        
+        #ifdef wirelink:egpOrderAbove(number, number)
+            EGP_w:egpOrderAbove(Element_i, Element_i+Above)
+        #endif
+    }
+    function egpSetOrderAbove([Element_n Abovethis_n]:string) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        local Abovethis_i = EGPS[Abovethis_n + "/index", number]
+        
+        #ifdef wirelink:egpOrderAbove(number, number)
+            EGP_w:egpOrderAbove(Element_i, Abovethis_i)
+        #endif
+    }
+    function egpSetOrderAbove(Abovethis_n:string) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS["lastIndex", number]
+        local Abovethis_i = EGPS[Abovethis_n + "/index", number]
+        
+        #ifdef wirelink:egpOrderAbove(number, number)
+                EGP_w:egpOrderAbove(Element_i, Abovethis_i)
+        #endif
+    }
+    
+    function egpSetOrderBelow([Element_n Belowthis_n]:string) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        local Belowthis_i = EGPS[Belowthis_n + "/index", number]
+        
+        #ifdef wirelink:egpOrderAbove(number, number)
+            EGP_w:egpOrderAbove(Element_i, Belowthis_i)
+        #endif
+    }
+    function egpSetOrderBelow(Belowthis_n:string) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS["lastIndex", number]
+        local Belowthis_i = EGPS[Belowthis_n + "/index", number]
+        
+        #ifdef wirelink:egpOrderBelow(number, number)
+            EGP_w:egpOrderBelow(Element_i, Belowthis_i)
+        #endif
+    }
+    function egpSetOrderBelow(Element_n:string, Below:number) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        
+        #ifdef wirelink:egpOrderBelow(number, number)
+            EGP_w:egpOrderBelow(Element_i, Element_i+Below)
+        #endif
+    }
+    function egpSetOrderBelow(Below:number) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS["lastIndex", number]
+        
+        #ifdef wirelink:egpOrderBelow(number, number)
+            EGP_w:egpOrderBelow(Element_i, Element_i+Below)
+        #endif
+    }
+    
+    #[
+    wirelink:egpParent(number index,entity parent)
+    wirelink:egpParent(number index,number parentindex)
+    
+    wirelink:egpPos(number index,vector2 pos)
+    wirelink:egpPos(number index,vector pos)
+    
+    wirelink:egpAngle(number index,number angle)
+    wirelink:egpAngle(number index,vector2 worldpos,vector2 axispos,number angle)
+    
+    wirelink:egpMaterial(number index,string material)
+    wirelink:egpMaterialFromScreen(number index,entity gpu)
+    
+    wirelink:egpColor(number index,vector color)
+    wirelink:egpColor(number index,vector4 color)
+    wirelink:egpColor(number index,number r,number g,number b,number a)
+    
+    wirelink:egpAlpha(number index,number a)
+    
+    wirelink:egpSetText(number index,string text)
+    
+    wirelink:egpSize(number index,number size)
+    wirelink:egpSize(number index,vector2 size)
+    
+    wirelink:egpAlign(number index,number halign,number valign)
+    wirelink:egpAlign(number index,number halign)
+    
+    wirelink:egpFont(number index,string font)
+    wirelink:egpFont(number index,string font,number size)
+    
+    
+    wirelink:egpFidelity(number index,number fidelity)
+    
+    wirelink:egpRadius(number index,number radius)
+    
+    wirelink:egpOrder(number index,number order)
+    wirelink:egpOrderAbove(number index,number abovethis)
+    wirelink:egpOrderBelow(number index,number belowthis)
+    
+    wirelink:egp3DTracker(number index,vector pos)
+    ]#
+    
+    function vector2 egpGetPos(Element_n:string) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        
+        return EGP_w:egpPos(Element_i)
+    }
+    function vector2 egpGetGlobalPos(Element_n:string) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        
+        local Pos = EGP_w:egpPos(Element_i)
+        local Parent = EGP_w:egpParent(Element_i)
+        while(Parent) {
+            Pos = EGP_w:egpPos(Parent) + Pos:rotate(-EGP_w:egpAngle(Parent))
+            Parent = EGP_w:egpParent(Parent)
+        }
+        
+        return Pos
+    }
+    #function vector2 egpGetLocalPos(Element_n:string, GlobalPos:vector2) {
+    
+    
+    function vector2 egpGetSize(Element_n:string) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        
+        return EGP_w:egpSize(Element_i)
+    }
+    function number egpGetSizeNum(Element_n:string) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        
+        local Size = EGP_w:egpSizeNum(Element_i)
+        if(Size == -1) {Size = EGPS[Element_n + "/sizeNum", number]}
+        
+        return Size
+    }
+    
+    function number egpGetAng(Element_n:string) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        
+        return EGP_w:egpAngle(Element_i)
+    }
+    
+    
+    function string egpGetMaterial(Element_n:string) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        
+        return EGP_w:egpMaterial(Element_i)
+    }
+    function vector egpGetColor(Element_n:string) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        
+        return EGP_w:egpColor(Element_i)
+    }
+    function number egpGetAlpha(Element_n:string) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        
+        return EGP_w:egpAlpha(Element_i)
+    }
+    
+    function string egpGetType(Element_n:string) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        local Element_i = EGPS[Element_n + "/index", number]
+        
+        return EGPS[Element_i + "/type", string]
+    }
+    
+    
+    function number egpInrange(Element_n:string, Coord:vector2) {
+        local Element_t = egpGetType(Element_n)
+        switch(Element_t) {
+            case "box",
+                local Element_s  = egpGetSize(Element_n) / 2
+                return inrange(Coord,-Element_s,Element_s)
+            break
+            case "circle",
+                local Element_s  = egpGetSize(Element_n)
+                return Coord:length() <= Element_s[1]
+            break
+        }
+        return 0
+    }
+    function number egpGlobalInrange(Element_n:string, Coord:vector2) {
+        local Coord = Coord - egpGetGlobalPos(Element_n)
+        return egpInrange(Element_n, Coord)
+    }
+    
+    function number egpLocalInrange(Element_n:string, Coord:vector2) {
+        local Coord = Coord - egpGetPos(Element_n)
+        return egpInrange(Element_n, Coord)
+    }
+}

@@ -1,0 +1,22 @@
+@name SWEP001
+
+@inputs 
+@outputs 
+@persist [E O]:entity [SWEP]:table
+
+
+
+if(changed(0)) {
+    
+    
+    E = entity()
+    O = owner()
+    
+    
+    function addUser(User:entity) {
+        
+    }
+}
+
+
+

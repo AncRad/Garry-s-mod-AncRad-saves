@@ -1,0 +1,17 @@
+@name EGP_string
+@inputs String:string
+@outputs 
+@persist EGP:wirelink
+
+
+if(changed(0)) {
+    EGP = entity():isWeldedTo():wirelink()
+    
+    EGP:egpClear()
+    EGP:egpTextLayout(1, "Подключи вход String",vec2(2),vec2(512))
+    EGP:egpSize(1, 15)
+    
+    exit()
+}
+
+EGP:egpSetText(1, String)

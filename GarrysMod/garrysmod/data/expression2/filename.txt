@@ -1,0 +1,65 @@
+@name 
+@inputs 
+@outputs 
+@persist W:wirelink A Curtime
+@trigger 
+
+interval(50)
+
+if(changed(0)) {
+    
+    Curtime = curtime()
+    
+    W = entity():isWeldedTo():wirelink()
+    W:egpClear()
+    
+    #W:egpResolution(vec2(0),vec2(512,256))
+    #W:egpScale(vec2(0,512),vec2(0,512))
+    
+    #W:egpBoxOutline(1, vec2(256,128), vec2(256,256))
+    W:egpText(2, "00:00:00", vec2(256,142))
+    #W:egpParent(2, 1)
+    W:egpAlign(2, 1,1)
+    W:egpSize(2, 120)
+    W:egpFont(2, "Courier New")
+    W:egpColor(2, vec(255,35,10))
+    
+    
+    W:egpText(3, "", vec2(256,180))
+    
+    function string numberAsText([Number CharCount]:number) {
+        Number = abs(floor(Number))
+        CharCount = abs(floor(CharCount))
+        local String = Number + ""
+        String = "0":repeat(CharCount-String:length()) + String
+        
+        return String
+    }
+}
+
+Interval = curtime()-Curtime
+Curtime = curtime()
+A += Interval * 1
+
+AA = floor(A/60)
+BB = floor(A-floor(A/60)*60)
+CC = floor((A*100)%100)
+S = (AA > 9 ? "" : "0")+AA + (BB > 9 ? ":" : ":0")+BB + (CC > 9 ? ":" : ":0")+CC
+
+W:egpSetText(2, S)
+#W:egpSetText(2, numberAsText(floor(A/60),2) + ":" + numberAsText(A-floor(A/60)*60,2) + ":" + numberAsText(floor((A*100)%100),2))
+
+W:egpSetText(3, ""+floor(A,2))
+
+
+
+
+
+
+
+
+
+
+
+
+

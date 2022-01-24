@@ -1,0 +1,30 @@
+@name Watermelon
+
+@inputs 
+@outputs 
+@persist [E O]:entity [Q]:table
+
+
+
+if(changed(0)) {
+    
+    E = entity()
+    O = owner()
+    
+    timer("", 1)
+}
+
+if(clk("")) {
+        timer("", 50)
+    
+    
+    local Throw = O:keyPressed("mouse_5")
+    if(changed(Throw) & Throw) {
+        
+        local Pos = O:shootPos() + O:eye() * 30
+        local Vel = O:vel() + O:eye() * 52.5 * 70
+        local Melon = propSpawn("models/props_junk/watermelon01.mdl", Pos, ang(), 0)
+        Melon:setMass(150)
+        Melon:setVel(Vel)
+    }
+}

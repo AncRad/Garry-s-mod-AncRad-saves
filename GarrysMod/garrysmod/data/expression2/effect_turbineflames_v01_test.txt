@@ -1,0 +1,85 @@
+@name effect_turbineFlames_v01_test
+@inputs [E1 E2 E3 E4]:entity
+@outputs 
+@persist Effect_FirstRun
+@trigger 
+
+
+if(changed(0)) {
+    if(Effect_FirstRun) {reset()}
+    Effect_FirstRun = 1
+    #include "effect_turbineFlames_v01"
+    
+    local Color = vec(255,255,255)
+    
+    E1:effect_turbineFlames("LH",vec(),ang(0,0,90),1.2,30,Color,15) E1:propNotSolid(1) E1:setColor(vec4()) effect_turbineFlames("LH", 1) effect_turbineFlames_shake("LH", 0.4)
+    E2:effect_turbineFlames("RH",vec(),ang(0,0,90),1.2,30,Color,15) E2:propNotSolid(1) E2:setColor(vec4()) effect_turbineFlames("RH", 1) effect_turbineFlames_shake("RH", 0.4)
+    
+    E3:effect_turbineFlames("LL",vec(),ang(0,0,-90),2.2,50,Color,15) E3:propNotSolid(1) E3:setColor(vec4()) effect_turbineFlames("LL", 1) effect_turbineFlames_shake("LL", 0.4)
+    E4:effect_turbineFlames("RL",vec(),ang(0,0,-90),2.2,50,Color,15) E4:propNotSolid(1) E4:setColor(vec4()) effect_turbineFlames("RL", 1) effect_turbineFlames_shake("RL", 0.4)
+    
+    
+    
+}
+
+
+effect_turbineFlames()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

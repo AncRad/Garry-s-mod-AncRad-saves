@@ -1,0 +1,35 @@
+@name setViewEntity
+@inputs 
+@outputs 
+@persist D
+@trigger 
+@model models/holograms/cube.mdl
+
+interval(1)
+E = entity()
+O = owner()
+
+#(
+E:applyAngForce(angnorm(((O:shootPos()-E:pos()+(O:vel()-E:vel()) / 5):toAngle() - E:angles())-E:angVel() / 8)  *E:mass()) 
+E:setMass(30)
+
+runOnKeys(O, 1)
+runOnList(1)
+
+
+local Key = O:keyPressed("mouse_4")
+if(changed(Key) & Key) {
+    D = !D
+    
+    if(D) {
+        entity():setViewEntity()
+    }
+    else {
+        owner():setViewEntity()
+    }
+}
+    
+
+if(last()) {
+    owner():setViewEntity()
+}

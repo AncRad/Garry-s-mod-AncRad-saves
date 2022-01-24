@@ -1,0 +1,175 @@
+@persist #Chao:entity
+@persist [ B_head B_vent B_rArm B_lArm B_lLeg_0 B_lLeg_1 B_rLeg_0 B_rLeg_1]:entity # Bones
+@persist [B_0_N B_head_N B_vent_N B_rArm_N B_lArm_N B_lLeg_0_N B_lLeg_1_N B_rLeg_0_N B_rLeg_1_N] # Bones
+@persist [A_0 A_head A_lArm A_rArm A_lLeg_0 A_lLeg_1 A_rLeg_0 A_rLeg_1]:angle V_0:vector Anim_Speed # Bone properties
+
+#include "Badcoder_Functions"
+##include "AncRad_&_Badcoder's_holo_animation_"
+
+function void omoCreate()
+{
+    if(0) {
+        E = B_0 = Chao = entity()
+    }
+    Chao = propSpawn("models/props_junk/MetalBucket01a.mdl", E:pos()+vec(0,0,10), 0) 
+    #ifdef entity:propDraw(number)
+        Chao:propDraw(0)
+    #else 
+        Chao:setAlpha(0)
+    #endif
+    
+        B_0 = holo( vec(0,0,0), vec(0.2), ang(0), "", "", vec(255,0,0), 0, Chao ) B_0_N = H_ID
+    #Head
+    local BX = 0.8
+    local FX = 1.2
+    local DZ = 0.7
+    local UZ = 1.1
+        B_head = holo( vec(0), vec(0.2), ang(0), "", "", vec(255,0,0), 0, B_0 ) B_head_N = H_ID
+        holo( vec(0,0,4), vec(BX,1,DZ), ang(0), "hq_sphere", "phoenix_storms/Fender_white", vec(100,200,255), 255, B_head ) #BD 1
+            clip( vec(0), vec(-1,0,0) ) 
+            clip( vec(0), vec(0,0,-1) ) 
+            clip( vec(0,2.5,0), vec(0,1,0) )
+        holo( vec(0,0,4), vec(BX,1,UZ), ang(0), "hq_sphere", "phoenix_storms/Fender_white", vec(100,200,255), 255, B_head ) #BU
+            clip( vec(0), vec(-1,0,0) ) 
+            clip( vec(0), vec(0,0,1) ) 
+            clip( vec(0,2.5,0), vec(0,1,0) )
+        holo( vec(0,0,4), vec(FX,1,DZ), ang(0), "hq_sphere", "phoenix_storms/Fender_white", vec(100,200,255), 255, B_head ) #FD
+            clip( vec(0), vec(1,0,0) ) 
+            clip( vec(0), vec(0,0,-1) ) 
+            clip( vec(0,2.5,0), vec(0,1,0) )
+        holo( vec(0,0,4), vec(FX,1,UZ), ang(0), "hq_sphere", "phoenix_storms/Fender_white", vec(100,200,255), 255, B_head ) #FU
+            clip( vec(0), vec(1,0,0) ) 
+            clip( vec(0), vec(0,0,1) ) 
+            clip( vec(0,2.5,0), vec(0,1,0) )
+        holo( vec(0,0,4), vec(BX,1,DZ), ang(0), "hq_sphere", "phoenix_storms/Fender_white", vec(100,200,255), 255, B_head ) #BD 2
+            clip( vec(0), vec(-1,0,0) ) 
+            clip( vec(0), vec(0,0,-1) ) 
+            clip( vec(0,-2.5,0), vec(0,-1,0) )
+        holo( vec(0,0,4), vec(BX,1,UZ), ang(0), "hq_sphere", "phoenix_storms/Fender_white", vec(100,200,255), 255, B_head ) #BU
+            clip( vec(0), vec(-1,0,0) ) 
+            clip( vec(0), vec(0,0,1) ) 
+            clip( vec(0,-2.5,0), vec(0,-1,0) )
+        holo( vec(0,0,4), vec(FX,1,DZ), ang(0), "hq_sphere", "phoenix_storms/Fender_white", vec(100,200,255), 255, B_head ) #FD
+            clip( vec(0), vec(1,0,0) ) 
+            clip( vec(0), vec(0,0,-1) ) 
+            clip( vec(0,-2.5,0), vec(0,-1,0) )
+        holo( vec(0,0,4), vec(FX,1,UZ), ang(0), "hq_sphere", "phoenix_storms/Fender_white", vec(100,200,255), 255, B_head ) #FU
+            clip( vec(0), vec(1,0,0) ) 
+            clip( vec(0), vec(0,0,1) ) 
+            clip( vec(0,-2.5,0), vec(0,-1,0) )
+        holo( vec(0,0,4), vec(BX,1,DZ), ang(0), "hq_sphere", "phoenix_storms/Fender_white", vec(100,150,255), 255, B_head ) #BD 3
+            clip( vec(0), vec(-1,0,0) ) 
+            clip( vec(0), vec(0,0,-1) ) 
+            clip( vec(0,2.5,0), vec(0,-1,0) )
+            clip( vec(0,-2.5,0), vec(0,1,0) )
+        holo( vec(0,0,4), vec(BX,1,UZ), ang(0), "hq_sphere", "phoenix_storms/Fender_white", vec(100,150,255), 255, B_head ) #BU
+            clip( vec(0), vec(-1,0,0) ) 
+            clip( vec(0), vec(0,0,1) ) 
+            clip( vec(0,2.5,0), vec(0,-1,0) )
+            clip( vec(0,-2.5,0), vec(0,1,0) )
+        holo( vec(0,0,4), vec(FX,1,DZ), ang(0), "hq_sphere", "phoenix_storms/Fender_white", vec(100,150,255), 255, B_head ) #FD
+            clip( vec(0), vec(1,0,0) ) 
+            clip( vec(0), vec(0,0,-1) ) 
+            clip( vec(0,2.5,0), vec(0,-1,0) )
+            clip( vec(0,-2.5,0), vec(0,1,0) )
+        holo( vec(0,0,4), vec(FX,1,UZ), ang(0), "hq_sphere", "phoenix_storms/Fender_white", vec(100,150,255), 255, B_head ) #FU
+            clip( vec(0), vec(1,0,0) ) 
+            clip( vec(0), vec(0,0,1) ) 
+            clip( vec(0,2.5,0), vec(0,-1,0) )
+            clip( vec(0,-2.5,0), vec(0,1,0) )
+        holo( vec(0,0,11), vec(0.2,0.2,0.12), ang(0), "hq_cone", "", vec(100,150,255), 255, B_head ) #Pimpa
+    #Eyes
+        holo( vec(6,2.5,6), vec(0.17,0.25,0.03), ang(10,120,70), "hq_cylinder", "models/weapons/v_slam/new light2", vec(255,150,50), 255, B_head ) 
+            holoDisableShading(H_ID, 1)
+        holo( vec(6,-2.5,6), vec(0.17,0.25,0.03), ang(-10,60,70), "hq_cylinder", "models/weapons/v_slam/new light2", vec(255,150,50), 255, B_head ) 
+            holoDisableShading(H_ID, 1)
+    #Mouth
+        holo( vec(6.9,0,4), vec(0.17,0.25,0.025), ang(90,0,0), "hq_cylinder", "", vec(255,175,0), 255, B_head ) 
+            holoDisableShading(H_ID, 1)
+            clip( vec(0), vec(1,0,0) ) 
+    #
+        B_vent = holo( vec(0,0,11), vec(0.2), ang(0), "", "", vec(255,0,0), 0, B_head )  B_vent_N = H_ID
+        holo( vec(0,0,-0.5), vec(0.12), ang(0,90,0), "models/props_phx/misc/propeller2x_small.mdl", "", vec(255,125,0), 255, B_vent )
+    #Body
+    local BX = 0.6
+    local DZ = 0.4
+    local UZ = 0.7
+    local Y = 0.7
+    local Z = -3.8
+        holo( vec(0,0,Z), vec(BX,Y,DZ), ang(0), "hq_sphere", "phoenix_storms/Fender_white", vec(100,200,255), 255, B_0 ) #BD 1
+            clip( vec(0), vec(0,0,-1) ) 
+            clip( vec(0,2.5,0), vec(0,1,0) )
+        holo( vec(0,0,Z), vec(BX,Y,UZ), ang(0), "hq_sphere", "phoenix_storms/Fender_white", vec(100,200,255), 255, B_0 ) #BU
+            clip( vec(0), vec(0,0,1) ) 
+            clip( vec(0,2.5,0), vec(0,1,0) )
+        holo( vec(0,0,Z), vec(BX,Y,DZ), ang(0), "hq_sphere", "phoenix_storms/Fender_white", vec(100,200,255), 255, B_0 ) #BD 2
+            clip( vec(0), vec(0,0,-1) ) 
+            clip( vec(0,-2.5,0), vec(0,-1,0) )
+        holo( vec(0,0,Z), vec(BX,Y,UZ), ang(0), "hq_sphere", "phoenix_storms/Fender_white", vec(100,200,255), 255, B_0 ) #BU
+            clip( vec(0), vec(0,0,1) ) 
+            clip( vec(0,-2.5,0), vec(0,-1,0) )
+        holo( vec(0,0,Z), vec(BX,Y,DZ), ang(0), "hq_sphere", "phoenix_storms/Fender_white", vec(100,150,255), 255, B_0 ) #BD 3
+            clip( vec(0), vec(0,0,-1) ) 
+            clip( vec(0,2.5,0), vec(0,-1,0) )
+            clip( vec(0,-2.5,0), vec(0,1,0) )
+        holo( vec(0,0,Z), vec(BX,Y,UZ), ang(0), "hq_sphere", "phoenix_storms/Fender_white", vec(100,150,255), 255, B_0 ) #BU
+            clip( vec(0), vec(0,0,1) ) 
+            clip( vec(0,2.5,0), vec(0,-1,0) )
+            clip( vec(0,-2.5,0), vec(0,1,0) )
+    #Left arm
+        B_lArm = holo( vec(0,1.5,0), vec(0.1), ang(0,0,70), "hq_sphere", "", vec(255,0,0), 0, B_0 ) B_lArm_N = H_ID
+        holo( vec(0,0,0), vec(0.15,0.15,1), ang(0), "hq_cone", "phoenix_storms/mat/mat_phx_carbonfiber2", vec(255), 255, B_lArm ) 
+            clip( vec(0), vec(0,0,-1) ) 
+        holo( vec(0,0,-5), vec(0.3), ang(0), "hq_sphere", "phoenix_storms/Fender_white", vec(255,255,50), 255, B_lArm )
+    #Right arm
+        B_rArm = holo( vec(0,-1.5,0), vec(0.1), ang(0,0,-70), "hq_sphere", "", vec(255,0,0), 0, B_0 ) B_rArm_N = H_ID
+        holo( vec(0,0,0), vec(0.15,0.15,1), ang(0), "hq_cone", "phoenix_storms/mat/mat_phx_carbonfiber2", vec(255), 255, B_rArm ) 
+            clip( vec(0), vec(0,0,-1) ) 
+        holo( vec(0,0,-5), vec(0.3), ang(0), "hq_sphere", "phoenix_storms/Fender_white", vec(255,255,50), 255, B_rArm )
+    #Legs
+    local BX = 0.4
+    local FX = 0.8
+    local DZ = 0.15
+    local UZ = 0.3
+    local AY = 0.4
+    #Left leg
+        B_lLeg_0 = holo( vec(0,2.5,-5), vec(0.1), ang(0,10,0), "hq_sphere", "", vec(255,0,0), 255, B_0 ) B_lLeg_0_N = H_ID
+        B_lLeg_1 = holo( vec(-1,0.6,-2.8), vec(0.1), ang(0), "hq_sphere", "", vec(255,0,0), 255, B_lLeg_0 ) B_lLeg_1_N = H_ID
+        holo( vec(0), vec(BX,AY,DZ), ang(0), "hq_sphere", "phoenix_storms/Fender_white", vec(255,200,100), 255, B_lLeg_1 ) #BD 1
+            clip( vec(0), vec(0,0,-1) )
+            clip( vec(0), vec(-1,0,0) )  
+        holo( vec(0), vec(FX,AY,DZ), ang(0), "hq_sphere", "phoenix_storms/Fender_white", vec(255,200,100), 255, B_lLeg_1 ) #FD
+            clip( vec(0), vec(0,0,-1) )
+            clip( vec(0), vec(1,0,0) )  
+        holo( vec(0), vec(BX,AY,UZ), ang(0), "hq_sphere", "phoenix_storms/Fender_white", vec(255,255,100), 255, B_lLeg_1 ) #BU
+            clip( vec(0), vec(0,0,1) )
+            clip( vec(0), vec(-1,0,0) )  
+        holo( vec(0), vec(FX,AY,UZ), ang(0), "hq_sphere", "phoenix_storms/Fender_white", vec(255,255,100), 255, B_lLeg_1 ) #FU
+            clip( vec(0), vec(0,0,1) )
+            clip( vec(0), vec(1,0,0) )  
+            clip( vec(2,0,0), vec(-1,0,0.5) ) 
+        holo( vec(0), vec(FX,AY,UZ), ang(0), "hq_sphere", "phoenix_storms/Fender_white", vec(255,200,100), 255, B_lLeg_1 ) #FU
+            clip( vec(0), vec(0,0,1) )
+            clip( vec(0), vec(1,0,0) )  
+            clip( vec(2,0,0), vec(1,0,-0.5) ) 
+    #Right leg
+        B_rLeg_0 = holo( vec(0,-2.5,-5), vec(0.1), ang(0,-10,0), "hq_sphere", "", vec(255,0,0), 255, B_0 ) B_rLeg_0_N = H_ID
+        B_rLeg_1 = holo( vec(-1,-0.6,-2.8), vec(0.1), ang(0), "hq_sphere", "", vec(255,0,0), 255, B_rLeg_0 ) B_rLeg_1_N = H_ID
+        holo( vec(0), vec(BX,AY,DZ), ang(0), "hq_sphere", "phoenix_storms/Fender_white", vec(255,200,100), 255, B_rLeg_1 ) #BD 1
+            clip( vec(0), vec(0,0,-1) )
+            clip( vec(0), vec(-1,0,0) )  
+        holo( vec(0), vec(FX,AY,DZ), ang(0), "hq_sphere", "phoenix_storms/Fender_white", vec(255,200,100), 255, B_rLeg_1 ) #FD
+            clip( vec(0), vec(0,0,-1) )
+            clip( vec(0), vec(1,0,0) )  
+        holo( vec(0), vec(BX,AY,UZ), ang(0), "hq_sphere", "phoenix_storms/Fender_white", vec(255,255,100), 255, B_rLeg_1 ) #BU
+            clip( vec(0), vec(0,0,1) )
+            clip( vec(0), vec(-1,0,0) )  
+        holo( vec(0), vec(FX,AY,UZ), ang(0), "hq_sphere", "phoenix_storms/Fender_white", vec(255,255,100), 255, B_rLeg_1 ) #FU
+            clip( vec(0), vec(0,0,1) )
+            clip( vec(0), vec(1,0,0) )  
+            clip( vec(2,0,0), vec(-1,0,0.5) ) 
+        holo( vec(0), vec(FX,AY,UZ), ang(0), "hq_sphere", "phoenix_storms/Fender_white", vec(255,200,100), 255, B_rLeg_1 ) #FU
+            clip( vec(0), vec(0,0,1) )
+            clip( vec(0), vec(1,0,0) )  
+            clip( vec(2,0,0), vec(1,0,-0.5) ) 
+}

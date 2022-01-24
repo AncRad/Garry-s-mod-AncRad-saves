@@ -1,0 +1,531 @@
+@name rpg_ACF_bgm71e_001
+
+@inputs 
+@outputs Debug:string
+
+@persist [E O]:entity
+@persist [Q]:table
+
+#- swep
+@persist [SWEP_GT]:gtable [SWEP_time]:number
+@persist [SWEP_user]:entity [SWEP_status]:string [SWEP_inUser]:number
+@persist [SWEP_user_chest_e SWEP_user_rhand_e SWEP_body_e]:entity [SWEP_user_rhand_i SWEP_user_chest_i SWEP_body_i SWEP_anim_i]:number
+
+@persist [SWEP_dropFind_a]:array
+@persist [SWEP_weapon_grab SWEP_weapon_grabLock]:number
+#@persist [SWEP_weapon_anim1 SWEP_weapon_anim2]:number [SWEP_weapon_anim1V1 SWEP_weapon_anim1V2]:vector [SWEP_weapon_anim1A1 SWEP_weapon_anim1A2]:angle
+@persist [SWEP_weapon_anim_0_V SWEP_weapon_anim_1_V SWEP_weapon_anim_2_V]:vector [SWEP_weapon_anim_0_A SWEP_weapon_anim_1_A SWEP_weapon_anim_2_A]:angle
+@persist [SWEP_weapon_anim_0and1 SWEP_weapon_anim_1and2]:number
+
+#- find obj
+@persist [FIND_lockTime]:number [FIND_excludeEnt]:array
+@persist [FIND_forAnalysis]:array [FIND_analysisCache]:table
+@persist [FIND_objects]:table [FIND_lockAngle]:number
+@persist [FIND_fireArmTime]:number
+
+#- acf
+@persist [FIND_ammo_excludeEnt]:array
+@persist [AcfTube_e AcfAmmo_e]:entity [AcfTube_w AcfAmmo_w]:wirelink
+
+@trigger 
+#@model models/missiles/bgm_71e_round.mdl
+
+
+
+if(changed(0)) {
+    ################
+    #
+    #- include
+    #
+    #include "AddHolo"
+    #include "library_IO_v001"
+    #
+    ################
+    #
+    #- functions
+    #
+    ################
+    #
+    #- model
+    #
+    function number modelPhysicsToggle(Status) {
+        AcfTube_e:drawShadow(255*Status)
+        AcfTube_e:setAlpha(255*Status)
+        AcfTube_e:propFreeze(!Status)
+        AcfTube_e:propNotSolid(!Status)
+        return !!AcfTube_e
+    }
+    #
+    function number smooth(Value:number) {
+        return 0.5-sin(90 + clamp(Value,0,1) * 180)/2
+    }
+    #
+    function number modelAnimate([A0and1 A1and2]:number) {
+        local A1and2 = smooth(clamp(A1and2,0,1))
+        local A1and2_ = 1-A1and2
+        local Vec_1or2 = SWEP_weapon_anim_1_V * A1and2_ + SWEP_weapon_anim_2_V * A1and2
+        local Ang_1or2 = SWEP_weapon_anim_1_A * A1and2_ + SWEP_weapon_anim_2_A * A1and2
+        local A0and1 = smooth(clamp(A0and1,0,1))^1.5
+        local A0and1_ = 1-A0and1
+        local Vec = SWEP_weapon_anim_0_V * A0and1_ + Vec_1or2 * A0and1
+        local Ang = SWEP_weapon_anim_0_A * A0and1_ + Ang_1or2 * A0and1
+        holoPos(SWEP_body_i, SWEP_user_chest_e:toWorld(Vec))
+        holoAng(SWEP_body_i, SWEP_user_chest_e:toWorld(Ang))
+        return 1
+    }
+    #
+    #- swep
+    #
+    function number entity:swep(NeedStatus:string) {
+        if(!This:isPlayer() | !This | NeedStatus == SWEP_status) {return 0}
+        if(!This) {NeedStatus = "drop"}
+        #chest rhand drop
+        
+        local SID = This:steamID()
+        if(SWEP_GT[SID + "/" + NeedStatus + "/entity", entity]) {return 0}
+        
+        if(NeedStatus == "drop") {
+            AcfAmmo_w["Active", number] = 0
+            
+            AcfTube_e:setAng(SWEP_body_e:angles())
+            AcfTube_e:setPos(SWEP_body_e:pos())
+            holoPos(SWEP_body_i, vec())
+            holoAng(SWEP_body_i, ang())
+            holoParent(SWEP_body_i, noentity())
+            
+            modelPhysicsToggle(1)
+            
+            #modelAnimate(0)
+            SWEP_weapon_anim_0and1 = 0
+            SWEP_weapon_anim_1and2 = 0
+            SWEP_weapon_grab = 0
+            
+            SWEP_GT:removeEntity(SID + "/" + SWEP_status + "/entity")
+            SWEP_status = NeedStatus
+            SWEP_user = noentity()
+            return 1
+        }
+        
+        SWEP_user = This
+        
+        if(!SWEP_body_e) {
+            while(!!holoEntity(SWEP_body_i)) {SWEP_body_i++}
+            SWEP_body_e = holoCreate(SWEP_body_i,vec(),vec(-0.4),ang())
+            if(!SWEP_body_e) {This:swep("drop") print("error SWEP_body_e") return 0}
+        }
+        
+        if(NeedStatus == "chest") {
+            if(!SWEP_user_chest_e) {
+                while(!!holoEntity(SWEP_user_chest_i)) {SWEP_user_chest_i++}
+                SWEP_user_chest_e = holoCreate(SWEP_user_chest_i,vec(),vec(-0.4),ang())
+                if(!SWEP_user_chest_e) {This:swep("drop") print("error SWEP_user_chest_e") return 0}
+            }
+            holoPos(SWEP_user_chest_i, SWEP_user:attachmentPos("chest"))
+            holoAng(SWEP_user_chest_i, SWEP_user:attachmentAng("chest"))
+            holoParentAttachment(SWEP_user_chest_i, SWEP_user, "chest")
+            holoPos(SWEP_body_i, SWEP_user_chest_e:toWorld(SWEP_weapon_anim_0_V))
+            holoAng(SWEP_body_i, SWEP_user_chest_e:toWorld(SWEP_weapon_anim_0_A))
+            holoParent(SWEP_body_i, SWEP_user_chest_e)
+            
+            modelPhysicsToggle(0)
+            
+            SWEP_GT[SID + "/" + NeedStatus + "/entity", entity] = AcfTube_e
+            SWEP_GT:removeEntity(SID + "/" + SWEP_status + "/entity")
+            SWEP_status = NeedStatus
+            return 1
+        }
+        
+        if(NeedStatus == "rhand") {
+            if(!SWEP_user_rhand_e) {
+                while(!!holoEntity(SWEP_user_rhand_i)) {SWEP_user_rhand_i++}
+                SWEP_user_rhand_e = holoCreate(SWEP_user_rhand_i,vec(),vec(-0.4),ang())
+                if(!SWEP_user_rhand_e) {This:swep("drop") print("error SWEP_user_rhand_e") return 0}
+            }
+            holoPos(SWEP_user_rhand_i, SWEP_user:attachmentPos("anim_attachment_rh"))
+            holoAng(SWEP_user_rhand_i, SWEP_user:attachmentAng("anim_attachment_rh"))
+            holoParentAttachment(SWEP_user_rhand_i, SWEP_user, "anim_attachment_rh")
+            holoPos(SWEP_body_i, SWEP_user_rhand_e:toWorld(vec()))
+            holoAng(SWEP_body_i, SWEP_user_rhand_e:toWorld(ang()))
+            holoParent(SWEP_body_i, SWEP_user_rhand_e)
+            
+            modelPhysicsToggle(0)
+            
+            SWEP_GT[SID + "/" + NeedStatus + "/entity", entity] = AcfTube_e
+            SWEP_GT:removeEntity(SID + "/" + SWEP_status + "/entity")
+            SWEP_status = NeedStatus
+            return 1
+        }
+        return 0
+    }
+    ################
+    #
+    #- DATA
+    #
+    ################
+    #
+    E = entity()
+    O = owner()
+    #
+    AcfTube_e = E:isWeldedTo()
+    if(!AcfTube_e) {AcfTube_e = E:parent()}
+    if(!AcfTube_e | AcfTube_e:type() != "acf_rack" | AcfTube_e:model() != "models/missiles/bgm_71e_round.mdl") {
+        printColor("[",vec(255,50,0),"BGM-71E",vec(255),"] ","Лепи чип на 1x BGM71E из ACF!")
+        selfDestruct() exit()
+    }
+    #
+    SWEP_GT = gTable("ancrad_swep01") #SWEP_GT:clear()
+    #
+    SWEP_status = "drop"
+    #
+    AcfTube_w = AcfTube_e:wirelink()
+    AcfTube_e:unConstrain()
+    E:unConstrain()
+    E:parentTo(AcfTube_e)
+    modelPhysicsToggle(1)
+    AcfTube_w["Fire", number] = 0
+    AcfTube_w["Reload", number] = 0
+    AcfTube_w["Target Pos", vector] = vec()
+    AcfTube_w["Target Ent", entity] = noentity()
+    #
+    SWEP_weapon_anim_0_V = vec(-10,-4,-4)
+    SWEP_weapon_anim_0_A = toWorldAng(vec(),ang(0,-5,0),vec(),ang(-80,0,0))
+    SWEP_weapon_anim_1_A = toWorldAng(vec(),ang(-35,0,0),vec(),ang(0,22,0))
+    SWEP_weapon_anim_1_V = vec(-3,-6,8) - SWEP_weapon_anim_1_A:forward() * 10
+    SWEP_weapon_anim_2_A = toWorldAng(vec(),ang(-55,0,0),vec(),ang(0,22,0))
+    SWEP_weapon_anim_2_V = vec(-3,-6,8) - SWEP_weapon_anim_2_A:forward() * 10
+    #
+    FIND_lockAngle = 15
+    #
+    ################
+    #
+    #- model
+    #
+    ################
+    #
+    addHolo("swep_body" ,vec(),vec(),ang(),vec(),"cube","","")
+    addHolo("swep_rhand",vec(),vec(),ang(),vec(),"cube","","")
+    addHolo("swep_chest",vec(),vec(),ang(),vec(),"cube","","")
+    addHolo_timer("swep", 1)
+    addHolo_timer("acf", 1)
+    #
+    addHolo("anim_base",vec(),vec(1),ang(),vec(255),"models/missiles/bgm_71e_round.mdl","","swep_body")
+    #
+    addHolo_start()
+    #
+    ################
+    
+    runOnLast(1)
+    exit()
+}
+
+
+
+if(clk("swep")) {
+    timer("swep", 50)
+    
+    if(changed(0)) {
+        SWEP_body_i = AddHolo["swep_body/index" , number]
+        SWEP_body_e = AddHolo["swep_body/entity", entity]
+        SWEP_anim_i = AddHolo["anim_base/index" , number]
+        SWEP_user_rhand_i = AddHolo["swep_rhand/index" , number]
+        SWEP_user_rhand_e = AddHolo["swep_rhand/entity", entity]
+        SWEP_user_chest_i = AddHolo["swep_chest/index" , number]
+        SWEP_user_chest_e = AddHolo["swep_chest/entity", entity]
+        O:swep("chest")
+        
+        SWEP_time = curtime()
+    }
+    local Curtime = curtime()
+    local Interval = Curtime-SWEP_time
+    SWEP_time = Curtime
+    
+    if(SWEP_status == "drop") {
+        if(findCanQuery()) {
+            findClearBlackList()
+            findClearWhiteList()
+            findIncludeClass("player")
+            findInSphere(AcfTube_e:pos(),100)
+            SWEP_dropFind_a = findToArray()
+        }
+        foreach(C, Player:entity = SWEP_dropFind_a) {
+            if(Player:keyUse() & Player:aimEntity() == AcfTube_e & Player:shootPos():distance(Player:aimPos()) < 85) {
+                if(Player:swep("chest")) {break}
+            }
+        }
+    }
+    elseif(SWEP_status == "chest") {
+        if(!SWEP_weapon_grab) {
+            local Key_grab = SWEP_user:keyReload()
+            if(changed(Key_grab) & Key_grab & SWEP_weapon_grabLock<Curtime & SWEP_user:weapon():type()=="weapon_crowbar" & !SWEP_user:inVehicle()) {
+                SWEP_weapon_grab = 1
+                SWEP_weapon_grabLock = Curtime+0.06
+            }
+        }
+        
+        if(SWEP_weapon_anim_0and1!=SWEP_weapon_grab | SWEP_weapon_anim_1and2!=SWEP_user:keyDuck()) {
+            SWEP_weapon_anim_0and1 = clamp(SWEP_weapon_anim_0and1 + Interval/0.5 * (SWEP_weapon_grab ? 1 : -1) ,0,1)
+            SWEP_weapon_anim_1and2 = clamp(SWEP_weapon_anim_1and2 + Interval/0.075 * (SWEP_user:keyDuck() ? 1 : -1) ,0,1)
+            modelAnimate(SWEP_weapon_anim_0and1,SWEP_weapon_anim_1and2)
+        }
+        
+        if(SWEP_weapon_anim_0and1 == 1) {
+            if(findCanQuery() & FIND_lockTime<Curtime) {
+                FIND_lockTime = Curtime + 1/2
+                
+                local Find_p = SWEP_user:shootPos()
+                local Find_d = SWEP_user:eyeAngles():forward()
+                findClearWhiteList()
+                findClearBlackList()
+                findIncludeClass("prop*")
+                findIncludeClass("acf*")
+                findIncludeClass("wire*") findExcludeClass("wire_hologram")
+                findIncludeClass("vehicle*")
+                findInCone(Find_p,Find_d,52.5*350,45)
+                local Find_c = findClipFromEntities(FIND_excludeEnt)
+                findSortByDistance(Find_p)
+                local Find_a = findToArray()
+                
+                local Perf = 100 while(perf(Perf)) {Perf--} Perf = min(Perf+80,95)
+                local C = 0
+                while(perf(Perf) & Find_c > C) {
+                    C++
+                    local Ent = Find_a:removeEntity(C)
+                    local Ent_constraints = Ent:getConstraints()
+                    if(Ent_constraints:count() > 4) {
+                        FIND_excludeEnt = FIND_excludeEnt:add(Ent_constraints):add(array(Ent))
+                        Find_c = findClipFromEntities(FIND_excludeEnt)
+                        Find_a = findToArray()
+                        C = 0
+                        FIND_forAnalysis:pushEntity(Ent)
+                        continue
+                    }
+                    FIND_excludeEnt:pushEntity(Ent)
+                }
+                if(changed(FIND_forAnalysis:count()) & FIND_forAnalysis:count()) {timer("FIND_forAnalysis", 1)}
+            }
+            
+            #local 
+            if(FIND_objects:exists(1)) {
+                local Sort_minAcos = 180
+                local Sort_minAcos_index = 0
+                local SWEP_user_shootPos = SWEP_user:shootPos()
+                local SWEP_user_eye = SWEP_user:eyeAngles():forward()
+                local FIND_objects_count = FIND_objects:count()
+                local C = 0
+                while(perf(99) & C < FIND_objects_count) {
+                    C++
+                    local Obj_T = FIND_objects[C, table]
+                    local Obj_e = Obj_T["massEntity", entity]
+                    local Obj_p = Obj_T["boxCenter" , vector]
+                    local Acos = acos(SWEP_user_eye:dot((Obj_e:toWorld(Obj_p)-SWEP_user_shootPos):normalized()))
+                    if(Acos < FIND_lockAngle & Acos < Sort_minAcos) {
+                        Sort_minAcos = Acos
+                        Sort_minAcos_index = C
+                    }
+                }
+                
+                if(Sort_minAcos_index) {
+                    local Obj_T = FIND_objects[Sort_minAcos_index, table]
+                    local Obj_e = Obj_T["massEntity", entity]
+                    local Obj_P = Obj_e:toWorld(Obj_T["boxCenter" , vector])
+                    AcfTube_w["Target Pos", vector] = Obj_P
+                    
+                    if(SWEP_user:keyAttack2() & !FIND_fireArmTime & AcfTube_w["Ready", number]) {
+                        AcfTube_e:setAng(SWEP_body_e:angles())
+                        AcfTube_e:setPos(SWEP_body_e:pos())
+                        
+                        FIND_fireArmTime = Curtime
+                    }
+                }
+                if(changed(Sort_minAcos_index)) {
+                    if(Sort_minAcos_index) {
+                        if(!holoEntity(1234)) {
+                            holoCreate(1234, vec(), vec(-20), ang(), vec(50), "hq_sphere")
+                            holoMaterial(1234, "models/wireframe")
+                            #holoAlpha(1234, 255)
+                        }
+                        local Obj_T = FIND_objects[Sort_minAcos_index, table]
+                        local Obj_e = Obj_T["massEntity", entity]
+                        local Obj_p = Obj_T["boxCenter" , vector]
+                        holoParent(1234, Obj_e)
+                        holoPos(1234, Obj_e:toWorld(Obj_p))
+                        holoVisible(1234, O, 1)
+                    }
+                    else {
+                        holoUnparent(1234)
+                        holoVisible(1234, O, 0)
+                    }
+                }
+            }
+        }
+        
+        !SWEP_user:isAlive() & SWEP_user:swep("drop")
+    }
+    else {
+        SWEP_user:swep("drop")
+    }
+    
+    if(SWEP_weapon_grab) {
+        local Key_grab = SWEP_user:keyReload()
+        if(changed(Key_grab) & Key_grab & SWEP_weapon_grabLock<Curtime | SWEP_user:inVehicle()) {
+            SWEP_weapon_grab = 0
+            SWEP_weapon_grabLock = Curtime+0.06
+        }
+        (SWEP_user:weapon():type()!="weapon_crowbar") & SWEP_user:swep("drop")
+    }
+    
+    
+    
+    setName("rpg_ACF_bgm71e_001\nOPS: " + ops() + "\nCPU: " + round(cpuUsage()*1e6))
+    
+    exit()
+}
+
+if(clk("acf")) {
+    timer("acf", 200)
+    
+    if(!AcfAmmo_e) {
+        if(findCanQuery()) {
+            findClearWhiteList()
+            findClearBlackList()
+            findIncludeClass("acf_ammo")
+            findInSphere(AcfTube_e:pos(), 52.5*20)
+            findClipToPlayerProps(O)
+            findSortByDistance(AcfTube_e:pos())
+            foreach(C, Ent:entity = findToArray()) {
+                if(Ent:acfNameShort() == "BGM-71E ASM") {
+                    local Parent = SWEP_GT["AcfAmmo_e"+Ent:creationID(), entity]
+                    if(!Parent | E == Parent) {
+                        AcfAmmo_e = Ent
+                        AcfAmmo_w = AcfAmmo_e:wirelink()
+                        
+                        AcfAmmo_e:unConstrain()
+                        AcfAmmo_e:parentTo(holoCreate(123213132,AcfAmmo_e:pos(),vec(),AcfAmmo_e:angles()))
+                        holoPos(123213132, AcfTube_e:pos())
+                        holoAng(123213132, AcfTube_e:angles())
+                        #AcfAmmo_e:setAlpha(0)
+                        AcfAmmo_e:drawShadow(0)
+                        AcfAmmo_e:noCollideAll(1)
+                        AcfAmmo_e:parentTo(AcfTube_e)
+                        AcfTube_e:acfLinkTo(AcfAmmo_e, 0)
+                        SWEP_GT["AcfAmmo_e"+AcfAmmo_e:creationID(), entity] = E
+                        break
+                    }
+                    else {
+                        FIND_ammo_excludeEnt:pushEntity(Ent)
+                    }
+                }
+            }
+        }
+    }
+    
+    if(FIND_fireArmTime) {
+        AcfTube_w["Fire", number] = FIND_fireArmTime != -1
+        FIND_fireArmTime = FIND_fireArmTime == -1 ? 0 : -1
+    }
+    
+    local Tube_ShotsLeft = AcfTube_w["Shots Left", number]
+    if(changed(Tube_ShotsLeft) | changed(AcfAmmo_e)) {
+        AcfTube_w["Reload", number] = AcfAmmo_w["Active", number] = !Tube_ShotsLeft print(AcfAmmo_e)
+    }
+    
+    exit()
+}
+
+if(clk("FIND_forAnalysis")) {
+    
+    local EntA = FIND_forAnalysis[1, entity]
+    if(!FIND_analysisCache:exists("Constraints")) {
+        Constraints_a = EntA:getConstraints():add(array(EntA))
+        FIND_analysisCache["Constraints", array] = Constraints_a
+        FIND_analysisCache["StartCount", number] = Constraints_a:count()
+    }
+    local Constraints_a = FIND_analysisCache["Constraints", array]
+    local Constraints_c = Constraints_a:count()
+    local MaxMass = FIND_analysisCache["MaxMass", number]
+    local PosSum = FIND_analysisCache["PosSum", vector]
+    
+    local Perf = 100 while(perf(Perf)) {Perf--} Perf = min(Perf+35,95)
+    local C = 0
+    while(perf(Perf) & Constraints_c) {
+        local Ent = Constraints_a:removeEntity(1) Constraints_c--
+        local Ent_m = Ent:mass()
+        if(Ent_m > MaxMass) {
+            MaxMass = Ent_m
+            FIND_analysisCache["MaxMassEntity", entity] = Ent
+        }
+        PosSum+=Ent:boxCenterW()
+    }
+    
+    if(!Constraints_c) {
+        local Obj = FIND_analysisCache["MaxMassEntity", entity]
+        local Obj_boxCenter = Obj:toLocal(PosSum/FIND_analysisCache["StartCount", number])
+        FIND_objects:pushTable(table(
+             "massEntity" = Obj
+            ,"boxCenter" = Obj_boxCenter
+        ))
+        
+        FIND_forAnalysis:remove(1)
+        FIND_analysisCache:clear()
+    }
+    
+    if(FIND_forAnalysis:count()) {timer("FIND_forAnalysis", 150)}
+    exit()
+}
+
+
+
+#include "AddHolo"
+library_IO_v001()
+
+
+
+
+if(last()) {
+    if(SWEP_status == "rhand" | SWEP_status == "chest") {
+        SWEP_user:swep("drop") | modelPhysicsToggle(1)
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

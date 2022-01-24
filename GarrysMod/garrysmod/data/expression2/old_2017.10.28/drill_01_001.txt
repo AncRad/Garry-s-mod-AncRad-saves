@@ -1,0 +1,151 @@
+@name drill 01 001
+
+@inputs 
+@outputs 
+@persist [E O]:entity [Q]:table T
+
+
+
+if(changed(0)) {
+    
+    E = entity()
+    O = owner()
+    
+    
+    
+    
+    
+    timer("", 200)
+}
+
+if(clk("")) {
+        timer("", 25)
+    
+    if(changed(0)) {
+        
+        Q["constraints", array] = E:getConstraints()
+    }
+    
+    local Constraints = Q["constraints", array]
+    local Constraints_c = Constraints:count()
+    if(Constraints_c) {
+        while(perf(5000)) {
+            local Prop_e = Constraints[1, entity]
+            Q["constraints", array]:remove(1)
+            
+            local Prop_m = Prop_e:model()
+            if(Prop_m == "models/props_phx/construct/metal_angle360.mdl") {
+                Q["base", entity] = Prop_e
+            }
+            elseif(Prop_m:left(36) == "models/sprops/mechanics/bgears/bevel") {
+                Q["ripperList", array] = Q["ripperList", array]:add(array(Prop_e))
+            }
+            elseif(Prop_m == "models/sprops/misc/domes/size_4/dome_48x24.mdl") {
+                Q["ripper", entity] = Prop_e
+            }
+            #
+            elseif(Prop_m == "models/sprops/cylinders/size_5/cylinder_12x6.mdl") {
+                Q["door_b", entity] = Prop_e
+                Prop_e:propNotSolid(1)
+            }
+            elseif(Prop_m == "models/sprops/cylinders/size_4/cylinder_9x12.mdl") {
+                Q["door_f", entity] = Prop_e
+                Prop_e:propNotSolid(1)
+            }
+            #
+            elseif(Prop_m == "models/props_phx/construct/windows/window_curve90x2.mdl") {
+                Q["window_curveList", array] = Q["window_curveList", array]:add(array(Prop_e))
+            }
+        }
+    }
+    else {
+        if(changed(0)) {
+            
+            foreach(C, Ripper:entity = Q["ripperList", array]) {
+                Ripper:propFreeze(0)
+            }
+            local Ripper_e = Q["ripper", entity]
+            local Base_e = Q["base", entity]
+            
+            Ripper_e:propFreeze(1)
+            
+            
+            foreach(C, WindowCurve:entity = Q["window_curveList", array]) {
+                local LocalPos = Base_e:toLocal(WindowCurve:pos())
+                local LocalPos_x = LocalPos[1]
+                if(LocalPos_x > 20) {
+                    WindowCurve:propFreeze(0)
+                    Q["door_windowCurve_b", entity] = WindowCurve
+                }
+                elseif(LocalPos_x < -20) {
+                    WindowCurve:propFreeze(0)
+                    Q["door_windowCurve_f", entity] = WindowCurve
+                }
+            }
+        }
+        
+        local Base_e = Q["base", entity]
+        foreach(C, D:string = array("f", "b")) {
+            local D1 = "d" + D
+            local Real = Q[D1 + "Real", number]
+            local Need = Q[D1 + "Need", number] = O:keyPressed("mouse_5")
+            local Dif = Need - Real
+            
+            if(abs(Dif) >= 0.001) {
+                Real = Q[D1 + "Real", number] = Real + clamp(Dif / 5 ,-5,5)
+                
+                local Root = Q["door_" + D, entity]
+                Root:setAng(Base_e:toWorld(ang(0,Real * 82,0)))
+            }
+        }
+        
+        
+        local Harvest = O:keyPressed("mouse_4")
+        if(Harvest) {
+            foreach(C, Ripper:entity = Q["ripperList", array]) {
+                
+                local A = Ripper:mass() * 6000 * (mod(C, 2) ? 1 : -1)
+                Ripper:applyAngForce(ang(0,A,0))
+                Ripper:propFreeze(0)
+            }
+        }
+        
+        local Down = Q["ripperDown", number]
+        Q["ripperDown", number] = Down = Down  + clamp((Harvest - Down) / 30 ,-0.05,0.05)
+        if(Down >= 0.01) {
+            local Ripper_e = Q["ripper", entity]
+            local Base_e = Q["base", entity]
+            
+            Ripper_e:propFreeze(1)
+            local Ripper_p = Base_e:toWorld(vec(0,0,142 - 80 * Down))
+            Ripper_e:setPos(Ripper_p)
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

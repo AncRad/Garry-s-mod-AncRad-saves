@@ -1,0 +1,449 @@
+@name PBA001
+@persist [PBA]:table
+
+
+
+if(changed(0)) {
+    
+    function entity:setPBA(PlayerBone_n:number, Ang:angle) {
+        #ifdef entity:playerSetBoneAng(number,angle)
+            This:playerSetBoneAng(PlayerBone_n, Ang)
+        #else
+            print("#PBA| Критическая ошибка! Отсутствует функция добавочного изменения углов наклона костей. PBA остановлен!")
+            stoptimer("pba")
+            #runOnLast(0)
+            CPA = PA_c = PA_p = 0
+        #endif
+    }
+    function entity:setPBA0() {
+        local Player_e = This
+        local Player_sid = Player_e:steamID()
+        local Sell_Psid_PBAPB  = Player_sid + "/pba/players/bone"
+        for(C = 0,17) {
+            Player_e:setPBA(C, ang())
+            PBA[Sell_Psid_PBAPB + "/needAngle/" + C, angle] = ang()
+            PBA[Sell_Psid_PBAPB + "/realAngle/" + C, angle] = ang()
+        }
+    }
+    function entity:addPBA() {
+        local Player_e = This
+        local Player_sid = Player_e:steamID()
+        
+        local PBAS_Psid = "pba/status/" + Player_sid
+        local PlayerStatus = PBA[PBAS_Psid, string]
+        
+        if(!PlayerStatus | PlayerStatus == "removed") {
+            
+            Player_e:setPBA0()
+            local Player_sid = Player_e:steamID()
+            PBA[PBAS_Psid, string] = "wait"
+            #PBA["pba/players/wait", array] = PBA["pba/players/wait", array]:add(array(Player_e))
+        }
+    }
+    function entity:removePBA() {
+        local Player_e = This
+        local Player_sid = Player_e:steamID()
+        
+        local PBAS_Psid = "pba/status/" + Player_sid
+        local PlayerStatus = PBA[PBAS_Psid, string]
+        
+        if(PlayerStatus != "removed") {
+            foreach(C, CPlayer_e:entity = PBA["pba/players/animated", array]) {
+                if(CPlayer_e == Player_e) {
+                    PBA["pba/players/animated", array]:remove(C)
+                    break
+                }
+            }
+            PBA[PBAS_Psid, string] = "removed"
+        }
+    }
+    
+    function entity:addPBA(PlayerBone_n:number, [NeedAng Delit Clamp]:angle, AnimVariable:string) {
+        local Player_e = This
+        local Player_sid = Player_e:steamID()
+        
+        local Sell_Psid_PBAPB  = Player_sid + "/pba/players/bone"
+        
+        
+        local Sell_Psid_PBAPBAV_PB = Sell_Psid_PBAPB + "/animVariable/" + PlayerBone_n
+        local RealAnimVariable = PBA[Sell_Psid_PBAPBAV_PB, string]
+        if(!RealAnimVariable | RealAnimVariable == "wait") {
+            PBA[Sell_Psid_PBAPBAV_PB, string] = "animated"
+            local Sell_Psid_PBAPBA = Player_sid + "/pba/players/bones/animated"
+            PBA[Sell_Psid_PBAPBA, array] = PBA[Sell_Psid_PBAPBA, array]:add(array(PlayerBone_n))
+        }
+        
+        PBA[Sell_Psid_PBAPB + "/needAngle/"    + PlayerBone_n, angle ] = NeedAng
+        PBA[Sell_Psid_PBAPB + "/delit/"        + PlayerBone_n, angle ] = Delit
+        PBA[Sell_Psid_PBAPB + "/clamp/"        + PlayerBone_n, angle ] = Clamp
+        PBA[Sell_Psid_PBAPB + "/animVariable/" + PlayerBone_n, string] = AnimVariable 
+        
+        
+        
+        local PBAS_Psid = "pba/status/" + Player_sid
+        if(PBA[PBAS_Psid, string] == "wait") {
+            PBA[PBAS_Psid, string] = "animated"
+            PBA["pba/players/animated", array] = PBA["pba/players/animated", array]:add(array(Player_e))
+        }
+    }
+    
+    
+    
+    
+    PBA["pba/interval", number] = 50
+    
+    runOnLast(1)
+    timer("pba", 1)
+}
+#####################
+###   vvvvv       ###
+###t() | 1 ? PBA["###  Line:102  Col:68
+###   ^^^^^       ###
+#####################
+
+
+if(clk("pba")) {
+        timer("pba", (PBA["pba/players/animated", array]:count() | 1 ? PBA["pba/interval", number] : 200))
+    
+    if(changed(0)) {
+        
+        PBA["pba/lastCurtime", number] = curtime()
+    }
+    local LastCurtime = PBA["pba/lastCurtime", number]
+    local Curtime = PBA["pba/lastCurtime", number] = curtime()
+    local Interval = Curtime - LastCurtime
+    local Loop = Interval / 0.015625
+    
+    
+    
+    
+    local PA_a = PBA["pba/players/animated", array]
+    local PA_c = PA_a:count()
+    local PA_p = PBA["pba/players/animated/position", number]
+    local CPA = 0
+    
+    if(CPA == PA_c) {
+        PA_p = PA_p - 1
+        if(PA_p < 0) {
+            PA_p = PA_c
+        }
+    }
+    PBA["pba/players/animated/position", number] = PA_p
+    
+    while(perf(70) & CPA != PA_c) {
+        CPA++
+        PA_p++
+        local Player_e = PA_a[PA_p, entity]
+        local Player_sid = Player_e:steamID()
+        
+        local PlayerBonesAnimated_a = PBA[Player_sid + "/pba/players/bones/animated", array]
+        local PlayerBonesAnimated_c = PlayerBonesAnimated_a:count()
+        if(PlayerBonesAnimated_c) {
+            local Clear = array()
+            local Sell_Psid_PBAPB              = Player_sid + "/pba/players/bone"
+            local Sell_Psid_PBAPB_animVariable = Sell_Psid_PBAPB + "/animVariable/"
+            local Sell_Psid_PBAPB_realAngle    = Sell_Psid_PBAPB + "/realAngle/"
+            local Sell_Psid_PBAPB_needAngle    = Sell_Psid_PBAPB + "/needAngle/"
+            foreach(CPBA, PlayerBone_n:number = PlayerBonesAnimated_a) {
+                
+                local Sell_Psid_PBAPB_realAngle_PlayerBone_n = Sell_Psid_PBAPB_realAngle + PlayerBone_n
+                
+                local RealAng = PBA[Sell_Psid_PBAPB_realAngle_PlayerBone_n, angle]
+                local NeedAng = PBA[Sell_Psid_PBAPB_needAngle+PlayerBone_n, angle]
+                local DIF = NeedAng - RealAng
+                if(vec(DIF):length() > 0.2) {
+                    local AnimVariable = PBA[Sell_Psid_PBAPB_animVariable + PlayerBone_n, string]
+                    local InCase = 0
+                    switch(AnimVariable) {
+                        case "1",
+                            
+                            local Delit = PBA[Sell_Psid_PBAPB + "/delit/" + PlayerBone_n, angle]
+                            local Clamp = PBA[Sell_Psid_PBAPB + "/clamp/" + PlayerBone_n, angle]
+                            local DIF = NeedAng - RealAng
+                            
+                            local Add = clamp(DIF / Delit,-Clamp,Clamp) * Loop
+                            local Add = ang(min(vec(Add),vec(DIF)))
+                            RealAng = angnorm(RealAng + Add)
+                            #~~44 Опс без учета мат и операторов присваивания
+                            
+                            InCase = 1
+                        break
+                        
+                        case "wait",
+                            Clear = array(CPBA):add(Clear)
+                            InCase = 0
+                        break
+                    }
+                    if(InCase) {
+                        PBA[Sell_Psid_PBAPB_realAngle_PlayerBone_n, angle] = RealAng
+                        Player_e:setPBA(PlayerBone_n, RealAng)
+                    }
+                    else {
+                        Clear = array(CPBA):add(Clear)
+                        print("#PBA| Ошибка: кость №" + PlayerBone_n + " игрока " + Player_e:name() + " имеет неверный вариант анимирования!")
+                    }
+                }
+                else {
+                    Clear = array(CPBA):add(Clear)
+                    PBA[Sell_Psid_PBAPB_animVariable + PlayerBone_n, string] = "wait"
+                    #PBA[Player_sid + "/pba/players/bones/wait", array] = PBA[Player_sid + "/pba/players/bones/wait", array]:add(array(PlayerBone_n))
+                }
+            }
+            foreach(CC, I:number = Clear) {
+                PBA[Player_sid + "/pba/players/bones/animated", array]:remove(I)
+            }
+        }
+        else {
+            PBA["pba/status/" + Player_sid, string] = "wait"
+            PBA["pba/players/animated", array]:remove(PA_p)
+            #PBA["pba/players/wait", array] = PBA["pba/players/wait", array]:add(array(Player_e))
+            CPA = max(CPA-1,0)
+            PA_p = max(PA_p-1,0)
+            PA_c = max(PA_c-1,0)
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+if(last()) {
+    foreach(C, Player_e:entity = PBA["pba/players/animated", array]) {
+        for(C = 0,16) {
+            Player_e:removePBA()
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

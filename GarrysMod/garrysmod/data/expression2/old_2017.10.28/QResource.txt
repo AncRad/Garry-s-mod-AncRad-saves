@@ -1,0 +1,272 @@
+@name QResource
+
+@inputs 
+@outputs 
+@persist [Language Settings]:table
+
+
+
+############################################################
+############################################################ KEYS
+############################################################
+function number entity:userKey(Key:string) {
+    switch(Key) {
+        case "keyForward", return This:keyForward()
+        case "keyBack"   , return This:keyBack()
+        case "keyLeft"   , return This:keyLeft()
+        case "keyRight"  , return This:keyRight()
+        case "keyJump"   , return This:keyJump()
+        case "keyDuck"   , return This:keyDuck()
+        case "keyWalk"   , return This:keyWalk()
+        case "keySprint" , return This:keySprint()
+        case "keyUse"    , return This:keyUse()
+        case "keyReload" , return This:keyReload()
+        case "keyZoom"   , return This:keyZoom()
+        case "keyAttack1", return This:keyAttack1()
+        case "keyAttack2", return This:keyAttack2()
+        case "none"      , return 0
+    }
+    return This:keyPressed(Key)
+}
+
+
+Language["keys", array] = array("keyForward", "keyBack", "keyLeft", "keyRight", "keyJump", "keyWalk", "keySprint", "keyDuck", "keyUse", "keyReload", "keyZoom", "keyAttack1", "keyAttack2", "none")
+
+Language["keyForward", string] = "Идти вперёд"
+Language["keyBack"   , string] = "Идти назад"
+Language["keyLeft"   , string] = "Идти влево"
+Language["keyRight"  , string] = "Идти вправо"
+Language["keyJump"   , string] = "Прыжок"
+Language["keyWalk"   , string] = "Идти шагом"
+Language["keySprint" , string] = "Бежать"
+Language["keyDuck"   , string] = "Присесть"
+Language["keyUse"    , string] = "Взаимодействие"
+Language["keyReload" , string] = "Перезарядить"
+Language["keyZoom"   , string] = "Приближение"
+Language["keyAttack1", string] = "Атака 1"
+Language["keyAttack2", string] = "Атака 2"
+Language["none"      , string] = "Нет кнопки"
+Language[""          , string] = "Нет значения"
+
+############################################################
+############################################################ SETTINGS
+############################################################
+##################
+################## number
+##################
+
+
+
+
+
+
+
+
+#[
+
+
+function string table:qR(Cell:string, Type:string) {
+    switch(Type) {
+        case "string"    , return            This[Cell, string  ]
+        case "array"     , return glonEncode(This[Cell, array   ])
+        case "table"     , return glonEncode(This[Cell, table   ])
+        case "number"    , return            This[Cell, number  ]:toString()
+        case "vector2"   , return            This[Cell, vector2 ]:toString()
+        case "vector"    , return            This[Cell, vector  ]:toString()
+        case "vector4"   , return            This[Cell, vector4 ]:toString()
+        case "angle"     , return            This[Cell, angle   ]:toString()
+        case "entity"    , return            This[Cell, entity  ]:toString()
+        #case "wirelink"  , return            This[Cell, wirelink]:toString()
+        #case "ranger"    , return            This[Cell, ranger  ]:toString()
+    }
+    return "error"
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

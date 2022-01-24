@@ -1,0 +1,182 @@
+@name sphere
+
+@inputs 
+@outputs 
+@persist [E O]:entity [Q]:table List:array
+@persist Center:vector Radius
+
+@trigger none
+
+
+
+if(changed(0)) {
+    
+    E = entity()
+    O = owner()
+    
+    timer("1", 1)
+    timer("2", 1)
+}
+
+
+if(clk("1")) {
+        timer("1", 200)
+    
+    
+    findAllowPlayerProps(O)
+    findByModel("models/props_phx/construct/metal_plate1.mdl")
+    findInSphere(E:pos(), 52.5 * 20)
+    List = findToArray()
+}
+
+
+
+
+if(clk("1")) {
+        timer("1", 50)
+    
+    if(changed(0)) {
+        Q["lastCurtime", number] = curtime()
+    }
+    
+    local LastCurtime = Q["lastCurtime", number]
+    local Curtime = Q["lastCurtime", number] = curtime()
+    local Interval = Curtime-LastCurtime
+    local Loop = Interval / 0.015625
+    
+    
+    local List_c = List:count()
+    if(changed(List_c)) {
+        
+        
+        local Size = 48
+        local Interval = Size * 1.2
+        
+        Radius = sqrt(List_c * Interval^2/4/pi())
+        
+        
+        local An = round(Radius*2*pi()/Interval) print(An)
+        if(List_c <= 1) {
+            Radius = 0
+        }
+        Center = E:pos() + vec(0,0,Radius+48)
+        
+        Q = table()
+        foreach(C, E:entity = List) {
+            
+            
+        }
+    }
+    
+    foreach(C, E:entity = List) {
+        
+        local V = vec()
+        if(C <= 2) {
+            V = select(C,
+                vec(0,0, Radius),
+                vec(0,0,-Radius),
+                vec( Radius,0,0),
+                vec(-Radius,0,0),
+                vec(0, Radius,0),
+                vec(0,-Radius,0)
+            )
+        }
+        else {
+            local A = 360/(List_c-2)*(C-2)+Curtime
+            local B = 0
+            V = vec(sin(A)*cos(B),cos(A)*cos(B),sin(B)) * (Radius * 1.2)
+        }
+        
+        local F = Center+V-E:pos()-E:vel()/4
+        
+        E:applyForce((F+vec(0,0,9))*E:mass()*Loop)
+        
+        
+        
+        #
+        local FA = (-E:angles()*2-E:angVel())
+        E:applyAngForce(FA*E:mass()*Loop)
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName("sphere\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1e6))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

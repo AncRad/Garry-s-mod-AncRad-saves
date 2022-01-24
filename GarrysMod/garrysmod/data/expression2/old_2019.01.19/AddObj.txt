@@ -1,0 +1,657 @@
+@name AddObj
+
+@persist [AddObj]:table [AddObj_queye]:array [AddObj_lastName]:string [AddObj_holoCounter AddObj_noNameCounter]
+@persist [AddObj_all_includeActs AddObj_prop_includeActs AddObj_holo_includeActs]:table
+
+
+
+if(changed(0)) {
+    
+    AddObj_all_includeActs = invert(table("timer","call_function()"))
+    AddObj_prop_includeActs = invert(table("propNotSolid"))
+    AddObj_holo_includeActs = invert(table("holo_clip","holo_clipLocal"))
+    
+    function holoClip([ID Index]:number, LocalPos:vector, LocalAng:angle, Offset:number) {
+        holoClipEnabled(ID, Index, 1)
+        holoClip(ID, Index, LocalPos + vec(Offset,0,0):rotate(LocalAng), vec(1,0,0):rotate(LocalAng), 0)
+    }
+    
+    #
+    #- all
+    #
+    #- timer
+    function add_timer(Timer_name:string) {
+        AddObj[AddObj_lastName, table]["actList", table] = AddObj[AddObj_lastName, table]["actList", table]:add(table(table(
+             "type"       = "timer"
+            ,"timer_name" = Timer_name
+            ,"timer_time" = 1
+        )))
+    }
+    function add_timer(Timer_name:string,Timer_time:number) {
+        AddObj[AddObj_lastName, table]["actList", table] = AddObj[AddObj_lastName, table]["actList", table]:add(table(table(
+             "type"       = "timer"
+            ,"timer_name" = Timer_name
+            ,"timer_time" = Timer_time
+        )))
+    }
+    function add_timer(Obj_name:string,Timer_name:string,Timer_time:number) {
+        AddObj[Obj_name, table]["actList", table] = AddObj[Obj_name, table]["actList", table]:add(table(table(
+             "type"       = "timer"
+            ,"timer_name" = Timer_name
+            ,"timer_time" = Timer_time
+        )))
+    }
+    #
+    #-
+    function add_callFunction(Function_name:string) {
+        AddObj[AddObj_lastName, table]["actList", table] = AddObj[AddObj_lastName, table]["actList", table]:add(table(table(
+             "type"          = "call_function()"
+            ,"function_name" = Function_name
+        )))
+    }
+    function add_callFunction(Obj_name:string,Function_name:string) {
+        AddObj[Obj_name, table]["actList", table] = AddObj[Obj_name, table]["actList", table]:add(table(table(
+             "type"          = "call_function()"
+            ,"function_name" = Function_name
+        )))
+    }
+    
+    
+    #
+    #- prop
+    #
+    #- propNotSolid
+    function add_propNotSolid(Obj_name:string, Obj_solid:number) {
+        AddObj[Obj_name, table]["actList", table] = AddObj[Obj_name, table]["actList", table]:add(table(table(
+            "type"         = "propNotSolid",
+            "propNotSolid" = Obj_solid
+        )))
+    }
+    function add_propNotSolid(Obj_solid:number) {
+        AddObj[AddObj_lastName, table]["actList", table] = AddObj[AddObj_lastName, table]["actList", table]:add(table(table(
+            "type"         = "propNotSolid",
+            "propNotSolid" = Obj_solid
+        )))
+    }
+    
+    #
+    #- parent
+    #
+    function add_parent(Obj_parent_name:string) {
+        AddObj[AddObj_lastName, table] = AddObj[AddObj_lastName, table]:merge(table(
+            "parent"      = "",
+            "parent/name" = Obj_parent_name
+        ))
+    }
+    function add_parent(Obj_name:string, Obj_parent_name:string) {
+        AddObj[Obj_name, table] = AddObj[Obj_name, table]:merge(table(
+            "parent"      = "",
+            "parent/name" = Obj_parent_name
+        ))
+    }
+    function add_parent(Obj_parent_entity:entity) {
+        AddObj[AddObj_lastName, table] = AddObj[AddObj_lastName, table]:merge(table(
+            "parent"        = "entity",
+            "parent/entity" = Obj_parent_entity
+        ))
+    }
+    function add_parent(Obj_name:string, Obj_parent_entity:entity) {
+        AddObj[Obj_name, table] = AddObj[Obj_name, table]:merge(table(
+            "parent"        = "entity",
+            "parent/entity" = Obj_parent_entity
+        ))
+    }
+    #- 
+    function add_parent(Obj_name:string, Obj_parent_name:string, Obj_parent_attachment:string) {
+        AddObj[Obj_name, table] = AddObj[Obj_name, table]:merge(table(
+            "parent"            = "attachment",
+            "parent/name"       = Obj_parent_name,
+            "parent/attachment" = Obj_parent_attachment
+        ))
+    }
+    function add_parent(Obj_parent_entity:entity, Obj_parent_attachment:string) {
+        AddObj[AddObj_lastName, table] = AddObj[AddObj_lastName, table]:merge(table(
+            "parent"             = "attachment",
+            "parent/entity"      = Obj_parent_entity,
+            "parent/attachment"  = Obj_parent_attachment
+        ))
+    }
+    function add_parent(Obj_name:string, Obj_parent_entity:entity, Obj_parent_attachment:string) {
+        AddObj[Obj_name, table] = AddObj[Obj_name, table]:merge(table(
+            "parent"             = "attachment",
+            "parent/entity"      = Obj_parent_entity,
+            "parent/attachment"  = Obj_parent_attachment
+        ))
+    }
+    #
+    #- into
+    #
+    function add_INTO(Obj_into_name:string) {
+        AddObj[AddObj_lastName, table] = AddObj[AddObj_lastName, table]:merge(table(
+            "parent"       = "",
+            "parent/name"  = Obj_into_name,
+            "toWorld"      = "",
+            "toWorld/name" = Obj_into_name
+        ))
+    }
+    function add_INTO(Obj_name:string, Obj_into_name:string) {
+        AddObj[Obj_name, table] = AddObj[Obj_name, table]:merge(table(
+            "parent"       = "",
+            "parent/name"  = Obj_into_name,
+            "toWorld"      = "",
+            "toWorld/name" = Obj_into_name
+        ))
+    }
+    function add_INTO(Obj_name:string, Obj_into_entity:entity) {
+        AddObj[Obj_name, table] = AddObj[Obj_name, table]:merge(table(
+            "parent"         = "entity",
+            "parent/entity"  = Obj_into_entity,
+            "toWorld"        = "entity",
+            "toWorld/entity" = Obj_into_entity
+        ))
+    }
+    function add_INTO(Obj_into_entity:entity) {
+        AddObj[AddObj_lastName, table] = AddObj[AddObj_lastName, table]:merge(table(
+            "parent"         = "entity",
+            "parent/entity"  = Obj_into_entity,
+            "toWorld"        = "entity",
+            "toWorld/entity" = Obj_into_entity
+        ))
+    }
+    #- 
+    function add_INTO(Obj_name:string, Obj_into_entity:entity, Obj_into_attachment:string) {
+        AddObj[Obj_name, table] = AddObj[Obj_name, table]:merge(table(
+            "parent"             = "attachment",
+            "parent/entity"      = Obj_into_entity,
+            "parent/attachment"  = Obj_into_attachment,
+            "toWorld"            = "attachment",
+            "toWorld/entity"     = Obj_into_entity,
+            "toWorld/attachment" = Obj_into_attachment
+        ))
+    }
+    function add_INTO(Obj_into_entity:entity, Obj_into_attachment:string) {
+        AddObj[AddObj_lastName, table] = AddObj[AddObj_lastName, table]:merge(table(
+            "parent"             = "attachment",
+            "parent/entity"      = Obj_into_entity,
+            "parent/attachment"  = Obj_into_attachment,
+            "toWorld"            = "attachment",
+            "toWorld/entity"     = Obj_into_entity,
+            "toWorld/attachment" = Obj_into_attachment
+        ))
+    }
+    #- 
+    function add_INTO(Obj_name:string, Obj_into_name:string, Obj_into_attachment:string) {
+        AddObj[Obj_name, table] = AddObj[Obj_name, table]:merge(table(
+            "parent"             = "attachment",
+            "parent/name"        = Obj_into_name,
+            "parent/attachment"  = Obj_into_attachment,
+            "toWorld"            = "attachment",
+            "toWorld/name"       = Obj_into_name,
+            "toWorld/attachment" = Obj_into_attachment
+        ))
+    }
+    
+    
+    
+    #
+    #- holo
+    #
+    #
+    #- clip
+    #
+    function add_holoClip(Holo_name:string, Holo_clip_localPos:vector, Holo_clip_localAng:angle, Holo_clip_localOffset:number) {
+        AddObj[Holo_name, table]["actList", table] = AddObj[Holo_name, table]["actList", table]:add(table(table(
+            "type"             = "holo_clip",
+            "clip_localPos"    = Holo_clip_localPos,
+            "clip_localAng"    = Holo_clip_localAng,
+            "clip_localOffset" = Holo_clip_localOffset
+        )))
+    }
+    function add_holoClip(Holo_clip_localPos:vector, Holo_clip_localAng:angle, Holo_clip_localOffset:number) {
+        AddObj[AddObj_lastName, table]["actList", table] = AddObj[AddObj_lastName, table]["actList", table]:add(table(table(
+            "type"             = "holo_clip",
+            "clip_localPos"    = Holo_clip_localPos,
+            "clip_localAng"    = Holo_clip_localAng,
+            "clip_localOffset" = Holo_clip_localOffset
+        )))
+    }
+    #
+    #- clip local
+    #
+    function add_holoClip(Holo_name:string, Holo_clip_localPos:vector, Clip_localPos_name:string, Holo_clip_localAng:angle, Clip_localAng_name:string, Holo_clip_localOffset:number) {
+        AddObj[AddObj_lastName, table]["actList", table] = AddObj[Holo_name, table]["actList", table]:add(table(table(
+            "type"              = "holo_clipLocal",
+            "clip_localPos"     = Holo_clip_localPos,
+            "clip_localPos_obj" = Clip_localPos_name,
+            "clip_localAng"     = Holo_clip_localAng,
+            "clip_localAng_obj" = Clip_localAng_name,
+            "clip_localOffset"  = Holo_clip_localOffset
+        )))
+    }
+    function add_holoClip(Holo_clip_localPos:vector, Clip_localPos_name:string, Holo_clip_localAng:angle, Clip_localAng_name:string, Holo_clip_localOffset:number) {
+        AddObj[AddObj_lastName, table]["actList", table] = AddObj[AddObj_lastName, table]["actList", table]:add(table(table(
+            "type"              = "holo_clipLocal",
+            "clip_localPos"     = Holo_clip_localPos,
+            "clip_localPos_obj" = Clip_localPos_name,
+            "clip_localAng"     = Holo_clip_localAng,
+            "clip_localAng_obj" = Clip_localAng_name,
+            "clip_localOffset"  = Holo_clip_localOffset
+        )))
+    }
+    #
+    function add_holoClip(Holo_name:string, Holo_clip_localPos:vector, Clip_localPos_entity:entity, Holo_clip_localAng:angle, Clip_localAng_entity:entity, Holo_clip_localOffset:number) {
+        AddObj[Holo_name, table]["actList", table] = AddObj[Holo_name, table]["actList", table]:add(table(table(
+            "type"              = "holo_clipLocal",
+            "clip_localPos"     = Holo_clip_localPos,
+            "clip_localPos_obj" = Clip_localPos_entity,
+            "clip_localAng"     = Holo_clip_localAng,
+            "clip_localAng_obj" = Clip_localAng_entity,
+            "clip_localOffset"  = Holo_clip_localOffset
+        )))
+    }
+    function add_holoClip(Holo_clip_localPos:vector, Clip_localPos_entity:entity, Holo_clip_localAng:angle, Clip_localAng_entity:entity, Holo_clip_localOffset:number) {
+        AddObj[AddObj_lastName, table]["actList", table] = AddObj[AddObj_lastName, table]["actList", table]:add(table(table(
+            "type"              = "holo_clipLocal",
+            "clip_localPos"     = Holo_clip_localPos,
+            "clip_localPos_obj" = Clip_localPos_entity,
+            "clip_localAng"     = Holo_clip_localAng,
+            "clip_localAng_obj" = Clip_localAng_entity,
+            "clip_localOffset"  = Holo_clip_localOffset
+        )))
+    }
+    
+    
+    function addProp(Obj_name:string, Obj_pos:vector, Obj_angle:angle, Obj_color:vector, [Obj_model Obj_material Obj_INTO]:string) {
+        while(AddObj:exists(Obj_name) | !Obj_name) {
+            AddObj_noNameCounter++
+            Obj_name = "noName" + AddObj_noNameCounter
+        }
+        
+        AddObj[Obj_name, table] = table(
+             "type"     = "prop"
+            ,"pos"      = Obj_pos
+            ,"ang"      = Obj_angle
+            ,"model"    = Obj_model
+            
+            ,"color"    = Obj_color
+            ,"material" = Obj_material
+            
+            ,"toWorld/name" = Obj_INTO
+            #,"parent/name"  = Obj_INTO
+        )
+        
+        AddObj_lastName = Obj_name
+        AddObj_queye:pushString(Obj_name)
+    }
+    function addHolo(Obj_name:string, Obj_pos:vector, Obj_size:vector, Obj_ang:angle, Obj_color:vector, [Obj_model Obj_material Obj_INTO]:string) {
+        
+        while(AddObj:exists(Obj_name) | !Obj_name) {
+            AddObj_noNameCounter++
+            Obj_name = "noName" + AddObj_noNameCounter
+        }
+        
+        AddObj[Obj_name, table] = table(
+             "type"     = "holo"
+            ,"pos"      = Obj_pos
+            ,"size"     = Obj_size
+            ,"ang"      = Obj_ang
+            ,"color"    = Obj_color
+            ,"model"    = Obj_model
+            ,"material" = Obj_material
+            
+            ,"toWorld/name" = Obj_INTO
+            ,"parent/name"  = Obj_INTO
+        )
+        
+        AddObj_lastName = Obj_name
+        AddObj_queye:pushString(Obj_name)
+    }
+    
+    
+    
+    function array table:toWorld() {
+        local Obj_pos     = This["pos", vector]
+        local Obj_ang     = This["ang", angle ]
+        local Obj_toWorld = This["toWorld", string]
+        
+        if(Obj_toWorld == "") {
+            local Obj_toWorld_name  = This["toWorld/name", string]
+            local Obj_toWorld_entity = AddObj[Obj_toWorld_name + "/entity", entity]
+            
+            local Pos = Obj_toWorld_entity:pos()
+            local Ang = Obj_toWorld_entity:angles()
+            return toWorldPosAng(Obj_pos,Obj_ang,Pos,Ang)
+        }
+        elseif(Obj_toWorld == "entity") {
+            local Obj_toWorld_entity = This["toWorld/entity", entity]
+            
+            local Pos = Obj_toWorld_entity:pos()
+            local Ang = Obj_toWorld_entity:angles()
+            return toWorldPosAng(Obj_pos,Obj_ang,Pos,Ang)
+        }
+        elseif(Obj_toWorld == "attachment") {
+            local Obj_toWorld_entity = This["toWorld/entity", entity]
+            if(!Obj_toWorld_entity) {
+                local Obj_toWorld_name  = This["toWorld/name", string]
+                Obj_toWorld_entity = AddObj[Obj_toWorld_name + "/entity", entity]
+            }
+            local Obj_toWorld_attachment = This["toWorld/attachment", string]
+            
+            local Pos = Obj_toWorld_entity:attachmentPos(Obj_toWorld_attachment)
+            local Ang = Obj_toWorld_entity:attachmentAng(Obj_toWorld_attachment)
+            return toWorldPosAng(Obj_pos,Obj_ang,Pos,Ang)
+        }
+    }
+    
+    
+    timer("AddObj", 1)
+    
+    
+    
+    if(entity():getName() == "AddObj") {
+        #addProp(Obj_name:string, Obj_pos:vector, Obj_angle:angle, Obj_color:vector, [Obj_model Obj_material Obj_INTO]:string)
+        addHolo("holo", vec(0,0,10), vec(3), ang(), vec(255), "cube", "", "")
+        add_INTO(entity())
+        addProp("prop", vec(10,0,0), ang(), vec(255), "models/bull/gates/processor.mdl", "", "holo")
+        add_parent("holo")
+    }
+}
+
+if(clk("AddObj")) {
+    local Count = AddObj_queye:count()
+        timer("AddObj", Count ? 100 : 500)
+    
+    while(Count & perf(70)) {
+        #
+        #- data
+        #
+        local Obj_name = AddObj_queye[1, string]
+        local Obj_table = AddObj[Obj_name, table]
+        local Obj_type = Obj_table["type", string]
+        #
+        #- check can create
+        #
+        local Obj_canCreate = 0
+        if(Obj_type == "prop") {Obj_canCreate = propCanCreate()}
+        if(Obj_type == "holo") {Obj_canCreate = holoCanCreate()}
+        
+        if(Obj_canCreate) {
+            #
+            #- remove in queye
+            #
+            Count--
+            AddObj:remove(Obj_name)
+            AddObj_queye:remove(1)
+            
+            local Obj_includeActs = AddObj_all_includeActs
+            switch(Obj_type) {
+                    #
+                    #- prop
+                    #
+                case "prop",
+                    #
+                    Obj_includeActs = Obj_includeActs:merge(AddObj_prop_includeActs)
+                    #
+                    #- prop get data
+                    #
+                    local Obj_CA = Obj_table:toWorld()
+                    local Obj_pos = Obj_CA[1, vector]
+                    local Obj_ang = Obj_CA[2, angle ]
+                    local Obj_model    = Obj_table["model"   , string]
+                    local Obj_material = Obj_table["material", string]
+                    local Obj_frozen   = Obj_table["frozen"  , number] | !Obj_table:exists("frozen")
+                    local Obj_parent   = Obj_table["parent"  , string]
+                    #
+                    #- prop create
+                    #
+                    local Obj_entity = propSpawn(Obj_model,Obj_pos,Obj_ang,Obj_frozen)
+                    #
+                    #- prop model
+                    #
+                    Obj_entity:setMaterial(Obj_material)
+                    #
+                    #- prop material
+                    #
+                    if(Obj_table:exists("color")) {
+                        Obj_entity:setColor(Obj_table["color", vector])
+                    }
+                    #
+                    #- prop parent
+                    #
+                    if(Obj_parent == "") {
+                        local Obj_parent_name  = Obj_table["parent/name", string]
+                        local Obj_parent_entity = AddObj[Obj_parent_name + "/entity", entity]
+                        if(Obj_parent_name & Obj_parent_entity) {
+                            Obj_entity:parentTo(Obj_parent_entity)
+                        }
+                    }
+                    elseif(Obj_parent == "entity") {
+                        local Obj_parent_entity = Obj_table["parent/entity", entity]
+                        
+                        if(Obj_parent_entity) {
+                            Obj_entity:parentTo(Obj_parent_entity)
+                        }
+                    }
+                    #
+                    #- prop set data
+                    #
+                    AddObj = AddObj:merge(table(
+                         Obj_name + "/type"   = "prop"
+                        ,Obj_name + "/entity" = Obj_entity
+                    ))
+                break
+                    #
+                    #- holo
+                    #
+                case "holo",
+                    #
+                    Obj_includeActs = Obj_includeActs:merge(AddObj_holo_includeActs)
+                    #
+                    #- holo index
+                    #
+                    AddObj_holoCounter++
+                    local Obj_index = AddObj_holoCounter
+                    #
+                    #- holo get data
+                    #
+                    local Obj_CA  = Obj_table:toWorld()
+                    local Obj_pos = Obj_CA[1, vector]
+                    local Obj_ang = Obj_CA[2, angle ]
+                    local Obj_size     = Obj_table["size"    , vector]
+                    local Obj_color    = Obj_table["color"   , vector]
+                    local Obj_model    = Obj_table["model"   , string]
+                    local Obj_material = Obj_table["material", string]
+                    local Obj_parent   = Obj_table["parent"  , string]
+                    #
+                    #- holo scale fix
+                    #
+                    local CustomModel = Obj_model:left(7) == "models/"
+                    if(!CustomModel) {Obj_size/=6}
+                    #
+                    #- holo create
+                    #
+                    local Obj_entity = holoCreate(Obj_index,Obj_pos,Obj_size,Obj_ang,Obj_color,Obj_model)
+                    #
+                    #- holo material
+                    #
+                    holoMaterial(Obj_index, Obj_model)
+                    #
+                    #- holo model
+                    #
+                    if(CustomModel) {
+                        if(!holoModelAny()) {
+                            #ifdef entity:setModel(string)
+                                Obj_entity:setModel(Obj_model)
+                            #else
+                                if(changed(0)) {
+                                    printColor(vec(255,80,0), "[AddObj] ", vec(255), "no function entity:setModel(string)")
+                                }
+                            #endif
+                        }
+                    }
+                    #
+                    #- holo parent
+                    #
+                    if(Obj_parent == "") {
+                        local Obj_parent_name  = Obj_table["parent/name", string]
+                        local Obj_parent_index = AddObj[Obj_parent_name + "/index", number]
+                        
+                        if(Obj_parent_name & Obj_parent_index) {
+                            holoParent(Obj_index,Obj_parent_index)
+                        }
+                    }
+                    elseif(Obj_parent == "entity") {
+                        local Obj_parent_entity = Obj_table["parent/entity", entity]
+                        
+                        if(Obj_parent_entity) {
+                            holoParent(Obj_index, Obj_parent_entity)
+                        }
+                    }
+                    elseif(Obj_parent == "attachment") {
+                        local Obj_parent_entity = Obj_table["parent/entity", entity]
+                        if(!Obj_parent_entity) {
+                            local Obj_toWorld_name  = Obj_table["parent/name", string]
+                            Obj_parent_entity = AddObj[Obj_toWorld_name + "/entity", entity]
+                        }
+                        local Obj_parent_attachment = Obj_table["parent/attachment", string]
+                        
+                        if(Obj_parent_entity) {
+                            holoParentAttachment(Obj_index, Obj_parent_entity, Obj_parent_attachment)
+                        }
+                    }
+                    #
+                    #- holo set data
+                    #
+                    AddObj = AddObj:merge(table(
+                        Obj_index + "/name"   = Obj_name,
+                        Obj_name  + "/index"  = Obj_index,
+                        Obj_name  + "/entity" = Obj_entity
+                    ))
+                break
+            }
+            #
+            #- obj act
+            #
+            local ActList = Obj_table["actList", table]
+            if(ActList:count()) {
+                
+                while(ActList:exists(1)) {
+                    local Act_table = ActList:removeTable(1)
+                    local Act_type = Act_table["type", string]
+                    if(Obj_includeActs:exists(Act_type)) {
+                        switch(Act_type) {
+                                #
+                                #- propNotSolid
+                                #
+                            case "propNotSolid",
+                                local Obj_entity = AddObj[Obj_name + "/entity", entity]
+                                Obj_entity:propNotSolid(Act_table["propNotSolid", number])
+                            break
+                                #
+                                #- timer
+                                #
+                            case "timer",
+                                local Timer_name = Act_table["timer_name", string]
+                                local Timer_time = Act_table["timer_time", number]
+                                
+                                timer(Timer_name,Timer_time)
+                            break
+                                #
+                                #- call_function()
+                                #
+                            case "call_function()",
+                                Act_table["function_name", string]()
+                            break
+                                #
+                                #
+                                #
+                            case "holo_clip",
+                                local Holo_clip_localPos    = Act_table["clip_localPos"   , vector]
+                                local Holo_clip_localAng    = Act_table["clip_localAng"   , angle ]
+                                local Holo_clip_localOffset = Act_table["clip_localOffset", number]
+                                
+                                local Holo_clip_counter = 0
+                                      Holo_clip_counter = Obj_table["clip_counter", number] = Obj_table["clip_counter", number] + 1
+                                holoClip(AddObj_holoCounter, Holo_clip_counter, Holo_clip_localPos, Holo_clip_localAng, Holo_clip_localOffset)
+                            break
+                            case "holo_clipLocal",
+                                local Holo_entity = AddObj[Obj_name + "/entity", entity]
+                                
+                                local Holo_clip_localPos_entity = Act_table["clip_localPos_obj", entity]
+                                if(!Holo_clip_localPos_entity) {Holo_clip_localPos_entity = AddObj[Act_table["clip_localPos_obj", string] + "/entity", entity]}
+                                local Holo_clip_localPos = Holo_entity:toLocal(Holo_clip_localPos_entity:toWorld(Act_table["clip_localPos", vector]))
+                                
+                                local Holo_clip_localAng_entity = Act_table["clip_localAng_obj", entity]
+                                if(!Holo_clip_localAng_entity) {Holo_clip_localAng_entity = AddObj[Act_table["clip_localAng_obj", string] + "/entity", entity]}
+                                local Holo_clip_localAng = Holo_entity:toLocal(Holo_clip_localPos_entity:toWorld(Act_table["clip_localAng", angle]))
+                                local Holo_clip_localOffset = Act_table["clip_localOffset", number]
+                                
+                                local Holo_clip_counter = 0
+                                      Holo_clip_counter = Obj_table["clip_counter", number] = Obj_table["clip_counter", number] + 1
+                                holoClip(AddObj_holoCounter, Holo_clip_counter, Holo_clip_localPos, Holo_clip_localAng, Holo_clip_localOffset)
+                            break
+                                #
+                                #
+                                #
+                            case " ",
+                            break
+                                #
+                                #
+                                #
+                            case " ",
+                            break
+                                #
+                                #
+                                #
+                            default,
+                            break
+                        }
+                    }
+                }
+            }
+        }
+        else {
+            break
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

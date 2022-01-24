@@ -1,0 +1,15 @@
+@name addOps test
+@inputs 
+@outputs D X
+@persist 
+@trigger 
+
+
+interval(1)
+X = 0
+for(C = 1, 3000) {
+    D++
+    X++
+}
+
+addOps(-ops()*15)

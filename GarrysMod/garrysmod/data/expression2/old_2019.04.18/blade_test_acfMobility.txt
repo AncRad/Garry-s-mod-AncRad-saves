@@ -1,0 +1,261 @@
+@name blade_test_acfMobility
+
+@outputs Throttle Active
+@outputs GearL GearR GearT
+@outputs ClutchR ClutchL
+@outputs WeldL WeldR
+@persist O:entity Gear
+
+@trigger none
+@model models/maxofs2d/button_05.mdl
+
+if(changed(0)) {
+    O = owner()
+    
+    runOnKeys(O,1)
+    
+    GearL = GearR = GearT = 1
+    ClutchL = ClutchR = 0
+}
+
+local Weld = O:keyPressed("pad_0")
+
+local W = O:keyPressed("pad_8")
+local S = O:keyPressed("pad_5")
+local WS = O:keyPressed("pad_8")-O:keyPressed("pad_5")
+if(changed(WS)) {
+    Gear = WS < 0 ? 8 : 1
+    GearL = GearR = Gear
+}
+
+
+local GearPM = O:keyPressed("pad_9")-O:keyPressed("pad_7")
+if(changed(GearPM) & GearPM & !S) {
+    Gear = clamp(Gear + GearPM,1,7)
+    GearL = GearR = Gear
+}
+
+local AD = O:keyPressed("pad_4")-O:keyPressed("pad_6")
+if(changed(AD)) {
+    if(Gear==1 | Gear==8) {
+        
+        GearL = AD > 0 ? 8 : 1
+        GearR = AD > 0 ? 1 : 8
+        ClutchL = ClutchR = 0
+        WeldL = WeldR = 0
+        GearT = 2
+    }
+    else {
+        ClutchL = AD < 0
+        ClutchR = AD > 0
+        WeldL = ClutchR
+        WeldR = ClutchL
+        GearL = GearR = Gear
+        GearT = 1
+    }
+}
+
+if(changed(Weld)) {
+    WeldL = WeldR = Weld
+}
+
+
+Throttle = Active = (WS | AD) * !Weld  * 50
+
+#[
+@outputs Throttle Active
+@outputs GearL GearR GearT
+@outputs ClutchR ClutchL
+@outputs BrakeL BrakeR
+@outputs Clutch1
+@persist O:entity Gear
+@trigger none
+@model models/maxofs2d/button_05.mdl
+
+if(changed(0)) {
+    O = owner()
+    
+    Clutch1 = 1
+    runOnKeys(O,1)
+}
+
+local GearPM = O:keyPressed("pad_9")-O:keyPressed("pad_7")
+if(changed(GearPM) & GearPM) {
+    Gear = clamp(Gear + GearPM,1,8)
+    GearL = Gear
+    GearR = Gear
+}
+
+local AD = O:keyPressed("pad_4")-O:keyPressed("pad_6")
+if(changed(AD)) {
+    ClutchL = (AD >= 0)/2
+    ClutchR = (AD <= 0)/2
+    BrakeL = !ClutchL
+    BrakeR = !ClutchR
+}
+
+
+local WS = O:keyPressed("pad_8")-O:keyPressed("pad_5")
+if(changed(WS)) {
+    GearT = clamp(1 - WS,1,2)
+}
+Throttle = Active = (WS | AD) * 50
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

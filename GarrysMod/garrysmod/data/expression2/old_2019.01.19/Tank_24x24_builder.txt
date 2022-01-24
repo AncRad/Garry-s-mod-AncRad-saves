@@ -1,0 +1,188 @@
+@name Tank_24x24_builder
+
+
+@inputs 
+@outputs 
+
+
+@persist [E O]:entity
+@persist [Q Helper]:table
+@persist [Base]:entity [Constraints FIND]:array
+
+
+@model models/bull/gates/processor.mdl
+
+
+
+if(changed(0)) {
+    
+    E = entity() E:setSkin(1)
+    O = owner()
+    
+    holoCreate(1,vec(),vec(),ang()) holoMaterial(1, "models/wireframe")
+    
+    function entity helper_point(Point_n:string, [Point_p]:vector, [Point_s]:number) {
+        local StartHolo_e = Helper[Point_n + "/entity", entity]
+        if(!StartHolo_e) {
+            if(holoCanCreate()) {
+                local StartHolo_i = 0
+                StartHolo_i = Helper[Point_n + "/index" , number] = Helper["indexCounter", number] = max(Helper["indexCounter", number] + 1 ,2281448)
+                StartHolo_e = Helper[Point_n + "/entity", entity] = holoCreate(StartHolo_i, Point_p, vec(Point_s/6), ang(), vec(255), "models/editor/axis_helper.mdl") holoMaterial(StartHolo_i, "lights/white")
+            } else {return noentity()}
+        } elseif(Point_p) {holoPos(Helper[Point_n + "/index", number], Point_p)}
+        return StartHolo_e
+    }
+    function entity helper_beam([Beam_n PointStart_n PointEnd_n]:string, [Helper_color]:vector, Width:number) {
+        local PointStart_e = Helper[PointStart_n + "/entity", entity]
+        local PointEnd_e   = Helper[PointEnd_n   + "/entity", entity]
+        if(PointStart_e & PointEnd_e & !Helper[Beam_n + "/beam/entity", entity]) {
+            local Helper_e = PointStart_e:drawBeam("trails/physbeam",PointStart_e:pos(),PointEnd_e:pos(),Helper_color,254,Width)
+            Helper_e:setBeamEndEnt(PointEnd_e)
+            Helper[Beam_n + "/beam/entity", entity] = Helper_e
+            return Helper_e
+        }
+        else {
+            return noentity()
+        }
+    }
+    
+    
+    Base = E:isWeldedTo()
+    Constraints = Base:getConstraints()
+    
+    
+    timer("",1)
+}
+
+
+
+
+#build#
+
+
+
+if(clk("")) {
+        timer("", 250)
+    
+    local Type = 3
+    local Visual = 0
+    local Build = 0
+    
+    if(Type == 1) {
+        
+        #
+        if(changed(0)) {
+            print("type" + Type + " started")
+            
+            local Wheels = array()
+            foreach(C, P:entity = Constraints) {
+                
+                local P_M = P:model()
+                if(P_M == "models/sprops/trans/wheel_a/wheel45.mdl") {
+                    Wheels:pushEntity(P)
+                }
+            }
+            Q["wheels", array] = Wheels
+        }
+        
+        local Count = Q["wheels", array]:count()
+        if(Count) {
+            local Wheel = Q["wheels", array]:entity(1)
+            local Rope = 0
+            Rope = Q["rope", number] = Q["rope", number]+1
+            
+            local WP = Wheel:massCenter()
+            
+            local LP = vec(52.5 * 7.5,0,0)
+            local LP = LP:setY(LP:rotate(0,90*(Rope==1 ? 1 : -1),0)[2])
+            
+            local Rope_P1 = WP
+            local Rope_P2 = WP+LP
+            
+            helper_point("Rope_P1 " + Count         , Rope_P1, 5)
+            helper_point("Rope_P2 " + Count+"_"+Rope, Rope_P2, 5)
+            #helper_beam("rope_" + Count + "_" + Rope,"Rope_P1 " + Count,"Rope_P2 " + Count+"_"+Rope, vec(255), 3)
+            if(Build) {
+                Wheel:ropeTo(Base,Wheel:toLocal(Rope_P1),Base:toLocal(Rope_P2),0,0,   Visual*2,Visual ? "cable/cable" : ""   ,1)
+            }
+            
+            if(Rope==2) {
+                Q["rope", number] = 0
+                Q["wheels", array]:remove(1)
+            }
+        }
+        else {
+            stoptimer("")
+            print("type" + Type + " complited")
+        }
+        #
+    }
+    elseif(Type == 2) {
+        
+        #
+        if(changed(0)) {
+            print("type" + Type + " started")
+            
+            local Wheels = array()
+            foreach(C, P:entity = Constraints) {
+                
+                local P_M = P:model()
+                if(P_M == "models/sprops/trans/wheel_a/wheel45.mdl") {
+                    Wheels:pushEntity(P)
+                }
+            }
+            Q["wheels", array] = Wheels
+        }
+        
+        local Count = Q["wheels", array]:count()
+        if(Count) {
+            local Wheel = Q["wheels", array]:removeEntity(1)
+            
+            local WP = Wheel:massCenter()
+            
+            
+            local Rope_P1 = WP+vec(0,0,18)
+            local Rope_P2 = WP+vec(0,0,-6)
+            local Rope_P3 = (Rope_P1+Rope_P2)/2
+            
+            local AddL = Rope_P1:distance(Rope_P2)/2-Rope_P3:distance(Wheel:massCenter())
+            
+            helper_point("Rope_P1 " + Count, Rope_P1, 10)
+            helper_point("Rope_P2 " + Count, Rope_P2, 10)
+            helper_point("Rope_P3 " + Count, Rope_P3, 20)
+            helper_beam("rope_" + Count,"Rope_P1 " + Count,"Rope_P2 " + Count, vec(255), 3)
+            if(Build) {
+                Wheel:ropeTo(Base,Wheel:massCenterL(),Base:toLocal(Rope_P3),AddL,0,   Visual*2,Visual ? "cable/cable" : ""   ,0)
+            }
+        }
+        else {
+            stoptimer("")
+            print("type" + Type + " complited")
+        }
+        #
+    }
+    else {
+        
+        #
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+if(dupefinished()) {
+    E:setSkin(0)
+    E:remoteSetCode(getCode():explode("\n#build#\n"):concat("#[\n#build#\n"))
+}

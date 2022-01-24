@@ -1,0 +1,284 @@
+@name Tank_01_001_hodovaya_
+
+@inputs [Base LW_e RW_e  AirCover ExhaustCover]:entity
+@inputs [Pod]:entity
+
+@outputs [Hydr_l1  Hydr_i1 Hydr_o1  Hydr_c1 Hydr_d1]:number
+@outputs [Hydr_l2  Hydr_i2 Hydr_o2  Hydr_c2 Hydr_d2]:number
+
+@outputs Debug:string
+
+@persist [E O]:entity
+
+@persist [Q]:table Control:vector [LAr RAr]:array
+
+@persist Temperature ExhaustPressure
+
+@persist Balance
+
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+
+if(changed(0)) {
+    
+    E = entity() E:setSkin(1)
+    O = owner()
+    
+    Q["constraints", array] = entity():isWeldedTo():getConstraints()
+    
+    Hydr_l1 = 42+random(0.01)
+    Hydr_c1 = 1500000
+    Hydr_i1 = 0
+    Hydr_o1 = 0
+    Hydr_d1 = 20000
+    
+    Hydr_l2 = 42+random(0.01)
+    Hydr_c2 = 1500000
+    Hydr_i2 = 0
+    Hydr_o2 = 0
+    Hydr_d2 = 20000
+    
+    Hydr_l1*=1.7
+    Hydr_l2*=1.7
+    
+    Balance = 1
+    
+    
+    timer("user", 1)
+    timer("control", 1)
+    timer("control_2", 1)
+}
+
+if(clk("user")) {
+    
+    
+    local User = Pod:driver()
+    
+    
+    if(User | O) {
+        
+        local Key_W = User:keyForward() | O:keyPressed("pad_8")
+        local Key_A = User:keyLeft() | O:keyPressed("pad_4")
+        local Key_S = User:keyBack() | O:keyPressed("pad_5")
+        local Key_D = User:keyRight() | O:keyPressed("pad_6")
+        
+        Control = Control + (vec(Key_W-Key_S,Key_A-Key_D,0) - Control) / 5
+        
+        local Key_balerina = User:keyWalk() | O:keyPressed("pad_7")
+        if(changed(Key_balerina) & Key_balerina) {
+            Balance = !Balance
+        }
+    }
+    
+    if(changed(User) & !User) {
+        Control = vec()
+    }
+    
+    
+    timer("user", User ? 50 : 200)
+}
+
+
+if(clk("control")) {
+        timer("control", 50)
+    
+    if(changed(0)) {
+        
+        Q["control/lastCurtime", number] = curtime()
+    }
+    
+    local Constraints = Q["constraints", array]
+    while(Constraints:count() & perf(90)) {
+        local E = Constraints:removeEntity(1)
+        #ifdef entity:propBuoyancy(number)
+            E:propBuoyancy(0)
+        #endif
+        E:propPhysicalMaterial("metal")
+        
+        if(E:model() == "models/sprops/trans/miscwheels/tank25.mdl") {
+            if(sign(Base:toLocal(E:boxCenterW())[2]) == 1) {
+                LAr:pushEntity(E)
+            }
+            else {
+                RAr:pushEntity(E)
+            }
+        }
+    }
+    Debug=""
+    
+    
+    
+    local LastCurtime = Q["control/lastCurtime", number]
+    local Curtime = curtime() Q["control/lastCurtime", number] = Curtime
+    local Interval = Curtime - LastCurtime
+    local Loop = Interval / 0.015625
+    
+    
+    local LVel = 0 foreach(C, W:entity = LAr) {LVel+=W:angVel()[1]} LVel/=LAr:count()
+    local RVel = 0 foreach(C, W:entity = RAr) {RVel+=W:angVel()[1]} RVel/=RAr:count()
+    Debug+="\n" + floor(LVel/3.6)
+    Debug+="\n" + floor(RVel/3.6)
+    Debug+="\n" + floor(Base:vel():length()/52.5*3.6)
+    
+    
+    local WS = Control[1]*((Pod:driver():keyJump() | O:keyPressed("pad_0")) ? 60 : 30)/3.6*250
+    local AD = Control[2]*12/3.6*250
+    
+    if(Balance) {
+        local SIGN = sign(Base:forward()[3])
+        WS=clamp(Base:toWorld(ang((SIGN==1? 101 : -99)-clamp((Base:velL()[3]+(sign(WS)*25*(WS|0)))/5,-10,10)*(SIGN==1 ? 1 : -1),0,0))[1]/90*5,-1.5,1.5)*1000
+        AD=200*sign(AD)*(AD|0)
+        
+        Balance = abs(asin(Base:up()[3])) < 30
+    }
+    
+    local LF =  (WS-AD)-LVel
+    local RF = -(WS+AD)-RVel
+    
+    
+    #LF*=1 + (1-clamp(abs(LVel)-500,0,100)/100)^1*1
+    #RF*=1 + (1-clamp(abs(RVel)-500,0,100)/100)^1*1
+    local LFA = ang(LF*3000/LAr:count(),0,0)
+    local RFA = ang(RF*3000/RAr:count(),0,0)
+    foreach(C, W:entity = LAr) {W:applyAngForce(LFA)} 
+    foreach(C, W:entity = RAr) {W:applyAngForce(RFA)} 
+    
+    
+    #[
+    local LV = LVel * 1.0 + min(abs(LVel/500),1)^5*0.8
+    local RV = RVel * 1.0 + min(abs(RVel/500),1)^5*0.8
+    local SUB = (abs(LV)+abs(RV))/2
+    
+    local WS = Control[1]*800 * clamp(2-SUB/1000 + clamp(1-clamp(SUB-1000,0,500)/500,0,1)*4,0.5,6)
+    local AD = Control[2]*2000 * clamp(1-SUB/1000,0.6,1)
+    
+    local WSAD = abs(WS) + abs(AD)
+    
+    Temperature+= (40 + WSAD/2000*50 - Temperature) / 75
+    # [600; 1800]rpm * 19L
+    ExhaustPressure+= (40 + WSAD/3000*50 - ExhaustPressure) / 4
+    
+    
+    local FL =  clamp(WS-AD,-5500,5500)
+    if(abs(LVel) >= 6000) {LF = -LVel}
+    LW_e:applyAngForce(ang( FL*Loop*350,0,0))
+    local RF = -clamp(WS+AD,-5500,5500)
+    if(abs(RVel) >= 6000) {RF = -RVel}
+    RW_e:applyAngForce(ang(RF*Loop*350,0,0))
+    
+    
+    local FLMAX = Q["FLMAX", number] if(FLMAX <   LW_e:angVel()[1]) {FLMAX = Q["FLMAX", number] =   LW_e:angVel()[1]} Debug+="\nFLMAX  " + floor(FLMAX)
+    local FRMAX = Q["FRMAX", number] if(FRMAX <  -RW_e:angVel()[1]) {FRMAX = Q["FRMAX", number] =  -RW_e:angVel()[1]} Debug+="\nFRMAX  " + floor(FRMAX)
+    ]#
+}
+
+if(clk("control_2")) {
+        timer("control_2", 25)
+    
+    if(changed(0)) {
+        
+        Q["control_2/lastCurtime", number] = curtime()
+        
+    }
+    local LastCurtime = Q["control_2/lastCurtime", number]
+    local Curtime = curtime() Q["control_2/lastCurtime", number] = Curtime
+    local Interval = Curtime - LastCurtime
+    local Loop = Interval / 0.015625
+    
+    #Debug="=======DEBUG======="
+    #Debug+="\nInterval: " + Temperature
+    
+    
+    
+    
+    local A = clamp(Base:toLocal(AirCover:angles())[3],0,55)
+    local F = (min(Temperature,80) - (A+20))*5 - AirCover:angVel()[3]/50
+    AirCover:applyAngForce(ang(0,0,F*AirCover:mass()*Loop))
+    
+    local A = clamp(Base:toLocal(ExhaustCover:angles())[3],0,55)
+    local F = (min(ExhaustPressure,80) - (A+20))*5 - ExhaustCover:angVel()[3]/50
+    ExhaustCover:applyAngForce(ang(0,0,F*ExhaustCover:mass()*Loop))
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName("Tank_01_001_hodovaya\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1e6))
+if(dupefinished()) {reset()}

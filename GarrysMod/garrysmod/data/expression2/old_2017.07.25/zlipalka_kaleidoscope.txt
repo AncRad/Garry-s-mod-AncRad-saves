@@ -1,0 +1,32 @@
+@name zlipalka kaleidoscope
+#@model models/hunter/blocks/cube8x8x8.mdl
+
+
+
+if(changed(0)) {
+    
+    local E = entity()
+    E:setAlpha(0)
+    #E:noCollideAll(1)
+    #E:propNotSolid(1)
+    
+    local Scale = 25
+    local Offset = 1
+    
+    local Holo = holoCreate(0, E:toWorld(vec()), vec(-Scale/6), E:toWorld(ang()), vec(), "cube")
+    holoParent(0, E) holoMaterial(0, "lights/white")
+    
+    local Size = (Scale-Offset)/6
+    for(C = 1, 6) {
+        local F = C - 1
+        local Ang = ang(F*90,0,0)
+        if(C > 4) {Ang = ang(0,0,90+F*180)}
+        local Pos = vec(0,0,0.5-Scale):rotate(Ang)
+        
+        holoCreate(C, Holo:toWorld(Pos), vec(Size), Holo:toWorld(Ang), vec(255), "plane")
+        holoParent(C, Holo) holoMaterial(C, "effects/flashlight/view")
+    }
+}
+
+timer("", 75)
+holoColor(0, hsv2rgb((curtime() * 20) % 360, 1, 1))

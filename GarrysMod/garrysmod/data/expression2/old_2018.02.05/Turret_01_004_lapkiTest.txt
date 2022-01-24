@@ -1,0 +1,121 @@
+@name Turret_01_004_lapkiTest
+@inputs 
+@outputs 
+@persist 
+@trigger 
+
+
+if(changed(0)) {
+    local Scale = 3
+    "local" Radius = 6 *Scale
+    "local" Height = 1 *Scale
+    
+    local Clip = Height
+    
+    
+    "local" Dno_height = Height*0.05
+    
+    local Height0 = Height+Dno_height*1.5
+    local Height1 = Height0*0.89
+    local Height2 = Height1*0.89
+    local Height3 = Height2*0.85
+    local Height4 = Height3*0.75
+    "local" Fingertip_height = Height4
+    
+    "local" AxisOffSet = Height1
+    
+    "local" Length0 = Radius/2 * sin(acos(Clip/Radius))*0.995
+    "local" Length1 = Length0
+    "local" Length4 = Length0-Fingertip_height/2
+    "local" Length3 = Length4*0.98
+    "local" Length2 = Length3*0.98
+    
+    Length0*=2 Length1*=2*0.95 Length2*=2 Length3*=2 Length4*=2
+    Length12  = Length1 + Length2
+    Length123 = Length1 + Length2 + Length3 - Fingertip_height
+    Min = Radius * 1.02+Length0
+    Max = Min + Length123
+    Offset = Radius * 1.02
+    
+    
+    
+    
+    E = entity()
+    
+    Length1123 = Length1+Length123
+    Min = Length1123 * cos(min(acos((Length1*1.2+Fingertip_height)/Length1123),70))
+    Max = Length1123 * cos(30)
+    Range = Max-Min
+    
+    N = ceil(Range / Fingertip_height / 4) print(N)
+    
+    local Done = 0
+    for(C = 1, N) {
+        
+        X = Min + clamp(Range / N * C,0,Range)
+        H = Length1123 * cos(asin(X/Length1123))
+        
+        local Pos = E:toWorld(vec(Offset+X,0,0))
+        R = rangerOffsetHull(H,Pos,-E:up(),vec(Fingertip_height))
+        H = R:distance()
+        
+        local Pos = Pos-E:up()*H/2
+        local Size = vec(Fingertip_height/3,1,max(H/2,0.2))/6
+        local Ang = E:toWorld(ang())
+        holoCreate(C, Pos, Size, Ang) holoParent(C, E)
+        
+        if(R:hit()) {
+            if(Done) {
+                holoColor(C,vec(0,0,255))
+            }
+            else {
+                holoColor(C,vec(0,255,0))
+                Done = 1
+            }
+        }
+        else {
+            holoColor(C,vec(255,0,0))
+        }
+    }
+    
+    
+    
+    
+    #[
+    E = entity()
+    
+    Length1123 = Length1+Length123
+    Min = Length1123 * cos(min(acos((Length1*1.2+Fingertip_height)/Length1123),70)) print(Min)
+    Max = Length1123 * cos(30) print(Max)
+    
+    N = floor(Length1123 / Fingertip_height / 2   /14*8) #print(N)
+    for(C = 1, N) {
+        
+        X = Length1123 / N * C
+        H = Length1123 * cos(asin(X/Length1123))
+        
+        local Pos = E:toWorld(vec(Offset+X,0,-H/2))
+        local Size = vec(Fingertip_height/3,1,max(H/2,0.2))/6
+        local Ang = E:toWorld(ang())
+        holoCreate(C, Pos, Size, Ang) holoParent(C, E)
+        if(!inrange(X,Min,Max)) {
+            holoColor(C,vec(255,0,0))
+        }
+    }
+    ]#
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+}

@@ -1,0 +1,16 @@
+@name Zen
+@inputs 
+@outputs 
+@persist 
+@trigger 
+
+E = entity()
+local S = -255
+local D = holoCreate(1, E:pos(), vec(S), ang(), vec(), "hq_sphere")
+holoMaterial(1, "lights/white")
+holoParent(1, E)
+
+holoCreate(2, D:pos(), vec(S+0.5), ang(), vec(20,0,100), "hq_sphere")
+holoParent(2, 1)
+holoMaterial(2, "models/wireframe")
+holoAlpha(2, 50)

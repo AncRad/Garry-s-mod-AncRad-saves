@@ -1,0 +1,45 @@
+@name blade_test_gun_doubleRotary_01
+@inputs [G1 G2 AmmoBox]:entity Fire Reload
+@outputs 
+@persist [A1 A2 A]:array Step
+@trigger 
+
+if(changed(0)) {
+    
+    A1 = G1:children()
+    A2 = G2:children()
+    
+    foreach(C, G:entity = 0 ? A1:add(A2) : entity():getConstraints()) {
+        if(G:type() == "acf_gun") {
+            A:pushWirelink(G:wirelink())
+        }
+    }
+    
+    timer("", 1)
+}
+
+
+if(clk("")) {
+        timer("", 15)
+    
+    if(changed(Fire) | Fire) {
+        LastStep = Step
+        Step = Step == A:count() ? 1 : Step + Fire
+        
+        A[LastStep, wirelink]["Fire", number] = 0
+        A[Step, wirelink]["Fire", number] = Fire
+    }
+    
+    if(changed(Reload)) {
+        AmmoBox:wirelink():setNumber("Active",1)
+        foreach(C, G:wirelink = A) {
+            G["Fire", number] = 0
+            G["Reload", number] = Reload
+        }
+        if(changed(AmmoBox) & AmmoBox) {
+            foreach(C, G:wirelink = A) {
+                G:entity():acfLinkTo(AmmoBox,0)
+            }
+        }
+    }
+}

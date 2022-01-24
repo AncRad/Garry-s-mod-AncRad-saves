@@ -1,0 +1,402 @@
+@name Fire particles 02
+
+@inputs 
+@outputs 
+@persist [Q]:table
+
+
+
+if(changed(0)) {
+    
+    function number entity:isExplosive() {
+        return 0
+    }
+    function string firePratModel(Scale:number) {
+        return "cube"
+    }
+    function entity createFirePart([Part_i Scale]:number) {
+        if(holoCanCreate()) {
+            local Part_e = holoCreate(Part_i, vec(), vec(-Q["debugMode", number]), ang(), vec(255), firePratModel(Scale))
+            holoMaterial(Part_i, "models/wireframe")
+            
+            return Part_e
+        }
+        else {
+            return noentity()
+        }
+    }
+    function toFly([Pos Vel]:vector, [Scale DropTime]:number) {
+        local Reserve_a = Q["reserve", array]
+        
+        
+        local Clear = array()
+        foreach(C, Part_i:number = Reserve_a) {
+            
+            local Part_e = holoEntity(Part_i)
+            if(!Part_e) {
+                if(holoCanCreate()) {
+                    Part_e = holoCreate(Part_i, vec(), vec(-Q["debugMode", number]), ang(), vec(255), "cube")
+                    holoMaterial(Part_i, "models/wireframe")
+                }
+            }
+            if(Part_e) {
+                
+                Q[Part_i + "/pos"     , vector] = Pos
+                Q[Part_i + "/vel"     , vector] = Vel
+                Q[Part_i + "/dropTime", number] = DropTime
+                Q[Part_i + "/scale"   , number] = Scale
+                
+                holoUnparent(Part_i)
+                holoPos(Part_i, Pos)
+                Part_e:extinguish()
+                Part_e:ignite(99999)
+                
+                Clear:unshiftNumber(C)
+                Q[Part_i + "/status", string] = "fly"
+                Q["fly", array] = Q["fly", array]:add(array(Part_i))
+                break
+            }
+            else {
+                
+                
+                Clear:unshiftNumber(C)
+                Q[Part_i + "/status", string] = "noEntity"
+                Q["noEntity", array] = Q["noEntity", array]:add(array(Part_i))
+            }
+        }
+        foreach(C, I:number = Clear) {
+            Q["reserve", array]:remove(I)
+        }
+    }
+    
+    
+    
+    
+    
+    if(entity():getName():explode("\n")[1, string] == "Fire particles 02") {
+        
+        timer("noInclude", 1)
+        Q["debugMode", number] = 1
+        Q["reserve/quality", number] = 60
+    }
+    
+    
+    timer("reserve", 1)
+    timer("drop", 1)
+    timer("fly", 1)
+}
+
+
+
+if(clk("reserve")) {
+    
+    local NeedQuality = Q["reserve/quality", number]
+    local RealQuality = Q["reserve", array]:count() + Q["fly", array]:count() + Q["drop", array]:count()
+    
+    
+    if(NeedQuality > RealQuality) {
+        
+        local Counter = Q["partCounter", number]
+        while(holoCanCreate() & (NeedQuality > RealQuality)) {
+            
+            Counter++
+            RealQuality++
+            Part_i = Counter + 2075445
+            
+            local Part_e = createFirePart(Part_i, 0)
+            if(Part_e) {
+                
+                Q[Part_i + "/pos"     , vector] = vec()
+                Q[Part_i + "/vel"     , vector] = vec()
+                Q[Part_i + "/dropTime", number] = 0
+                Q[Part_i + "/status", string] = "reserve"
+                Q["reserve", array] = Q["reserve", array]:add(array(Part_i))
+            }
+        }
+        Q["partCounter", number] = Counter
+        
+        timer("reserve", 50)
+    }
+    else {
+        
+        timer("reserve", 1500)
+    }
+}
+
+if(clk("fly")) {
+        timer("fly", Q["fly", array]:count() ? 75 : 200)
+    
+    if(changed(0)) {
+        
+        Q["flyLastCurtime", number] = curtime()
+    }
+    local LastCurtime = Q["flyLastCurtime", number]
+    local Curtime = Q["flyLastCurtime", number] = curtime()
+    local Interval = Curtime - LastCurtime
+    
+    local Clear = array()
+    foreach(C, Part_i:number = Q["fly", array]) {
+        
+        local Part_e = holoEntity(Part_i)
+        if(!Part_e) {
+            if(holoCanCreate()) {
+                Part_e = createFirePart(Part_i, 0)
+            }
+        }
+        
+        if(Part_e) {
+            
+            
+            local Pos      = Q[Part_i + "/pos"     , vector]
+            local Vel      = Q[Part_i + "/vel"     , vector]
+            #local DropTime = Q[Part_i + "/dropTime", number]
+            #local Scale    = Q[Part_i + "/scale"   , number]
+            
+            local Ranger = rangerOffset(Vel:length()*Interval, Pos, Vel)
+            if(Ranger:hit()) {
+                
+                local Ranger_e = Ranger:entity()
+                if(1 | Ranger_e) {
+                    
+                    
+                    Clear:unshiftNumber(C)
+                    local DropEndTime = Q[Part_i + "/dropEndTime", number] = Q[Part_i + "/dropTime", number] + curtime()
+                    Q[Part_i + "/status", string] = "drop"
+                    Q["drop", array] = Q["drop", array]:add(array(Part_i))
+                    
+                    if(Ranger_e) {
+                        if(Ranger_e:isNPC() | Ranger_e:isPlayer()) {
+                            
+                            
+                            Q[Part_i + "/dropType", string] = "alive"
+                            
+                            holoParentAttachment(Part_i, Ranger_e, "chest")
+                        }
+                        else {
+                            
+                            
+                            Q[Part_i + "/dropType", string] = "entity"
+                            Q[Part_i + "/drop/isOnEntity", entity] = Ranger_e
+                            
+                            holoParent(Part_i, Ranger_e)
+                        }
+                        
+                        
+                        local Ranger_E = Ranger_e:toString()
+                        
+                        Q[Ranger_E + "/victim/partList", array] = Q[Ranger_E + "/victim/partList", array]:add(array(Part_i))
+                        if(!Q[Ranger_E + "/isVictim", number]) {
+                            
+                            Q[Ranger_E + "/victim/isAlive", number] = Ranger_e:isAlive()
+                            Q[Ranger_E + "/isVictim", number] = 1
+                            Q["victims", array] = Q["victims", array]:add(array(Ranger_e))
+                        }
+                        
+                        local IsExplosive = Ranger_e:isExplosive()
+                        if(IsExplosive) {
+                            
+                        }
+                    }
+                    else {
+                        
+                        
+                        Q[Part_i + "/dropType", string] = "world"
+                    }
+                }
+            }
+            else {
+                Vel = Vel - (Vel * 0.01 + vec(0,0,600)) * Interval
+                
+            }
+            
+            Pos = Ranger:pos()
+            holoPos(Part_i, Pos)
+            Q[Part_i + "/pos", vector] = Pos
+            Q[Part_i + "/vel", vector] = Vel
+        }
+        else {
+            
+            
+            Clear:unshiftNumber(C)
+            Q[Part_i + "/status", string] = "noEntity"
+            Q["noEntity", array] = Q["noEntity", array]:add(array(Part_i))
+        }
+    }
+    foreach(C, I:number = Clear) {
+        Q["fly", array]:remove(I)
+    }
+}
+
+if(clk("drop")) {
+        timer("drop", Q["drop", array]:count() | Q["victims", array]:count() ? 100 : 500)
+    
+    local Curtime = curtime()
+    
+    local Clear = array()
+    foreach(C, Part_i:number = Q["drop", array]) {
+        
+        if(Q[Part_i + "/status", string] == "drop") {
+            if(Q[Part_i + "/dropEndTime", number] <= Curtime) {
+                
+                local Part_e = holoEntity(Part_i)
+                if(Part_e) {
+                    
+                    Part_e:extinguish()
+                    holoPos(Part_i, vec())
+                    holoUnparent(Part_i)
+                    
+                    Q[Part_i + "/status", string] = "reserve"
+                    Q["reserve", array] = Q["reserve", array]:add(array(Part_i))
+                }
+                else {
+                    
+                    Q[Part_i + "/status", string] = "noEntity"
+                    Q["noEntity", array] = Q["noEntity", array]:add(array(Part_i))
+                }
+                
+                Clear:unshiftNumber(C)
+            }
+            else {
+                
+            }
+        }
+        else {
+            Clear:unshiftNumber(C)
+        }
+    }
+    foreach(C, I:number = Clear) {
+        Q["drop", array]:remove(I)
+    }
+    
+    
+    local Clear = array()
+    foreach(C, Victim_e:entity = Q["victims", array]) {
+        local Victim_E = Victim_e:toString()
+        local Victim_a = Q[Victim_E + "/victim/partList", array]
+        local Victim_c = Victim_a:count()
+        local IsAlive = Q[Victim_E + "/victim/isAlive", number]
+        
+        if(Victim_c & Victim_e #[& (IsAlive ? Victim_e:isAlive() : 1)]#) {
+            #
+            #
+            #
+            foreach(C, Part_i:number = Victim_a) {
+                local Part_v = Q[Victim_E + "/victim/vel", vector] + randvec(-3,3) * 52.5 + vec(0,0,100)
+                local Part_p = Q[Victim_E + "/victim/pos", vector] + Q[Part_i + "/localPos", vector]:rotate(Q[Victim_E + "/victim/ang", angle ])
+                local Part_s = Q[Part_i + "/scale", number]
+                
+                local Part_e = holoEntity(Part_i)
+                if(!Part_e) {
+                    if(holoCanCreate()) {
+                        Part_e = createFirePart(Part_i, Part_s)
+                    }
+                }
+                
+                if(Part_e) {
+                    Q[Part_i + "/status", string] = "noEntity"
+                    Q["noEntity", array] = Q["noEntity", array]:add(array(Part_i))
+                    toFly(Part_p, Part_v, Part_s, Q[Part_i + "/dropTime", number])
+                }
+                else {
+                    Q[Part_i + "/vel", vector] = Part_v
+                    Q[Part_i + "/pos", vector] = Part_p
+                    
+                    Q[Part_i + "/status", string] = "fly"
+                    Q["fly", array] = Q["fly", array]:add(array(Part_i))
+                }
+            }
+            Clear:unshiftNumber(C)
+            #
+            #
+            #
+            Q[Victim_E + "/isVictim", number] = 0
+            Q[Victim_E + "/victim/isAlive", number] = 0
+            Q[Victim_E + "/victim/partList", array]:clear()
+        }
+        else {
+            Q[Victim_E + "/victim/vel", vector] = Victim_e:vel()
+            Q[Victim_E + "/victim/pos", vector] = Victim_e:pos()
+            Q[Victim_E + "/victim/ang", angle ] = Victim_e:angles()
+        }
+    }
+    foreach(C, I:number = Clear) {
+        Q["victims", array]:remove(I)
+    }
+}
+
+
+
+
+
+
+
+
+if(clk("noInclude")) {
+        timer("noInclude", 50)
+    
+    local O = owner()
+    local E = entity()
+    local KeyFire = O:keyPressed("mouse_4")
+    
+    if(KeyFire) {
+        local Pos = O:shootPos() + O:eye() * 30
+        local Vel = O:eye():rotate(ang(randvec(-2,2))) * 52.5 * 40
+        
+        toFly(Pos, Vel, 0, 3)
+    }
+    
+    
+    
+    
+    
+    
+    
+    local Reserve  = Q["reserve" , array]:count()
+    local Fly      = Q["fly"     , array]:count()
+    local Drop     = Q["drop"    , array]:count()
+    local NoEntity = Q["noEntity", array]:count()
+    local OPS = ops()
+    setName("Fire particles 02" + "\nOPS: " + OPS + "\nReserve: " + Reserve + "\nFly: " + Fly + "\nDrop: " + Drop + "\nNoEntity: " + NoEntity + "\nVictims" + Q["victims", array]:count())
+    
+    
+    
+    if(changed(0)) {
+        
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

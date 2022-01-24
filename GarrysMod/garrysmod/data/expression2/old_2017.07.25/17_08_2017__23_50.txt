@@ -1,0 +1,623 @@
+@name 17 08 2017  23 50
+
+@inputs 
+@outputs 
+@persist [E O]:entity [Q]:table [GT]:gtable
+
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+
+if(changed(0)) {
+    
+    GT = gTable("17 08 2017  23 50")
+    
+    #include "old 28.10.2017/25.07.2017/BBB"
+    ##include "dd"
+    
+    
+    E = entity() E:setSkin(1)
+    O = owner()
+    
+    
+    egpSelect(E:isWeldedTo():wirelink())
+    egpClear()
+    
+    function string toText000(Number, Offset) {
+        local Text = ""
+        for(C = 1, abs(Offset) - (Number + ""):length()) {Text = Text + "  "}
+        if(Offset > 0) {
+            Text = Number + Text
+        }
+        else {
+            Text = Text + Number
+        }
+        
+        
+        return Text
+    }
+    
+    ###   ###   ###   ###   ###   ###   ###   ###
+       ###   ###   ###   ###   ###   ###   ###   
+    ###   ###   ###   ###   ###   ###   ###   ###
+    function objectList_Create() {
+        local Name = "objectList"
+        
+        local FS     = Q["objectList/fontSize", number] = GT["objectList/fontSize", number] # = 20
+        local Indent = Q["objectList/indent"  , number] = 2
+        
+        #base
+        local B_n = Name + "/base"
+        local B_s = GT["objectList/size", vector2] #= v(400,300)
+        local B_p = GT["objectList/pos" , vector2] #= v(960, 1075 - B_s[2] / 2)
+        egpAddBox(B_n, B_p, B_s, "")
+        egpSetColor(0)
+        egpSetAlpha(0)
+        
+        #title
+        local TB_n = Name + "/titleBase"
+        local TB_s = v(B_s[1], FS)
+        local TB_p = v(0, (TB_s[2] - B_s[2]) / 2)
+        egpAddBox(TB_n, TB_p, TB_s, "")
+        egpSetParent(B_n)
+        egpSetColor(13)
+        local TT_n = Name + "/titleText"
+        local TT_p = v(-TB_s[1]/2 + Indent,0)
+        egpAddText(TT_n, "title", TT_p)
+        egpSetParent(TB_n)
+        egpSetSize(FS)
+        egpSetAlign(0,1)
+        local TS_n = Name + "/titleSizing"
+        local TS_s = v(FS)
+        local TS_p = v((TB_s[1]-FS)/2,0)
+        egpAddBox(TS_n, TS_p, TS_s, "")
+        egpSetParent(TB_n)
+        egpSetColor(13)
+        
+        #scroll
+        local SB_n = Name + "/scrollBase"
+        local SB_s = v(clamp(FS,15,20), B_s[2] - TB_s[2] - Indent)
+        local SB_p = (B_s - SB_s) / 2
+        egpAddBox(SB_n, SB_p, SB_s, "")
+        egpSetParent(B_n)
+        egpSetColor(13)
+        local S_n = Name + "/scroll"
+        local S_s = v(SB_s[1],SB_s[2]/4)
+        local S_p = v(0, (S_s[2] - SB_s[2])/2)
+        egpAddBox(S_n, S_p, S_s, "")
+        egpSetParent(SB_n)
+        egpSetColor(20)
+        
+        #listing
+        local LB_n = Name + "/listingBase"
+        local LB_s = B_s - v(SB_s[1] + Indent, TB_s[2] + Indent)
+        local LB_p = (LB_s - B_s) * v(0.5,-0.5)
+        egpAddBox(LB_n, LB_p, LB_s, "")
+        egpSetParent(B_n)
+        egpSetColor(13)
+        local LS_n = Name + "/listingSelector"
+        local LS_s = v(LB_s[1],FS-2)
+        local LS_p = v(0,LS_s[2]/2)
+        egpAddBox(LS_n, LS_p, LS_s, "")
+        egpSetParent(LB_n)
+        egpSetColor(20)
+        
+        local LT1_n = Name + "/listingText1"
+        local LT1_s = LB_s - v(Indent,0)
+        local LT1_p = v(Indent,0)-LT1_s/2
+        egpAddTextLayout(LT1_n, "LT1_n", LT1_p, LT1_s)
+        egpSetParent(LB_n)
+        egpSetSize(FS)
+        local LT2_n = Name + "/listingText2"
+        local LT2_s = LB_s - v(Indent,0)
+        local LT2_p = v(Indent,0)-LT2_s/2
+        egpAddTextLayout(LT2_n, "", LT2_p, LT2_s)
+        egpSetParent(LB_n)
+        egpSetSize(FS)
+        
+        egpAddBox("objectList/sizer", v(), v(), "o")
+        egpSetAlpha(100)
+        
+        Q["objectList/lines", number] = floor(LB_s[2]/FS)
+        Q["cursorTargets", array] = Q["cursorTargets", array]:add(array(B_n))
+        Q[B_n  + "/cursorTargets", array] = array(TB_n, S_n, LB_n)
+        Q[TB_n + "/cursorTargets", array] = array(TS_n)
+        
+        
+        
+        
+        
+    }
+    function objectList_Listing() {
+        local Name = "objectList"
+        
+        local FS     = Q["objectList/fontSize", number]
+        local Lines  = Q["objectList/lines"   , number]
+        local Scroll = Q["objectList/scroll"  , number]
+        local List   = Q["objectList/list"    , array]
+        local Count  = List:count()
+        local Text   = ""
+        
+        local ScrollN = ceil(Scroll * max(Count - Lines,0))
+        
+        if(Count) {
+            local In = ScrollN + 1
+            local To = ScrollN + clamp(Count,1,Lines)
+            for(C = In, To) {
+                Text+= (Text ? "\n" : "") + List[C, string]
+            }
+        }
+        
+        local LT1_n = Name + "/listingText1"
+        egpSetText(LT1_n, Text)
+        
+    }
+    function objectList_SetList(Array:array) {
+        Q["objectList/list", array] = Array
+        objectList_Listing()
+    }
+    function objectList_Size(NewSize:vector2) {
+        
+        local Dif = NewSize - egpGetSize("objectList" + "/base")
+        if(Dif) {
+            local Name = "objectList"
+            
+            local FS = Q["objectList/fontSize", number]
+            local Indent = Q["objectList/indent", number]
+            
+            #base
+            local B_n = Name + "/base"
+            local B_s = NewSize
+            local B_p = egpGetPos(B_n) + Dif*v(0.5,-0.5)
+            egpSetSize(B_n, B_s)
+            egpSetPos(B_n, B_p)
+            
+            #title
+            local TB_n = Name + "/titleBase"
+            local TB_s = v(B_s[1], FS)
+            local TB_p = v(0, (TB_s[2] - B_s[2]) / 2)
+            egpSetSize(TB_n, TB_s)
+            egpSetPos(TB_n, TB_p)
+            local TT_n = Name + "/titleText"
+            local TT_p = v(-TB_s[1]/2 + Indent,0)
+            egpSetPos(TT_n, TT_p)
+            egpSetSize(TT_n, FS)
+            local TS_n = Name + "/titleSizing"
+            local TS_s = v(FS)
+            local TS_p = v((TB_s[1]-FS)/2,0)
+            egpSetSize(TS_n, TS_s)
+            egpSetPos(TS_n, TS_p)
+            
+            #scroll
+            local SB_n = Name + "/scrollBase"
+            local SB_s = v(clamp(FS,15,20), B_s[2] - TB_s[2] - Indent)
+            local SB_p = (B_s - SB_s) / 2
+            egpSetSize(SB_n, SB_s)
+            egpSetPos(SB_n, SB_p)
+            local S_n = Name + "/scroll"
+            local S_s = v(SB_s[1],SB_s[2]/4)
+            local S_p = v(0,(Q["objectList/scroll"  , number]-0.5) * (SB_s[2] - S_s[2]))
+            egpSetSize(S_n, S_s)
+            egpSetPos(S_n, S_p)
+            
+            #listing
+            local LB_n = Name + "/listingBase"
+            local LB_s = B_s - v(SB_s[1] + Indent, TB_s[2] + Indent)
+            local LB_p = (LB_s - B_s) * v(0.5,-0.5)
+            egpSetSize(LB_n, LB_s)
+            egpSetPos(LB_n, LB_p)
+            local LS_n = Name + "/listingSelector"
+            local LS_s = v(LB_s[1],FS-2)
+            local LS_p = v(0,LS_s[2]/2)
+            egpSetSize(LS_n, LS_s)
+            egpSetPos(LS_n, LS_p)
+            
+            local LT1_n = Name + "/listingText1"
+            local LT1_s = LB_s - v(Indent,0)
+            local LT1_p = v(Indent,0)-LT1_s/2
+            egpSetSize(LT1_n, LT1_s)
+            egpSetPos(LT1_n, LT1_p)
+            egpSetSize(LT1_n, FS)
+            local LT2_n = Name + "/listingText2"
+            local LT2_s = LB_s - v(Indent,0)
+            local LT2_p = v(Indent,0)-LT2_s/2
+            egpSetSize(LT2_n, LT2_s)
+            egpSetPos(LT2_n, LT2_p)
+            egpSetSize(LT2_n, FS)
+            
+            Q["objectList/lines", number] = floor(LB_s[2]/FS)
+            
+            GT["objectList/size", vector2] = NewSize
+            GT["objectList/fontSize", number] = FS
+            GT["objectList/size", vector2] = B_s
+            GT["objectList/pos" , vector2] = B_p
+            
+            objectList_Listing()
+        }
+    }
+    function objectList_Size(NewSize:vector2, [FontSize Indent]) {
+        Q["objectList/fontSize", number] = FontSize
+        Q["objectList/indent", number] = Indent
+        objectList_Size(NewSize)
+    }
+    function objectList_Pos(NewPos:vector2) {
+        local B_n = "objectList/base"
+        local B_s = egpGetSize(B_n)
+        local B_p = clamp(NewPos,B_s,egpScrSize(O)-B_s)
+        egpSetPos(B_n, B_p)
+    }
+    ###   ###   ###   ###   ###   ###   ###   ###
+       ###   ###   ###   ###   ###   ###   ###   
+    ###   ###   ###   ###   ###   ###   ###   ###
+    
+    
+    function array objectList() {
+        
+        
+        
+        
+    }
+    
+    
+    
+    objectList_Create()
+    #objectList_Size(v(460,300), 15, 3)
+    
+    #findIncludeClass("prop")
+    #objectList_SetList(List)
+    
+    
+    timer("", 0)
+}
+
+if(clk("")) {
+        timer("", 75)
+    
+    if(O:keyPressed("C")) {
+        ##################################################################
+        ##################################################################
+        local Eye        = O:eye()
+        local EyeAngles  = O:eyeAngles()
+        if(changed(Eye) | changed(EyeAngles)) {
+            local EyeA       = EyeAngles:forward()
+            local EgpScrSize = egpScrSize(O)
+            
+            local Holo = holoEntity(0)
+            if(!Holo) {holoCreate(0,vec(),vec())}
+            holoAng(0, EyeAngles)
+            
+            local Cos = Eye[1] * EyeA[1] + Eye[2] * EyeA[2] + Eye[3] * EyeA[3]
+            local CursorV = (Holo:toLocal(Eye / Cos) / vec(1, -1.332, -0.75) + vec(0, 1, 1)) / 2
+            
+            local Cursor = EGP["cursor", vector2] = vec2(CursorV[2], CursorV[3]) * EgpScrSize
+        }
+        ##################################################################
+        ##################################################################
+    }
+    
+    
+    if(changed(0)) {
+        
+        function number globalInrange(Name:string, CursorPos:vector2) {
+            local TargetGP = egpGetGlobalPos(Name)
+            local TargetS  = egpGetSize(Name) / 2
+            local Inrange = inrange(CursorPos - TargetGP,-TargetS,TargetS)
+            
+            return Inrange
+        }
+        
+        function string cursorTarget(TargetList:string, CursorPos:vector2) {
+            
+            if(Q["cursorTarget/end", number]) {
+                local CursorTarget = Q["cursorTarget", string]
+                if(CursorTarget) {
+                    if(globalInrange(CursorTarget, CursorPos)) {
+                        return CursorTarget
+                    }
+                }
+            }
+            
+            
+            local CursorTargets = Q[TargetList, array]
+            local Return = ""
+            local Real = 0
+            while(1) {
+                Real++
+                local Target = CursorTargets[Real, string]
+                if(Target) {
+                    if(globalInrange(Target, CursorPos)) {
+                        Return = Target
+                        local Targets = Q[Target + "/cursorTargets", array]
+                        if(Targets:count()) {
+                            CursorTargets = Targets
+                            Real = 0
+                        }
+                        else {
+                            Q["cursorTarget/end", number] = 1
+                            Q["cursorTarget", string] = Target
+                            return Target
+                        }
+                    }
+                }
+                else {
+                    Q["cursorTarget/end", number] = 0
+                    Q["cursorTarget", string] = Return
+                    return Return
+                }
+            }
+        }
+        function string cursorTarget(CursorPos:vector2) {
+            cursorTarget("cursorTargets" , CursorPos)
+        }
+        
+        
+        egpAddBox("c1", v(), v(200,15), "")
+        egpSetColor(10)
+        egpAddText("c1/t", "target", v(-98,0))
+        egpSetParent("c1")
+        egpSetAlign(0,1)
+        egpSetSize(15)
+        
+        egpAddBox("c2", v(0,15 + 2), v(200,15), "")
+        egpSetParent("c1")
+        egpSetColor(10)
+        egpAddText("c2/t", "ops", v(-98,0))
+        egpSetParent("c2")
+        egpSetAlign(0,1)
+        egpSetSize(15)
+        
+    }
+    
+    local Cursor = EGP["cursor", vector2]
+    local CursorTarget = Q["cursorTarget", string]
+    if(changed(Cursor)) {
+        cursorTarget(Cursor)
+        egpSetPos("c1", Cursor + v(300,15)/2)
+        egpSetText("c1/t", CursorTarget)
+    }
+    
+    egpSetText("c2/t", toText000(ops(), -4))
+    
+    local KeyClick = O:keyPressed("E") | O:keyAttack1()
+    if(O:keyPressed("C") & !Q["clickLock", number]) {
+        if(changed(KeyClick) & KeyClick) {
+            switch(CursorTarget) {
+                case "objectList/scroll",
+                    Q["act", string] = "objectList/scroll"
+                break
+                case "objectList/titleBase",
+                    Q["act", string] = "objectList/titleBase"
+                break
+                
+                case "objectList/titleSizing",
+                    Q["act", string] = "objectList/titleSizing"
+                break
+                
+                case "objectList/listingBase",
+                    Q["act", string] = "objectList/listingBase"
+                break
+            }
+        }
+    }
+    
+    
+    
+    local Act = Q["act", string]
+    switch(Act) {
+        case "objectList/scroll",
+            if(KeyClick) {
+                if(!Q["clickLock", number]) {
+                    Q["clickLock", number] = 1
+                    Q["act/startCursorPos", vector2] = Cursor
+                    Q["act/startScrollPos", number] = Q["objectList/scroll", number]
+                    egpSetColor("objectList"+"/scroll", 255)
+                }
+                if(changed(Cursor)) {
+                    local StartScroll = Q["act/startScrollPos", number]
+                    local StartCursorPos = Q["act/startCursorPos", vector2]
+                    local Dif = Cursor - StartCursorPos
+                    
+                    local Name = "objectList"
+                    local SB_n = Name + "/scrollBase"
+                    local S_n = Name + "/scroll"
+                    local SB_s = egpGetSize(SB_n)
+                    local S_s = egpGetSize(S_n)
+                    local SS = (SB_s[2] - S_s[2])
+                    local Scroll = clamp(StartScroll + Dif[2] / SS ,0,1)
+                    
+                    egpSetPos(S_n, v(0,(Scroll-0.5) * SS))
+                    Q["objectList/scroll", number] = Scroll
+                    objectList_Listing()
+                }
+            }
+            else {
+                egpSetColor("objectList"+"/scroll", 20)
+                Q["act", string]       = ""
+                Q["clickLock", number] = 0
+            }
+        break
+        case "objectList/titleBase",
+            if(KeyClick) {
+                if(!Q["clickLock", number]) {
+                    Q["clickLock", number] = 1
+                    Q["act/startCursorPos", vector2] = Cursor
+                    Q["act/startPos", vector2] = egpGetPos("objectList/base")
+                }
+                local Dif = Cursor - Q["act/startCursorPos", vector2]
+                
+                local NewPos = Q["act/startPos", vector2] + Dif
+                local B_n = "objectList/base"
+                local B_s = egpGetSize(B_n)/2
+                local B_p = clamp(NewPos,B_s,egpScrSize(O)-B_s)
+                egpSetPos(B_n, B_p)
+                GT["objectList/pos", vector2] = B_p
+            }
+            else {
+                Q["act", string]       = ""
+                Q["clickLock", number] = 0
+            }
+        break
+        case "objectList/titleSizing",
+            if(!Q["clickLock", number]) {
+                Q["clickLock", number] = 1
+                Q["act/startCursorPos", vector2] = Cursor
+                Q["act/startSize", vector2] = egpGetSize("objectList/base")
+                Q["act/startPos", vector2] = egpGetPos("objectList/base")
+            }
+            local Dif = Cursor - Q["act/startCursorPos", vector2]
+            
+            local NewSize = Q["act/startSize", vector2] + Dif * v(1,-1)
+            local NewPos  = Q["act/startPos" , vector2] + Dif * v(0.5,0.5)
+            
+            egpSetSize("objectList/sizer", NewSize)
+            egpSetPos("objectList/sizer", NewPos)
+            
+            if(!KeyClick) {
+                objectList_Size(NewSize)
+                egpSetPos("objectList/sizer", v(9999))
+                Q["act", string]       = ""
+                Q["clickLock", number] = 0
+            }
+        break
+        
+        case "objectList/listingBase",
+            if(!Q["clickLock", number]) {
+                Q["clickLock", number] = 1
+                print("listingBase")
+                
+                if(O:keyWalk()) {
+                    Q["clickMode", string] = "listinMenu"
+                    print("alt")
+                    
+                    
+                }
+            }
+            
+            switch(Q["clickMode", string]) {
+                case "",
+                    
+                break
+                
+                case "listinMenu",
+                    if(changed(KeyClick) & KeyClick) {
+                        local CursorTarget = cursorTarget(Cursor)
+                        
+                        
+                    }
+                break
+            }
+            
+            
+            
+            
+            if(!KeyClick & 0) {
+                Q["act", string]       = ""
+                Q["clickLock", number] = 0
+            }
+        break
+        
+        case "",
+            if(changed(KeyClick) & KeyClick) {
+                local SP = O:shootPos()
+                local EYE = O:eye()
+                rangerFilter(O)
+                local Ent = rangerOffset(1000, SP, EYE):entity()
+                
+                if(Ent:type() == "prop_physics") {
+                    local ES = Ent:toString()
+                    local ListE = Q["listList", array]
+                    
+                    
+                    
+                }
+                
+                
+                objectList_SetList(objectList())
+            }
+        break
+    }
+}
+
+
+
+
+
+
+
+#O:stripWeapons()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,66 @@
+@name Turret_01_005_model
+
+@inputs 
+@outputs 
+@persist 
+
+
+
+#include "AddHolo"
+
+
+
+if(changed(0)) {
+    noDuplications()
+    
+    
+    local Color1 = vec(255)
+    local Color2 = vec(255)
+    local Mater1 = "phoenix_storms/OfficeWindow_1-1"
+    local Mater2 = "models/gibs/metalgibs/metal_gibs"
+    local Material_glow = "lights/white"
+    
+    
+    
+    local Scale = 1 +2 ########################
+    local Radius = 8   *Scale
+    local Height = 1.3 *Scale
+    
+    local Dno_height = 0.05 *Scale
+    
+    local PichMax = 40
+    local PichMin = -50
+    local PitchMAX = abs(PichMax) > abs(PichMin) ? abs(PichMax) : abs(PichMin)
+    
+    
+    local Clip = Height
+    
+    
+    
+    
+    local Height0 = Height+Dno_height*1.0
+    local Height1 = Height0*0.89
+    local Height2 = Height1*0.89
+    local Height3 = Height2*0.85
+    local Height4 = Height3*0.75
+    local Fingertip_height = Height4
+    
+    local AxisOffSet = Height1
+    
+    local LengthClip = Radius/2 * sin(acos(Clip/Radius))*0.995
+    local Length0 = LengthClip * 1.0
+    local Length1 = Length0
+    local Length4 = Length0-Fingertip_height/2
+    local Length3 = Length4*0.98
+    local Length2 = Length3*0.98
+    local Offset = Radius * 1.02 + (Length0-LengthClip)*2
+    
+    local E = entity()
+    ################
+    #
+    #- base
+    #
+    #bones
+    
+    
+}

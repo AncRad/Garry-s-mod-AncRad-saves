@@ -1,0 +1,442 @@
+@name DefendSystem
+
+@inputs 
+@outputs 
+@persist [E O]:entity [Q]:table [DefendSystem]:table# [G]:gtable
+
+@trigger none
+@model models/bull/gates/processor.mdl
+#
+#
+#
+if(changed(0)) {
+    ################
+    #
+    #= INCLUDE
+    #
+    #include "EGPS"
+    #
+    ################
+    
+    
+    ################
+    #
+    #- constant
+    #
+    E = entity()
+    O = owner()
+    #
+    ################
+    
+    
+    ################
+    #
+    #- 
+    #
+    E:setSkin(1)
+    #
+    runOnFile(1)
+    runOnHTTP(1)
+    #
+    timer("", 1)
+    timer("fileSystem", 1)
+    timer("httpSystem", 1)
+    #
+    Q["httpSystem/requestHTTP/maxTime", number] = 20
+    Q["httpSystem/waitHTTP/maxTime"   , number] = 20
+    Q["fileSystem/requestFile/maxTime", number] = 20
+    Q["fileSystem/waitFile/maxTime"   , number] = 20
+    Q["fileSystem/writeFile/maxTime"  , number] = 20
+    #
+    #
+    #
+    Q["fileSystem/procedure", string] = "requestFile"
+    Q["fileSystem/requestFile/fileName", string] = "DefendSystem"
+    #
+    ################
+}
+#
+#
+#
+if(clk("")) {
+        timer("", 75)
+    
+    if(changed(0)) {
+        function egpAddAct() {}
+        function startAct() {
+            
+        }
+        
+        
+    }
+    
+    
+    local Step = Q["egpSystem/step", number]
+    switch(Step) {
+        #
+        #
+        #
+        case 0,
+            local EIW = E:isWeldedTo()
+            if(EIW:type() == "gmod_wire_egp" & EIW:model() == "models/hunter/plates/plate2x2.mdl" | 1) {
+                
+                egpSelect(EIW:wirelink())
+                
+                Q["egpSystem/step", number] = Step + 1
+                setName("DefendSystem")
+            }
+            else {
+                setName("DefendSystem\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage() * 1e6))
+            }
+        break
+        #
+        #
+        #
+        case 228, "print(228)" break
+        #
+        #
+        #
+        case 1,
+            
+            egpClear()
+            
+            local FontSize = EGPS["fontSize", number] = 15
+            
+            local EGP_res = v(512,512)
+            
+            local Fon_n = "fon"
+            local Fon_s = EGP_res
+            local Fon_p = EGP_res/2 + v(550)
+            egpAddBox(Fon_n,Fon_s,Fon_p)
+            egpSetColor(0)
+            
+            local PL_n = "playerList"
+            local PL_s = Fon_s * v(1,0.6)
+            local Strings = round(PL_s[2]/FontSize)
+            local PL_s = v(PL_s[1],(Strings+1)*FontSize+2)
+            local PL_p = v()
+            egpAddBox(PL_n,PL_s,PL_p)
+            egpSetColor(10)
+            egpSetParent(Fon_n)
+            
+            local PLF_n = PL_n + "_fon"
+            egpAddBox(PLF_n,PL_s+v(2),v())
+            egpSetColor(255,80,0)
+            egpSetParent(Fon_n)
+            egpSetOrder(PLF_n,PL_n,0)
+            
+            local TB_n = PL_n + "_textBase"
+            local TB_s = v(PL_s[1],Strings * FontSize)
+            local TB_p = v(0,(PL_s[2]-TB_s[2])/2)
+            egpAddBox(TB_n,TB_s,TB_p)
+            egpSetColor(30)
+            egpSetParent(PL_n)
+            egpAddDashedLine(TB_n,FontSize)
+            egpSetColor(20)
+            
+            local TBR0_n = TB_n + "/0"
+            local TBR0_s = v(TB_s[1],1)
+            local TBR0_p = v(0,-TB_s[2]/2-1)
+            egpAddBox(TBR0_n,TBR0_s,TBR0_p)
+            egpSetColor(255,80,0)
+            egpSetParent(TB_n)
+            
+            local TBR_n = TB_n + "/"
+            local TBR_s = v(1,TB_s[2])
+            local Ar = array(
+                FontSize*(round(Strings/10)!=0+round(Strings/100)!=0)*1.2,
+                #0.5,
+                1
+            )
+            local DD = 0
+            foreach(C, TBR_px:number = Ar) {
+                if(abs(TBR_px) <= 1) {
+                    TBR_px = TBR_px * (TB_s[1]-DD)
+                }
+                local TBR_p = v(DD-TB_s[1]/2,0)
+                
+                egpAddBox(TBR_n + C,TBR_s,TBR_p)
+                egpSetColor(255,80,0)
+                egpSetParent(TB_n)
+                
+                local TBTB_n = TB_n + "_textBase" + C
+                local TBTB_s = v(TBR_px,TB_s[2])
+                local TBTB_p = v(0,0)
+                egpAddBox(TBTB_n,TBTB_s-v(1,0),v(TBR_p[1]+TBTB_s[1]/2,0))
+                #egpSetParent(PL_n)
+                egpSetColor(255,0)
+                local TBT_n = TBTB_n + "_text"
+                local TBT_t = ""
+                local TBT_s = TBTB_s-v(2,0)
+                local TBT_p = -TBT_s/2
+                egpAddText(TBT_n,TBT_t,TBT_s,TBT_p)
+                egpSetSize(FontSize)
+                egpSetColor(200,200)
+                egpSetParent(TBTB_n)
+                
+                DD+=TBR_px
+            }
+            
+            
+            
+            
+            Q["egpSystem/step", number] = Step + 1
+        break
+        #
+        #
+        #
+        case 2,
+            
+            
+            
+            Q["egpSystem/step", number] = Step + 1
+        break
+        #
+        #
+        #
+        default,
+            if(!EGPS["egp/wirelink", wirelink]) {
+                egpClear()
+                EGPS:clear()
+                Q["egpSystem/step", number] = 0
+            }
+            
+            local Clear = array()
+            foreach(C, Act_i:string = Q["actList", array]) {
+                local Act_T = Q[Act_i + "/act/table", table]
+                local Act_n = Act_T["act/name", string]
+                
+                switch(Act_n) {
+                    case "d",
+                        
+                        Clear = array(C):add(Clear)
+                    break
+                    default,
+                        
+                        Clear = array(C):add(Clear)
+                    break
+                }
+            }
+            foreach(C, I:number = Clear) {
+                Q["actList", array]:remove(I)
+            }
+        break
+    }
+}
+#
+#
+#
+if(clk("fileSystem") | fileClk()) {
+        timer("fileSystem", 200)
+    
+    local Procedure = Q["fileSystem/procedure", string]
+    switch(Procedure) {
+        #
+        #
+        #
+        case "requestFile",
+            if(fileCanLoad()) {
+                
+                fileLoad(Q["fileSystem/requestFile/fileName", string])
+                Q["fileSystem/procedure", string] = "waitFile"
+                Q["fileSystem/requestFile/startTime", number] = 0
+                break
+            }
+            
+            local StartTime = Q["fileSystem/requestFile/startTime", number]
+            if(!Q["fileSystem/requestFile/startTime", number]) {
+                Q["fileSystem/requestFile/startTime", number] = curtime()
+            }
+            elseif((StartTime - curtime()) > Q["fileSystem/requestFile/maxTime", number]) {
+                
+                Q["fileSystem/procedure", string] = ""
+                Q["fileSystem/requestFile/startTime", number] = 0
+            }
+        break
+        #
+        #
+        #
+        case "writeFile",
+            if(fileCanWrite()) {
+                
+                fileWrite(Q["fileSystem/writeFile/fileName", string], Q["fileSystem/writeFile/fileName", string])
+                
+                Q["fileSystem/procedure", string] = ""
+                Q["fileSystem/writeFile/startTime", number] = 0
+                break
+            }
+            
+            local StartTime = Q["fileSystem/writeFile/startTime", number]
+            if(!Q["fileSystem/writeFile/startTime", number]) {
+                Q["fileSystem/writeFile/startTime", number] = curtime()
+            }
+            elseif((StartTime - curtime()) > Q["fileSystem/writeFile/maxTime", number]) {
+                
+                Q["fileSystem/procedure", string] = ""
+                Q["fileSystem/writeFile/startTime", number] = 0
+            }
+        break
+        #
+        #
+        #
+        case "waitFile",
+            if(fileClk()) {
+                
+                local File_t = fileRead()
+                if(File_t) {
+                    DefendSystem:clear()
+                    DefendSystem = vonDecodeTable(File_t)
+                    local Error = vonError()
+                    if(Error) {
+                        print(Error)
+                    }
+                    
+                    Q["fileSystem/file_t", string] = File_t
+                    Q["fileSystem/file_n", string] = Q["fileSystem/writeFile/fileName", string]
+                }
+                else {
+                    print("Создаю файл")
+                    DefendSystem:clear()
+                    DefendSystem = table("DefendSystem_owner/SID" = O:steamID(), "DefendSystem_owner/name" = O:name(), "players" = array())
+                }
+                
+                Q["fileSystem/procedure", string] = ""
+                Q["fileSystem/waitFile/startTime", number] = 0
+                break
+            }
+            
+            local StartTime = Q["fileSystem/waitFile/startTime", number]
+            if(!Q["fileSystem/waitFile/startTime", number]) {
+                Q["fileSystem/waitFile/startTime", number] = curtime()
+            }
+            elseif((StartTime - curtime()) > Q["fileSystem/waitFile/maxTime", number]) {
+                
+                Q["fileSystem/procedure", string] = ""
+                Q["fileSystem/waitFile/startTime", number] = 0
+            }
+        break
+        #
+        #
+        #
+        default,
+            
+        break
+    }
+}
+#
+#
+#
+if(clk("httpSystem") | httpClk()) {
+        timer("httpSystem", 200)
+    
+    local Procedure = Q["httpSystem/procedure", string]
+    switch(Procedure) {
+        #
+        #
+        #
+        case "requestHttp",
+            if(httpCanRequest()) {
+                
+                httpRequest("https://raw.githubusercontent.com/AncRad/expression/master/DefendSystem")
+                Q["httpSystem/procedure", string] = "waitHttp"
+                Q["httpSystem/requestHttp/startTime", number] = 0
+                break
+            }
+            
+            local StartTime = Q["httpSystem/requestHttp/startTime", number]
+            if(!Q["httpSystem/requestHttp/startTime", number]) {
+                Q["httpSystem/requestHttp/startTime", number] = curtime()
+            }
+            elseif((StartTime - curtime()) > Q["httpSystem/requestHttp/maxTime", number]) {
+                
+                Q["httpSystem/procedure", string] = ""
+                Q["httpSystem/requestHttp/startTime", number] = 0
+            }
+        break
+        #
+        #
+        #
+        case "waitHttp",
+            if(httpClk()) {
+                
+                local Data = httpData()
+                if(Data) {
+                    local Explode = Data:explode("    Код:\n")
+                    local Info = Explode[1, string]
+                    local Code = Explode[2, string]
+                    
+                    if(Code) {
+                        if(Code == getCode()) {
+                            if(!Q["egpSystem/step", number]) {
+                                print("Ваша версия кода не отличается от оригинала.")
+                            }
+                        }
+                        else {
+                            if(!Q["egpSystem/step", number]) {
+                                print("Ваша версия кода отличается от оригинала.")
+                            }
+                        }
+                    }
+                    else {
+                        if(!Q["egpSystem/step", number]) {
+                            print("Код пуст")
+                        }
+                    }
+                }
+                else {
+                    
+                }
+                Q["httpSystem/procedure", string] = ""
+                Q["httpSystem/waitHttp/startTime", number] = 0
+                break
+            }
+            
+            local StartTime = Q["httpSystem/waitHttp/startTime", number]
+            if(!Q["httpSystem/waitHttp/startTime", number]) {
+                Q["httpSystem/waitHttp/startTime", number] = curtime()
+            }
+            elseif((StartTime - curtime()) > Q["httpSystem/waitHttp/maxTime", number]) {
+                
+                Q["httpSystem/procedure", string] = ""
+                Q["httpSystem/waitHttp/startTime", number] = 0
+            }
+        break
+        #
+        #
+        #
+        default,
+            
+        break
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

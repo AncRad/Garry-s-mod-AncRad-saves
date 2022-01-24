@@ -1,0 +1,558 @@
+@name Alpha 
+@persist [E O Block Keycard Button]:entity
+@persist Queues:table
+@persist Ready Open Detonate DetonationTime
+@persist Buffer:array
+@persist BFade MaxProps VITYA
+
+#- STRINGS
+@persist Strings_list:table
+@persist Strings_HoloId
+@persist Strings_LastStringID
+
+
+###################################
+#      Wrote by $❤В▒И▒Т▒Я❤€     #        
+#         20.06.2019              #
+#      Helped Cancella            #
+#          v.1.1                  #
+###################################
+
+interval(10)
+
+if(first()|dupefinished()){
+    
+    Strings_HoloId = 9e9 #Что бы не пересекались с другими
+    
+    E = entity()
+    
+    O = owner()
+    
+    MaxProps = 200 # ETA HYIETA
+    
+    Dozvoleno = array("STEAM_0:1:107557735")
+    
+    # Steam-id ili Nickname
+    #noDuplications()
+
+    
+    
+    
+    
+    
+    function entity findPlayer(Str:string){
+        local Found = findPlayerByName(Str)
+        if(!Found){
+            Found = findPlayerBySteamID(Str)   
+        }
+        return Found
+    }
+    
+    foreach(I,PlrS:string=Dozvoleno){
+        local Plr = findPlayer(PlrS)
+        Plr["allowed",number] = 1
+    }
+    
+    O["allowed",number] = 1
+    
+    
+    propSpawnUndo(0)
+    
+    local Chasis = vec(150)
+    local Plating = vec(255)
+    
+    Block = propSpawn("models/hunter/blocks/cube1x2x025.mdl",E:toWorld(vec(0,0,47)),ang(0,90+O:eyeAngles():yaw(),90),1)
+    #Block:propMakePersistent(1)
+    Block:setMaterial("metal6")
+    Block:setColor(Chasis)
+    #Block:setAlpha(50)
+    
+    E:setPos(Block:toWorld(vec(0,0,6)))
+    E:setAng(Block:toWorld(ang()))
+    E:setMaterial("models/shiny")
+    E:setColor(vec4(50,50,50,255))
+    E:soundPlay("boop",0,"hl1/ambience/computalk2.wav")
+    
+    timer("parent",100)
+    
+    function queue(QN:string,Table:table){
+        if(!Queues:exists(QN)){
+            Queues[QN,table] = table()
+        }
+        Queues[QN,table]:pushTable(Table)
+    }
+    
+    function number q_(QN:string){
+        return Queues[QN,table]:count()
+    }
+    
+    function q(){
+        if(perf(90) & netSpam()<97){
+            local Keys = Queues:keys()
+            for(I=1,Keys:count()){
+                local Key = Keys[I,string]
+                while(Queues[Key,table]:count()>0 & perf(90) & netSpam()<97){
+                    local Input = Queues[Key,table][1,table]
+                    local Result = ("q_"+Key)(Input)[number]
+                    local Break = 0
+                    switch(Result){
+                        case 0,
+                        Break = 1
+                        break
+                        case 1,
+                        Queues[Key,table]:removeTable(1)
+                        break
+                    }
+                    if(Break){
+                        break   
+                    }
+                }   
+            }
+        }
+    }
+
+    function number newID(){
+        return randint(1e+4,1e+14)   
+    }
+    
+    
+    function number q_prop(Table:table){
+        if(!propCanCreate()){
+            return 0   
+        }
+        
+        local Prop = propSpawn(Table[1,string],Block:toWorld(Table[2,vector]),Block:toWorld(Table[3,angle]),1)
+        Prop:setColor(Table[4,vector4])
+        Prop:setMaterial(Table[5,string]=="w" ? "models/debug/debugwhite" : (Table[5,string]=="m" ? "metal4" : Table[5,string]))
+        Prop:propMakePersistent(1)
+        Prop:parentTo(Block)
+        
+        return 1
+    }
+    
+    
+    
+    #queue("prop",table("",vec(),ang(),vec4(),""))
+    queue("prop",table("models/hunter/plates/plate05x1.mdl",vec(0,49,-6),ang(90,0,90),vec4(Plating,255),"m"))
+    queue("prop",table("models/hunter/triangles/05x05x05.mdl",vec(11.6,35.5,-6),ang(180,0,90),vec4(Chasis,255),"metal6"))
+    queue("prop",table("models/hunter/triangles/05x05x05.mdl",vec(-11.6,35.5,-6),ang(180,0,90),vec4(Chasis,255),"metal6"))
+    queue("prop",table("models/hunter/plates/plate1x1.mdl",vec(0,-32,-26.4),ang(0,90,0),vec4(Chasis,255),"metal6"))
+    
+    queue("prop",table("models/hunter/blocks/cube05x1x025.mdl",vec(0,-10,-14),ang(90+20,90,0),vec4(Chasis,255),"metal6"))
+    queue("prop",table("models/hunter/blocks/cube1x1x05.mdl",vec(0,-34,-14),ang(0,90,0),vec4(Chasis,255),"metal6"))
+    
+    
+    function h(Pos:vector,Scale:vector,Ang:angle,Color4:vector4,Mdl:string){
+        local ID = newID()
+        holoCreate(ID,Block:toWorld(Pos),Scale,Block:toWorld(Ang),Color4,Mdl)
+        holoParent(ID,Block)
+    }
+    
+    function h(ID,Pos:vector,Scale:vector,Ang:angle,Color4:vector4,Mdl:string){
+        holoCreate(ID,Block:toWorld(Pos),Scale,Block:toWorld(Ang),Color4,Mdl)
+        holoMaterial(ID,"models/debug/debugwhite")
+        holoParent(ID,Block)
+        holoDisableShading(ID,1)
+    }
+    
+    function addString([String_Text]:string, [String_FontSize String_FontThickness]:number, String_Ang:angle, String_Color4:vector4) {
+        
+        String_Text = String_Text:upper()
+        local Strings_firstChar_Entity = noentity()
+        local String_Table = table()
+        Strings_list[String_Text, table] = String_Table
+        
+        foreach(C, Char:string = String_Text:explode("")) {
+            while(holoEntity(Strings_HoloId)) {Strings_HoloId++}
+            
+            local Char_Entity = holoCreate(Strings_HoloId,Strings_firstChar_Entity:toWorld(vec( 0 , 0 , 0 )),vec(String_FontThickness,String_FontSize,String_FontSize),Strings_firstChar_Entity:toWorld(ang( 0 , 0 , 0 )), String_Color4, "models/sprops/misc/alphanum/alphanum_" + Char + ".mdl")
+            String_Table[Strings_HoloId, string] = Char
+            if(C == 1) {
+                Strings_LastStringID = Strings_HoloId
+                Strings_firstChar_Entity = Char_Entity
+            }
+        }
+    }
+    
+    
+    Keycard = propSpawn("models/sprops/rectangles/size_1_5/rect_6x6x3.mdl",Block:toWorld(vec(-14,-7,-22)),Block:toWorld(ang(90+20,90,0)),1)
+    Keycard:setColor(Chasis*0.6)
+    Keycard:setMaterial("metal2")
+    
+    h(100,vec(-13,-5.6,-22.7),vec(0.135,0.135,0.02),ang(45,-19,65),vec4(50,155,255,255),"models/hunter/tubes/tube1x1x1d.mdl")
+    h(101,vec(-12.5,-5.6,-22.7),vec(0.105,0.105,0.02),ang(45,-19,65),vec4(50,155,255,255),"models/hunter/tubes/tube1x1x1d.mdl")
+    h(102,vec(-12.0,-5.6,-22.7),vec(0.075,0.075,0.02),ang(45,-19,65),vec4(50,155,255,255),"models/hunter/tubes/tube1x1x1d.mdl")
+    h(103,vec(-11.5,-5.6,-22.7),vec(0.045,0.045,0.02),ang(45,-19,65),vec4(50,155,255,255),"models/hunter/tubes/tube1x1x1d.mdl")
+
+    
+    
+    Button = propSpawn("models/sprops/cylinders/size_3/cylinder_6x3.mdl",Block:toWorld(vec(-14,-4,-12)),Block:toWorld(ang(90+20,90,0)),1)
+    Button:setColor(vec(255,100,100))
+    Button:setMaterial("metal2")
+    
+    noCollideAll(Button,1)
+    noCollideAll(Keycard,1)
+
+    
+    h(99,vec(-14,-4,-12),vec(0.09,0.09,0.2),ang(0,0,180+70),vec4(Chasis*0.6,255),"models/props_phx/construct/metal_wire2x2b.mdl")
+    holoMaterial(99,"metal2")
+    h(98,vec(-14,-4,-12),vec(0.7),ang(0,0,70),vec4(vec(240,240,255)*0.6,255),"")
+    holoMaterial(98,"models/props_combine/citadel_cable")
+    #holoColor(98,vec(0,0,0))
+    #holoAng(1,holoEntity(1):angles():rotateAroundAxis(holoEntity(1):up(),1))
+    #Axis(holoEntity(1):up(),2))
+    
+    h(vec(0,17.5,-5),vec(3.4,2.8,0.2),ang(0,0,0),vec4(vec(10),255),"")
+    
+    
+    local Clr = vec4(70,255,123,255)
+    
+    h(1,vec()+vec(14,17.5,-5),vec(0.57,0.9,0.57),ang(0,0,-90),Clr,"models/sprops/misc/alphanum/alphanum_r.mdl")
+    h(2,vec()+vec(7,17.5,-5),vec(0.57,0.9,0.57),ang(0,0,-90),Clr,"models/sprops/misc/alphanum/alphanum_e.mdl")
+    h(3,vec()+vec(0,17.5,-5),vec(0.57,0.9,0.57),ang(0,0,-90),Clr,"models/sprops/misc/alphanum/alphanum_a.mdl")
+    h(4,vec()+vec(-7,17.5,-5),vec(0.57,0.9,0.57),ang(0,0,-90),Clr,"models/sprops/misc/alphanum/alphanum_d.mdl")
+    h(5,vec()+vec(-14,17.5,-5),vec(0.57,0.9,0.57),ang(0,0,-90),Clr,"models/sprops/misc/alphanum/alphanum_y.mdl")
+    
+    
+    
+    local Clr = vec4(255,90,70,255)
+    
+    h(11,vec()+vec(14,17.5,-5),vec(0.37,0.9,0.37),ang(0,0,-90),Clr,"models/sprops/misc/alphanum/alphanum_d.mdl")
+    h(12,vec()+vec(10,17.5,-5),vec(0.37,0.9,0.37),ang(0,0,-90),Clr,"models/sprops/misc/alphanum/alphanum_i.mdl")
+    h(13,vec()+vec(6,17.5,-5),vec(0.37,0.9,0.37),ang(0,0,-90),Clr,"models/sprops/misc/alphanum/alphanum_s.mdl")
+    h(14,vec()+vec(2,17.5,-5),vec(0.37,0.9,0.37),ang(0,0,-90),Clr,"models/sprops/misc/alphanum/alphanum_a.mdl")
+    h(15,vec()+vec(-2,17.5,-5),vec(0.37,0.9,0.37),ang(0,0,-90),Clr,"models/sprops/misc/alphanum/alphanum_b.mdl")
+    h(16,vec()+vec(-6,17.5,-5),vec(0.37,0.9,0.37),ang(0,0,-90),Clr,"models/sprops/misc/alphanum/alphanum_l.mdl")
+    h(17,vec()+vec(-10,17.5,-5),vec(0.37,0.9,0.37),ang(0,0,-90),Clr,"models/sprops/misc/alphanum/alphanum_e.mdl")
+    h(18,vec()+vec(-14,17.5,-5),vec(0.37,0.9,0.37),ang(0,0,-90),Clr,"models/sprops/misc/alphanum/alphanum_d.mdl")
+    
+    
+    
+    local Clr = vec4(255,255,70,255)
+    
+    h(21,vec()+vec(10,20.5,-5),vec(0.37,0.9,0.37),ang(0,0,-90),Clr,"models/sprops/misc/alphanum/alphanum_p.mdl")
+    h(22,vec()+vec(6,20.5,-5),vec(0.37,0.9,0.37),ang(0,0,-90),Clr,"models/sprops/misc/alphanum/alphanum_l.mdl")
+    h(23,vec()+vec(2,20.5,-5),vec(0.37,0.9,0.37),ang(0,0,-90),Clr,"models/sprops/misc/alphanum/alphanum_e.mdl")
+    h(24,vec()+vec(-2,20.5,-5),vec(0.37,0.9,0.37),ang(0,0,-90),Clr,"models/sprops/misc/alphanum/alphanum_a.mdl")
+    h(25,vec()+vec(-6,20.5,-5),vec(0.37,0.9,0.37),ang(0,0,-90),Clr,"models/sprops/misc/alphanum/alphanum_s.mdl")
+    h(26,vec()+vec(-10,20.5,-5),vec(0.37,0.9,0.37),ang(0,0,-90),Clr,"models/sprops/misc/alphanum/alphanum_e.mdl")
+    
+    h(27,vec()+vec(6,14.5,-5),vec(0.37,0.9,0.37),ang(0,0,-90),Clr,"models/sprops/misc/alphanum/alphanum_w.mdl")
+    h(28,vec()+vec(2,14.5,-5),vec(0.37,0.9,0.37),ang(0,0,-90),Clr,"models/sprops/misc/alphanum/alphanum_a.mdl")
+    h(29,vec()+vec(-2,14.5,-5),vec(0.37,0.9,0.37),ang(0,0,-90),Clr,"models/sprops/misc/alphanum/alphanum_i.mdl")
+    h(30,vec()+vec(-6,14.5,-5),vec(0.37,0.9,0.37),ang(0,0,-90),Clr,"models/sprops/misc/alphanum/alphanum_t.mdl")
+    
+    local Clr = vec4(255,191,0,255)
+    
+    h(31,vec()+vec(14,17.5,-5),vec(0.37,0.9,0.37),ang(0,0,-90),Clr,"models/sprops/misc/alphanum/alphanum_0.mdl")
+    h(32,vec()+vec(10,17.5,-5),vec(0.37,0.9,0.37),ang(0,0,-90),Clr,"models/sprops/misc/alphanum/alphanum_0.mdl")
+    h(33,vec()+vec(6,17.5,-5),vec(0.37,0.9,0.37),ang(0,0,-90),Clr,"models/sprops/misc/alphanum/alphanum_colon.mdl")
+    h(34,vec()+vec(2,17.5,-5),vec(0.37,0.9,0.37),ang(0,0,-90),Clr,"models/sprops/misc/alphanum/alphanum_0.mdl")
+    h(35,vec()+vec(-2,17.5,-5),vec(0.37,0.9,0.37),ang(0,0,-90),Clr,"models/sprops/misc/alphanum/alphanum_0.mdl")
+    h(36,vec()+vec(-6,17.5,-5),vec(0.37,0.9,0.37),ang(0,0,-90),Clr,"models/sprops/misc/alphanum/alphanum_colon.mdl")
+    h(37,vec()+vec(-10,17.5,-5),vec(0.37,0.9,0.37),ang(0,0,-90),Clr,"models/sprops/misc/alphanum/alphanum_0.mdl")
+    h(38,vec()+vec(-14,17.5,-5),vec(0.37,0.9,0.37),ang(0,0,-90),Clr,"models/sprops/misc/alphanum/alphanum_0.mdl")
+  
+    function ready(Y){
+        
+        Ready = Y
+        
+        if(Y!=2){
+            
+            for(I=1,5){
+                holoAlpha(I,Y*255)
+            }
+            
+            for(I=11,18){
+                holoAlpha(I,255-Y*255)
+            }
+            
+            for(I=21,30){
+                holoAlpha(I,0)
+            }
+            
+            for(I=31,38){
+                holoAlpha(I,0)
+            }
+            
+        } else {
+            
+            for(I=1,5){
+                holoAlpha(I,0)
+            }
+            
+            for(I=11,18){
+                holoAlpha(I,0)
+            }
+            
+            for(I=21,30){
+                holoAlpha(I,255)
+            }
+            
+            for(I=31,38){
+                holoAlpha(I,0)
+            }
+            
+        }
+    
+    }
+    
+    function armed(Y){
+        if(Y){
+            for(I=1,5){
+                holoAlpha(I,0)
+            }
+            
+            for(I=11,18){
+                holoAlpha(I,0)
+            }
+            
+            for(I=21,30){
+                holoAlpha(I,0)
+            }
+            
+            for(I=31,38){
+                holoAlpha(I,255)
+            }
+        }
+    }
+    
+    ready(0)
+    
+    
+    function open(Y){
+        Open = Y
+        #holoAlpha(98,255-Y*255)
+        if(Y){
+            BFade = 1
+        } else {
+            BFade = 2
+        }
+    }
+    
+    runOnChat(1)
+    
+    runOnUse(Keycard,1)
+    runOnUse(Button,1)   
+     
+    #Keycard:parentTo(Block)
+    #Button:parentTo(Block)
+    
+    timer("t100",1)
+    function t100(){
+        
+        if(BFade){
+            BFade += (Open*2-1)*0.1*2
+            holoAlpha(98,255-(BFade-1)*255)
+            if(BFade>=2 & Open){
+                BFade = 0   
+            }
+            if(BFade<=1 & !Open){
+                BFade = 0   
+            }
+        }
+        
+        q()
+        
+        Keycard:setPos(Block:toWorld(vec(-14,-7,-22)))
+        Keycard:setAng(Block:toWorld(ang(90+20,90,0)))
+        
+        Button:setPos(Block:toWorld(vec(-14,-4,-12)))
+        Button:setAng(Block:toWorld(ang(90+20,90,0)))
+        
+        if(propCanCreate() & Buffer:count()<MaxProps){
+            Buffer:pushEntity(propSpawn("models/props_phx/amraam.mdl",vec(-6876,9877,-9000),1))
+        }
+        
+    }
+    
+}
+
+if(clk("back")){
+    for(I=100,103){
+        holoColor(I,vec(50,155,255))   
+    }
+}
+
+if(useClk()){
+    if(useEntClk()==Keycard & Keycard["cd",number]<systime()){
+        local Plr = Keycard:inUseBy()
+        if(Plr["allowed",number]){
+            for(I=100,103){
+                holoColor(I,vec(34,139,34))   
+            }
+
+            open(!Open)
+            Keycard:soundPlay("btn",0.9,"Buttons.snd47")
+            timer("back",900)
+            Keycard["cd",number] = systime()+1
+        } else {
+            for(I=100,103){
+                holoColor(I,vec(255, 0, 0))   
+            }
+            Keycard:soundPlay("btn",0.9,"Buttons.snd16")
+            timer("back",900)
+            Keycard["cd",number] = systime()+1
+        }   
+    }   
+}
+    if(useEntClk()==Button & Open & !Detonate & Ready==1){
+        armed(1)
+        Button:soundPlay("btncl",0.9,"buttons/button6.wav")
+        Detonate = 1
+        if(VITYA)
+        {
+            armed(1)
+            Block:soundURLload("reexplode","https://victoryanykovich.000webhostapp.com/Resume90%20(online-audio-converter.com).mp3",80,0)   
+            VITYA = 0
+            Detonate = 1
+            DetonationTime = systime() + 97
+            
+             timer("detonate",97000)
+            
+            
+            
+    }
+        else
+        {
+            Block:soundURLload("explod","https://victoryanykovich.000webhostapp.com/Main120%20(online-audio-converter.com).mp3",100,0)
+            DetonationTime = systime() + 129
+        }
+        timer("detonate",129000)
+    }
+
+
+if(clk("sd")){
+    findIncludePlayerProps(O)
+    findInBox(E:pos()-vec(4700),E:pos()+vec(4700))
+    foreach(I,Rem:entity=findToArray()){
+        Rem:remove()   
+    }
+    selfDestructAll()   
+}
+
+
+if(clk("detonate")){
+    Detonate = 0
+    stoptimer("detonate")
+    for(I=1,4){
+        soundStop("siren"+I)
+        holoDelete(I+1000)
+    }
+    
+    
+    local Plrs = array()
+    foreach(I,Plr:entity=players()){
+        if(Plr:pos():distance(Block:pos())<4700){
+            Plrs:pushEntity(Plr)   
+        }
+    }
+    
+    foreach(I,Buf:entity=Buffer){
+        local Plr = Plrs[randint(1,Plrs:count()),entity]
+        if(random()>0.7 | !Plr:isAlive()){
+            Buf:setPos(Block:pos()+vec(random(-4700,4700),random(-4700,4700),random(0,800)))   
+        } else {
+            Buf:setPos(Plr:pos()+vec(0,0,100))
+        }
+        Buf:propBreak()  
+    }
+    
+    timer("sd",300)
+    
+    
+    
+}
+
+if (Detonate) {
+    
+    local Time = DetonationTime - systime()
+    local Mins = floor(Time / 60):toString()
+    local Secs = round(Time % 60, 2)
+    local Intg = floor(Secs):toString()
+    local Frac = frac(Secs):toString()
+     
+    if (Intg:length() < 2) {
+    
+        Intg = "0" + Intg     
+        
+    }
+
+    if (Frac:length() < 4) {
+    
+        Frac = Frac + "0"    
+        
+    }
+    
+    holoModel(32, "models/sprops/misc/alphanum/alphanum_" + Mins + ".mdl")
+    holoModel(34, "models/sprops/misc/alphanum/alphanum_" + Intg[1] + ".mdl")
+    holoModel(35, "models/sprops/misc/alphanum/alphanum_" + Intg[2] + ".mdl")
+    holoModel(37, "models/sprops/misc/alphanum/alphanum_" + Frac[3] + ".mdl")
+    holoModel(38, "models/sprops/misc/alphanum/alphanum_" + Frac[4] + ".mdl")    
+          
+}
+
+
+if(clk("r0")){
+    ready(0)   
+}
+if(clk("r1")){
+    ready(1)   
+}
+
+if(chatClk(O)){
+    local Exp = lastSaid():explode(" ")
+    if(Exp[1,string]=="/access"){
+        hideChat(1)
+        local Plr = findPlayer(Exp[2,string])
+        if(Plr){
+            Plr["allowed",number] = !Plr["allowed",number]
+            print(( Plr["allowed",number] ?  "Дан доступ"  : "Забран доступ у") +" " + Plr:name())
+        } else {
+            print("Игрок не найден")
+        }
+    }
+    
+    if(lastSaid()=="/ready"){
+        hideChat(1)
+        if(Ready==0){
+            ready(2)   
+            timer("r1",5000)
+        }
+    }   
+    if(lastSaid()=="/disable"){
+        hideChat(1)
+        if(Ready == 1 & DetonationTime - systime() > 10){
+            if(Detonate){
+                soundURLdelete("explod")
+                
+                soundURLdelete("reexplode")
+
+                
+                Block:soundURLload("stopdet","https://victoryanykovich.000webhostapp.com/Canceled%20(online-audio-converter.com).mp3",100,0)   
+                VITYA = 1
+            }
+            open(0)
+            Detonate = 0
+            stoptimer("detonate")
+            
+            ready(2)   
+            timer("r0",15000)
+            
+            VITYA = 1
+        }
+    }   
+}
+
+
+if(clk("parent")){
+    E:parentTo(Block)
+}    
+
+
+if(clk("t100")){
+    t100()
+    timer("t100",100)
+}
+
+

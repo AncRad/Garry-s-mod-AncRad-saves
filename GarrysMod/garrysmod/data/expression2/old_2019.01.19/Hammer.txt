@@ -1,0 +1,127 @@
+@name Hammer
+
+@inputs 
+@outputs 
+
+#- base
+@persist [E]:entity [Gate_name]:string
+
+#- 
+@persist [O]:entity
+
+#- 
+@persist 
+
+
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+
+#include "AddHolo"
+
+
+
+if(changed(0)) {
+    #if(!isSinglePlayer()) {noDuplications()}
+    
+    #- base
+    E = entity()
+    E:setSkin(1)
+    Gate_name = E:getName():explode("\n"):string(1)
+    
+    #- 
+    O = owner()
+    
+    
+    
+    
+    addHolo("rt",vec(),vec(),ang(),vec(),"cube","","")
+    if(0) {
+        addHolo_INTO(E)
+    }
+    else {
+        addHolo_INTO(O, "anim_attachment_rh")
+    }
+    
+    
+    addHolo("base",vec(),vec(),ang(),vec(),"cube","","rt")
+    
+    local Scale = 1
+    
+    local Hand_r = 1  * Scale
+    local Hand_l = 6 * Scale
+    addHolo("hand",vec(),vec(Hand_r,Hand_r,Hand_l),ang(),vec(255),"hq_cylinder","","base")
+    
+    addHolo("",vec(0,0,-Hand_l-Hand_r),vec(Hand_r,Hand_r,Hand_r),ang(180,0,0),vec(255),"hq_cone","","hand")
+    
+    
+    
+    
+    
+    
+    addHolo_timer("")
+    addHolo_start()
+    
+    
+    
+}
+
+
+if(clk("")) {
+        timer("", 50)
+    
+    
+    
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName(Gate_name + "\nOPS: " + ops() + "\nCPU: " + int(cpuUsage()*1e6))
+if(dupefinished()) {reset()}

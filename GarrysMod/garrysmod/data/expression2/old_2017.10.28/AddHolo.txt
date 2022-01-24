@@ -1,0 +1,475 @@
+@name AddHolo
+
+@inputs 
+@outputs 
+@persist [AddHolo]:table
+
+
+
+if(changed(0)) {
+    function holoClip([ID Index]:number, LocalPos:vector, LocalAng:angle, Offset:number) {
+        holoClipEnabled(ID, Index, 1)
+        holoClip(ID, Index, LocalPos + vec(Offset,0,0):rotate(LocalAng), vec(1,0,0):rotate(LocalAng), 0)
+    }
+    
+    function addHoloClip(Name:string, LocalPos:vector, LocalAng:angle, Offset:number) {
+        local ID = AddHolo[Name + "/id", number]
+        local Index = AddHolo[ID + "/clips", number] + 1 AddHolo[ID + "/clips", number] = Index
+        
+        AddHolo[ID + "/clip/localPos/" + Index, vector] = LocalPos
+        AddHolo[ID + "/clip/localAng/" + Index, angle ] = LocalAng
+        AddHolo[ID + "/clip/offset/"   + Index, number] = Offset
+    }
+    function addHoloClip(LocalPos:vector, LocalAng:angle, Offset:number) {
+        local Name = AddHolo["lastName", string]
+        addHoloClip(Name, LocalPos, LocalAng, Offset)
+    }
+    function addHoloClip(Name:string, LocalAng:angle, Offset:number) {
+        addHoloClip(Name, vec(), LocalAng, Offset)
+    }
+    function addHoloClip(LocalAng:angle, Offset:number) {
+        local Name = AddHolo["lastName", string]
+        addHoloClip(Name, vec(), LocalAng, Offset)
+    }
+    
+    
+    function addHoloTimer([Name TimerName]:string, TimerTime:number) {
+        local ID = AddHolo[Name + "/id", number]
+        local Index = AddHolo[ID + "/timers", number] + 1 AddHolo[ID + "/timers", number] = Index
+        
+        AddHolo[ID + "/timer/name/" + Index, string] = TimerName
+        AddHolo[ID + "/timer/time/" + Index, number] = TimerTime
+    }
+    function addHoloTimer(TimerName:string, TimerTime:number) {
+        local Name = AddHolo["lastName", string]
+        addHoloTimer(Name, TimerName, TimerTime)
+    }
+    function addHoloTimer(TimerName:string) {
+        local Name = AddHolo["lastName", string]
+        addHoloTimer(Name, TimerName, 1)
+    }
+    
+    function addHoloOffset(Name:string, OffsetPos:vector, OffsetAng:angle) {
+        local ID = AddHolo[Name + "/id", number]
+        local Index = AddHolo[ID + "/offsets", number] + 1 AddHolo[ID + "/offsets", number] = Index
+        
+        AddHolo[ID + "/offset/offsetAng/" + Index, vector] = OffsetPos
+        AddHolo[ID + "/offset/offsetPos/" + Index, angle ] = OffsetAng
+    }
+    function addHoloOffset(OffsetPos:vector, OffsetAng:angle) {
+        local Name = AddHolo["lastName", string]
+        addHoloOffset(Name, OffsetPos, OffsetAng)
+    }
+    function addHoloOffset(Name:string, OffsetPos:vector) {
+        addHoloOffset(Name, OffsetPos, ang())
+    }
+    function addHoloOffset(OffsetPos:vector) {
+        local Name = AddHolo["lastName", string]
+        addHoloOffset(Name, OffsetPos, ang())
+    }
+    function addHoloOffset(Name:string, OffsetAng:angle) {
+        addHoloOffset(Name, vec(), OffsetAng)
+    }
+    function addHoloOffset(OffsetAng:angle) {
+        local Name = AddHolo["lastName", string]
+        addHoloOffset(Name, vec(), OffsetAng)
+    }
+    
+    function addHoloParent(Name:string, Parent:string) {
+        local ID = AddHolo[Name + "/id", number]
+        
+        AddHolo[ID + "/parent", string] = Parent
+    }
+    function addHoloParent(Name:string, Ent:entity) {
+        local ID = AddHolo[Name + "/id", number]
+        
+        AddHolo[ID + "/parent", entity] = Ent
+    }
+    function addHoloParent(Ent:entity) {
+        local Name = AddHolo["lastName", string]
+        addHoloParent(Name, Ent)
+    }
+    function addHoloParent(Name:string, Ent:entity, Attachment:string) {
+        local ID = AddHolo[Name + "/id", number]
+        
+        AddHolo[ID + "/parent"           , string] = "attach"
+        AddHolo[ID + "/toWorld"          , string] = "attach"
+        AddHolo[ID + "/parent/attach"    , entity] = Ent
+        AddHolo[ID + "/parent/attachment", string] = Attachment
+    }
+    function addHoloParent(Ent:entity, Attachment:string) {
+        local Name = AddHolo["lastName", string]
+        addHoloParent(Name, Ent, Attachment)
+    }
+    function addHoloParent(Name:string, NameTO:string, Attachment:string) {
+        local ID = AddHolo[Name + "/id", number]
+        
+        AddHolo[ID + "/parent"           , string] = "attach"
+        AddHolo[ID + "/toWorld"          , string] = "attach"
+        AddHolo[ID + "/parent/attach"    , string] = NameTO
+        AddHolo[ID + "/parent/attachment", string] = Attachment
+    }
+    
+    function addHoloToWorld(Name:string, ToWordl:string) {
+        local ID = AddHolo[Name + "/id", number]
+        
+        AddHolo[ID + "/toWorld", string] = ToWordl
+    }
+    function addHoloToWorld(Name:string, Ent:entity) {
+        local ID = AddHolo[Name + "/id", number]
+        
+        AddHolo[ID + "/toWorld", entity] = Ent
+    }
+    function addHoloToWorld(Ent:entity) {
+        local Name = AddHolo["lastName", string]
+        addHoloToWorld(Name, Ent)
+    }
+    function addHoloToWorld(Name:string, Ent:entity, Attachment:string) {
+        local ID = AddHolo[Name + "/id", number]
+        
+        AddHolo[ID + "/toWorld"           , string] = "attach"
+        AddHolo[ID + "/toWorld/attach"    , entity] = Ent
+        AddHolo[ID + "/toWorld/attachment", string] = Attachment
+    }
+    function addHoloToWorld(Ent:entity, Attachment:string) {
+        local Name = AddHolo["lastName", string]
+        addHoloToWorld(Name, Ent, Attachment)
+    }
+    
+    
+    function addHoloINTO(Name:string, INTO:string) {
+        addHoloToWorld(Name, INTO)
+        addHoloParent(Name, INTO)
+    }
+    function addHoloINTO(Name:string, Ent:entity) {
+        addHoloToWorld(Name, Ent)
+        addHoloParent(Name, Ent)
+    }
+    function addHoloINTO(Ent:entity) {
+        local Name = AddHolo["lastName", string]
+        
+        addHoloToWorld(Name, Ent)
+        addHoloParent(Name, Ent)
+    }
+    
+    function addHoloINTO(Name:string, Ent:entity, Attachment:string) {
+        addHoloToWorld(Name, Ent, Attachment)
+        addHoloParent(Name, Ent, Attachment)
+    }
+    function addHoloINTO(Ent:entity, Attachment:string) {
+        local Name = AddHolo["lastName", string]
+        
+        addHoloToWorld(Name, Ent, Attachment)
+        addHoloParent(Name, Ent, Attachment)
+    }
+    
+    function addHoloAlpha(Name:string, Alpha:number) {
+        local ID = AddHolo[Name + "/id", number]
+        
+        AddHolo[ID + "/alpha", number] = Alpha
+    }
+    function addHoloAlpha(Alpha:number) {
+        local ID = AddHolo["lastID", number]
+        
+        AddHolo[ID + "/alpha", number] = Alpha
+    }
+    function addHoloAnim(Animation:string) {
+        local ID = AddHolo["lastID", number]
+        
+        AddHolo[ID + "/animation", string] = Animation
+    }
+    
+    function addHoloPrintColor(Name:string, Array:array) {
+        local ID = AddHolo[Name + "/id", number]
+        local Index = AddHolo[ID + "/printColor", number] + 1 AddHolo[ID + "/printColor", number] = Index
+        
+        AddHolo[ID + "/printColor/array" + Index, array ] = Array
+    }
+    function addHoloPrintColor(Array:array) {
+        local Name = AddHolo["lastName", string]
+        
+        addHoloPrintColor(Name, Array)
+    }
+    function addHoloPrint([Name Text]:string) {
+        local ID = AddHolo[Name + "/id", number]
+        local Index = AddHolo[ID + "/printColor", number] + 1 AddHolo[ID + "/printColor", number] = Index
+        
+        AddHolo[ID + "/printColor/array" + Index, array ] = array(vec(255), Text)
+    }
+    function addHoloPrint(Text:string) {
+        local Name = AddHolo["lastName", string]
+        
+        addHoloPrint(Name, Text)
+    }
+    
+    
+    #addHolo("name", vec(0,0,0), vec(1,1,1), ang(0,0,0), vec(255,255,255), "cube", "", "") addHoloINTO(E)
+    function number addHolo(Name:string, Pos:vector, Scale:vector, Ang:angle, Color:vector, Model:string, Material:string, INTO:string) {
+        local ID = AddHolo["id", number] + 1 AddHolo["id", number] = ID
+        
+        if(!Name) {Name = "noName" + ID}
+        AddHolo[Name + "/id"      , number] = ID
+        AddHolo[ID   + "/name"    , string] = Name
+        AddHolo[ID   + "/pos"     , vector] = Pos
+        AddHolo[ID   + "/scale"   , vector] = Scale
+        AddHolo[ID   + "/ang"     , angle ] = Ang
+        AddHolo[ID   + "/color"   , vector] = Color
+        AddHolo[ID   + "/alpha"   , number] = 255
+        AddHolo[ID   + "/model"   , string] = (Model ? Model : "cube")
+        AddHolo[ID   + "/material", string] = Material
+        AddHolo[ID   + "/parent"  , string] = INTO
+        AddHolo[ID   + "/toWorld" , string] = INTO
+        
+        
+        AddHolo["lastID"  , number] = ID
+        AddHolo["lastName", string] = Name
+        AddHolo["list", array] = AddHolo["list", array]:add(array(ID))
+        
+        return ID
+    }
+    function number addHolo(Name:string, Pos:vector, Scale:vector, Ang:angle, Color:vector, Model:string, Material:string, INTO:entity) {
+        local ID = addHolo(Name, Pos, Scale, Ang, Color, Model, Material, "")
+        
+        AddHolo[ID + "/toWorld", entity] = INTO
+        AddHolo[ID + "/parent" , entity] = INTO
+        return ID
+    }
+    function addHolo(AddCount:number) {
+        AddHolo["id", number] = AddHolo["id", number] + AddCount
+    }
+    
+    
+    if(entity():getName() == "AddHolo") {
+        addHolo("test", vec(), vec(10), ang(), vec(255), "hq_sphere", "", "")
+        addHoloINTO(entity())
+        addHoloClip(ang(0,0,0), 0)
+        
+        addHolo("", vec(0,0,20), vec(20,6,6), ang(0,30,0), vec(255), "cube", "", "test")
+    }
+    
+    
+    
+    timer("addHolo", 1)
+}
+
+if(clk("addHolo")) {
+    local List = AddHolo["list", array]
+    local Count = List:count()
+    if(Count) {
+        while(holoCanCreate() & Count & (ops() <= 8000)) {
+            local ID = AddHolo["list", array][1, number]
+            AddHolo["list", array]:remove(1)
+            Count--
+            
+            local Name      = AddHolo[ID   + "/name"      , string]
+            local Pos       = AddHolo[ID   + "/pos"       , vector]
+            local Scale     = AddHolo[ID   + "/scale"     , vector]
+            local Ang       = AddHolo[ID   + "/ang"       , angle ]
+            local Color     = AddHolo[ID   + "/color"     , vector]
+            local Alpha     = AddHolo[ID   + "/alpha"     , number]
+            local Model     = AddHolo[ID   + "/model"     , string]
+            local Material  = AddHolo[ID   + "/material"  , string]
+            local Parent    = AddHolo[ID   + "/parent"    , string]
+            local ToWorld   = AddHolo[ID   + "/toWorld"   , string]
+            local Clips     = AddHolo[ID   + "/clips"     , number]
+            local Timers    = AddHolo[ID   + "/timers"    , number]
+            local Offsets   = AddHolo[ID   + "/offsets"   , number]
+            local Prints    = AddHolo[ID   + "/printColor", number]
+            local Animation = AddHolo[ID   + "/animation" , string]
+            
+            if(ToWorld) {
+                if(ToWorld != "attach") {
+                    local ToWorld = holoEntity(AddHolo[ToWorld + "/id", number])
+                    Pos = ToWorld:toWorld(Pos)
+                    Ang = ToWorld:toWorld(Ang)
+                }
+                else {
+                    local ToWorld    = AddHolo[ID   + "/parent/attach"    , entity]
+                    if(!ToWorld) {
+                        local To_n   = AddHolo[ID   + "/parent/attach"    , string]
+                        local To_i   = AddHolo[To_n + "/id"               , number]
+                        ToWorld      = AddHolo[To_i + "/entity"           , entity]
+                    }
+                    local Attachment = AddHolo[ID   + "/parent/attachment", string]
+                    Pos = ToWorld:attachmentPos(Attachment)
+                    Ang = ToWorld:attachmentAng(Attachment)
+                }
+            }
+            elseif(AddHolo[ID + "/toWorld", entity]) {
+                local ToWorld = AddHolo[ID + "/toWorld", entity]
+                Pos = ToWorld:toWorld(Pos)
+                Ang = ToWorld:toWorld(Ang)
+            }
+            
+            
+            local CustomModel = 0
+            if(Model:left(7) == "models/") {
+                CustomModel = 1
+            }
+            else {
+                Scale = Scale / 6
+            }
+            
+            local Holo = holoCreate(ID, Pos, Scale, Ang, Color, Model) AddHolo[Name + "/entity", entity] = AddHolo[ID + "/entity", entity] = Holo
+            if(CustomModel) {
+                if(!holoModelAny()) {
+                    #ifdef entity:setModel(string)
+                        Holo:setModel(Model)
+                    #else
+                        print("error: no function entity:setModel(string)")
+                    #endif
+                }
+            }
+            
+            holoAlpha(ID, Alpha)
+            holoMaterial(ID, Material)
+            
+            if(Animation) {
+                #ifdef holoAnim(number, string)
+                    holoAnim(ID, Animation)
+                #else
+                    print("error: no function holoAnim(number, string)")
+                #endif
+            }
+            if(Parent) {
+                if(Parent != "attach") {
+                    local Parent = holoEntity(AddHolo[Parent + "/id", number])
+                    holoParent(ID, Parent)
+                }
+                else {
+                    local Parent    = AddHolo[ID   + "/parent/attach"   , entity]
+                    if(!Parent) {
+                        local To_n  = AddHolo[ID   + "/parent/attach"   , string]
+                        local To_i  = AddHolo[To_n + "/id"              , number]
+                        Parent      = AddHolo[To_i + "/entity"          , entity]
+                    }
+                    local Attachment = AddHolo[ID + "/parent/attachment", string]
+                    holoParentAttachment(ID, Parent, Attachment)
+                }
+            }
+            elseif(AddHolo[ID + "/parent", entity]) {
+                local Parent = AddHolo[ID + "/parent", entity]
+                holoParent(ID, Parent)
+            }
+            
+            if(Clips) {
+                for(Index = 1, Clips) {
+                    local LocalAng = AddHolo[ID + "/clip/localAng/" + Index, angle ]
+                    local Offset   = AddHolo[ID + "/clip/offset/"   + Index, number]
+                    local LocalPos = AddHolo[ID + "/clip/localPos/" + Index, vector]
+                    
+                    holoClip(ID, Index, LocalPos, LocalAng, Offset)
+                }
+            }
+            if(Timers) {
+                for(Index = 1, Timers) {
+                    local TimerName = AddHolo[ID + "/timer/name/" + Index, string]
+                    local TimerTime = AddHolo[ID + "/timer/time/" + Index, number]
+                    
+                    timer(TimerName, TimerTime)
+                }
+            }
+            if(Offsets) {
+                for(Index = 1, Offsets) {
+                    local OffsetPos = AddHolo[ID + "/offset/offsetAng/" + Index, vector]
+                    local OffsetAng = AddHolo[ID + "/offset/offsetPos/" + Index, angle ]
+                    
+                    holoPos(ID, Holo:toWorld(OffsetPos))
+                    holoAng(ID, Holo:toWorld(OffsetAng))
+                }
+            }
+            if(Prints) {
+                for(Index = 1, Prints) {
+                    local Array = AddHolo[ID + "/printColor/array" + Index, array ]
+                    
+                    printColor(Array)
+                }
+            }
+        }
+        
+        timer("addHolo", 50)
+    }
+    else {
+        timer("addHolo", 500)
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

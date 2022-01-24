@@ -1,0 +1,502 @@
+@name ragdoll
+
+@inputs 
+@outputs DD OPS
+@persist [E O Ragdoll]:entity [Q]:table
+
+@trigger none
+
+
+
+if(changed(0)) {
+    
+    #include "EGPS"
+    E = entity()
+    O = owner()
+    
+    function vector2 scrPos(V:vector) {
+        local ShootPos   = O:shootPos()
+        local EyeAngles  = O:eyeAngles()
+        local Holo = holoEntity(0)                if(!Holo) {holoCreate(0,vec(),vec())} holoAng(0, EyeAngles)
+        local EyeA       = EyeAngles:forward()
+        local EgpScrSize = egpScrSize(O)
+        
+        local Eye = (ShootPos - V):normalized()
+        local Cos = Eye[1] * EyeA[1] + Eye[2] * EyeA[2] + Eye[3] * EyeA[3]
+        local Pos = (Holo:toLocal(Eye / Cos) / vec(1, -1.332, -0.75) + vec(0, 1, 1)) / 2
+        local ScreenPos = vec2(Pos[2], Pos[3]) * EgpScrSize
+        return ScreenPos
+    }
+    
+    
+    timer("base", 1)
+}
+
+if(clk("base")) {
+        timer("base", 25)
+    ###  ##  ##
+    #
+    #  first run "base"
+    #
+    ###  ##  ##
+    if(!Ragdoll) {
+        findClearWhiteList()
+        findClearBlackList()
+        findIncludeClass("ragdoll")
+        findIncludeModel("models/player/p2_chell.mdl")
+        findInSphere(O:pos(), 52.5*10)
+        findClosest(O:pos())
+        local Find = find()
+        if(Find) {
+            
+            Ragdoll = Q["ragdoll", entity] = Find
+            local C = 0
+            while(perf(30)) {
+                C++
+                
+                local Bone = Ragdoll:bone(C)
+                if(Bone) {
+                    Q["bones", array] = Q["bones", array]:add(array(Bone))
+                }
+                else {
+                    #print("Bones added " + C)
+                    break
+                }
+            }
+        }
+        
+        Q["base/curtime", number] = curtime()
+    }
+    local LastCurtime = Q["base/curtime", number]
+    local Curtime = Q["base/curtime", number] = curtime()
+    local Interval = Curtime - LastCurtime
+    ###  ##  ##
+    #
+    #  baseBody
+    #
+    ###  ##  ##
+    local User = Q["user", entity] = O
+    
+    
+    
+    if(Ragdoll) {
+        if(changed(0)) {
+            
+            Q["legsOffset", vector] = vec(10,10,0)
+            
+        }
+        
+        
+        local LOR = Q["legsOffset", vector]
+        local LRL = 7.5
+        
+        local Bones = Q["bones", array]  #= Ragdoll:bones()
+        
+        local Mass = 58.12862765789
+        
+        local Body_b = Bones[1, bone]
+        local Body_p = Body_b:pos()
+        local Body_a = Ragdoll:attachmentAng("chest")
+        
+        local LegL_b = Bones[13, bone]
+        local LegL_p = LegL_b:pos()
+        local LegR_b = Bones[14, bone]
+        local LegR_p = LegR_b:pos()
+        local WalkPos = (LegL_p + LegR_p)/2
+        
+        local AGrav = vec(0,0,600)
+        
+        rangerFilter(Ragdoll)
+        local LegL_R = rangerOffsetHull(LRL, LegL_p, vec(0,0,-1), vec(3,3,0.5))
+        local LegL_R_h = LegL_R:hit()
+        local LegL_R_p = LegL_R:pos()
+        
+        rangerFilter(Ragdoll)
+        local LegR_R = rangerOffsetHull(LRL, LegR_p, vec(0,0,-1), vec(3,3,0.5))
+        local LegR_R_h = LegR_R:hit()
+        local LegR_R_p = LegR_R:pos()
+        
+        rangerFilter(Ragdoll)
+        local Body_R = rangerOffset(50, Body_p, vec(0,0,-1))
+        local Body_R_d = Body_R:distance()
+        local Body_R_p = Body_R:pos()
+        
+        
+        
+        local Z = (LegL_p[3] < LegR_p[3] ? LegL_p[3] : LegR_p[3])
+        if(1) {
+            local LeftPos = LegL_R_p:setZ(Z)
+            local RightPos = LegR_R_p:setZ(Z)
+            local LeftOffSet = vec()
+            
+            if(LegL_R_h) {
+                LeftPos = LeftPos + clamp(LeftOffSet,-LOR,LOR)
+                
+            }
+            
+            
+            local Body_f = vec()
+            Body_b:applyForce( Body_f*Interval*Mass )
+        }
+        
+        
+        
+        local ScrPos_Body_p = scrPos(Body_p)
+        local ScrPos_Body_R_p = scrPos(Body_R_p)
+        egpAddLine("Body_R", ScrPos_Body_R_p, ScrPos_Body_p)
+        egpAddLine("Body_f", ScrPos_Body_p, scrPos(Body_p + Body_a:forward() * 5)) egpSetColor(0,0,255)
+        egpAddLine("Body_r", ScrPos_Body_p, scrPos(Body_p + Body_a:right() * 5)) egpSetColor(0,255,0)
+        egpAddLine("Body_u", ScrPos_Body_p, scrPos(Body_p + Body_a:up() * 5)) egpSetColor(255,0,0)
+        
+        egpAddLine("WalkPos1", ScrPos_Body_R_p, scrPos(WalkPos:setZ(Body_R_p[3])))
+        egpSetColor(255,60,0)
+        egpAddLine("WalkPos2", scrPos(WalkPos:setZ(Body_R_p[3])), scrPos(WalkPos))
+        egpSetColor(255,60,0)
+        
+        egpAddLine("legL_R", scrPos(LegL_p), scrPos(LegL_R_p)) if(LegL_R_h) {egpSetColor(0,150,255)} else {egpSetColor(255)}
+        egpAddLine("legR_R", scrPos(LegR_p), scrPos(LegR_R_p)) if(LegR_R_h) {egpSetColor(0,150,255)} else {egpSetColor(255)}
+        
+        egpAddLine("legLR", scrPos(LegR_p), scrPos(LegL_p))
+        egpSetColor(255,60,0)
+        
+        
+        
+        
+        
+        #mass chell 58.12862765789
+    }
+    ###  ##  ##
+    #
+    #  egpSelect
+    #
+    ###  ##  ##
+    local EGPw = EGP["egp", wirelink]
+    if(EGPw) {
+        if(changed(0)) {
+            timer("hud", 1)
+        }
+    }
+    else {
+        local IsWT = E:isWeldedTo()
+        if(IsWT:type() == "gmod_wire_egp_hud" & IsWT:owner() == O) {
+            egpSelect(IsWT:wirelink())
+            egpClear()
+        }
+        elseif(O:keyPressed("E")) {
+            findClearWhiteList()
+            findClearBlackList()
+            findIncludeClass("gmod_wire_egp_hud")
+            findInSphere(O:shootPos(), 150)
+            local Find = find()
+            if(Find:owner() == O) {
+                egpSelect(Find:wirelink())
+                egpClear()
+            }
+        }
+    }
+    ###  ##  ##
+    #
+    #
+    #
+    #
+}
+
+if(clk("hud")) {
+        timer("hud", 100)
+    ###  ##  ##
+    #
+    #  first run "hud"
+    #
+    ###  ##  ##
+    if(changed(0)) {
+        
+        
+        
+        
+        #
+        #
+        #
+        Q["hud/curtime", number] = curtime()
+    }
+    local LastCurtime = Q["hud/curtime", number]
+    local Curtime = Q["hud/curtime", number] = curtime()
+    local Interval = Curtime - LastCurtime
+    ###  ##  ##
+    #
+    #  hudBody
+    #
+    ###  ##  ##
+    local EGPw = EGP["egp", wirelink]
+    if(EGPw) {
+        local User = Q["user", entity]
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        local Key = O:keyPressed("C")
+        if(changed(Key) | Key) {
+            local ShootPos   = User:shootPos()
+            local EyeAngles  = User:eyeAngles()
+            #local Eye        = User:eye()                     #if(User:keyPressed("mouse_4")) {Eye = Eye:rotate(angnorm(EyeAngles-Cam:angles())*ang(-1,1,0))}
+            local Holo = holoEntity(0)                        if(!Holo) {holoCreate(0,vec(),vec())} holoAng(0, EyeAngles)
+            local EyeA       = EyeAngles:forward()
+            local EgpScrSize = egpScrSize(User)
+            if(changed(0)) {
+            }
+            local Step = Q["step", number]
+            if(Step <= 2) {
+                Step = Q["step", number] = Step + 1
+                foreach(C, Bone:bone = Q["bones", array]) {
+                    
+                    if(Step == 1) {
+                        local P_n = "point"+C
+                        egpAddBox(P_n, v(), v(1), "")
+                    }
+                    else {
+                        local P_n = "point"+C
+                        local T_n = "text" + C
+                        local T_t = " " + C
+                        local T_p = v()
+                        egpAddText(T_n, T_t, T_p)
+                        egpSetParent(P_n)
+                        egpSetSize(12)
+                        egpSetAlign(0,0)
+                    }
+                }
+            }
+            else {
+                local Array = array()
+                foreach(C, Bone:bone = Q["bones", array]) {
+                    
+                    local Eye = (ShootPos - Bone:pos()):normalized()
+                    local Cos = Eye[1] * EyeA[1] + Eye[2] * EyeA[2] + Eye[3] * EyeA[3]
+                    local Pos = (Holo:toLocal(Eye / Cos) / vec(1, -1.332, -0.75) + vec(0, 1, 1)) / 2
+                    local ScreenPos = vec2(Pos[2], Pos[3]) * EgpScrSize
+                    
+                    Array:pushVector2(ScreenPos)
+                    egpSetPos("point"+C, (Key ? ScreenPos : v()))
+                }
+                Q["bones/screenPos", array] = Array
+            }
+        }
+    }
+}
+
+
+OPS = ops()
+
+
+
+
+
+
+
+
+
+#[
+
+    
+    function cursorPos(Player:entity) {
+        ###########################################################################################
+        ############################################################################################
+        
+        local EyeAngles  = Player:eyeAngles()
+        local Eye        = Player:eye():rotate(angnorm(EyeAngles-Cam:angles())*ang(-1,1,0)*Player:keyPressed("mouse_4"))
+        if(changed(Eye) | changed(EyeAngles)) {                                                     ##
+            local EyeA       = EyeAngles:forward()                                                  ##
+            local EgpScrSize = egpScrSize(Player)                                                   ##
+                                                                                                    ##
+            local Holo = holoEntity(0)                                                              ##
+            if(!Holo) {holoCreate(0,vec(),vec())}                                                   ##
+            holoAng(0, EyeAngles)                                                                   ##
+                                                                                                    ##
+            local Cos = Eye[1] * EyeA[1] + Eye[2] * EyeA[2] + Eye[3] * EyeA[3]                      ##
+            local CursorV = (Holo:toLocal(Eye / Cos) / vec(1, -1.332, -0.75) + vec(0, 1, 1)) / 2    ##
+                                                                                                    ##
+            local Cursor = Q["cursor", vector2] = vec2(CursorV[2], CursorV[3]) * EgpScrSize        ###
+            egpSetPos("c", Cursor)
+        }                                                                                         ###
+        ############################################################################################
+        ###########################################################################################
+    }
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#RTPN Farm

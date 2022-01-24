@@ -1,0 +1,13 @@
+@name PHC
+
+#[
+hq_cylinder
+models/sprops/misc/alphanum/alphanum_r.mdl
+models/sprops/misc/alphanum/alphanum_e.mdl
+models/sprops/misc/alphanum/alphanum_c.mdl
+]#
+
+#[
+
+
+#[

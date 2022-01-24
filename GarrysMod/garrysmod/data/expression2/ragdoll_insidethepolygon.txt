@@ -1,0 +1,468 @@
+@name Ragdoll_InsideThePolygon
+
+@inputs 
+@outputs 
+
+#- CODE
+@persist CODE_FirstRun
+
+#- FIND
+@persist 
+
+#- ITP
+@persist ITP_LimbList:array
+@outputs ITP_DEBUG:string
+@persist ITP_
+
+#- HELPER
+@persist Helper:table
+
+
+
+
+switch(clkName()) {
+    default,
+        if(changed(0)) {
+            if(CODE_FirstRun) {reset()}
+            CODE_FirstRun = 1
+            
+            function entity helper_point(Point_n:string, Point_p:vector) {
+                local StartHolo_e = Helper[Point_n + "/entity", entity]
+                if(!StartHolo_e) {
+                    if(holoCanCreate()) {
+                        local StartHolo_i = 0
+                        StartHolo_i = Helper[Point_n + "/index" , number] = Helper["indexCounter", number] = max(Helper["indexCounter", number] + 1 ,2281448)
+                        StartHolo_e = Helper[Point_n + "/entity", entity] = holoCreate(StartHolo_i, Point_p, vec(0.2), ang(), vec(255), "models/editor/axis_helper.mdl")
+                    } else {return noentity()}
+                } elseif(Point_p) {holoPos(Helper[Point_n + "/index", number], Point_p)}
+                return StartHolo_e
+            }
+            function entity helper_beam([Beam_n PointStart_n PointEnd_n]:string, Helper_color:vector) {
+                
+                local PointStart_e = Helper[PointStart_n + "/entity", entity]
+                local PointEnd_e   = Helper[PointEnd_n   + "/entity", entity]
+                
+                if(PointStart_e & PointEnd_e & !Helper[Beam_n + "/beam/entity", entity]) {
+                    local Helper_e = PointStart_e:drawBeam("trails/smoke",PointStart_e:pos(),PointEnd_e:pos(),Helper_color,255,5)
+                    Helper_e:setBeamEndEnt(PointEnd_e)
+                    
+                    Helper[Beam_n + "/beam/entity", entity] = Helper_e
+                    return Helper_e
+                }
+                else {
+                    return noentity()
+                }
+            }
+            function entity helper([Helper_n StartHolo_n EndHolo_n]:string, [StartPos EndPos Helper_color]:vector) {
+                local StartHolo_e = helper_point(StartHolo_n, StartPos)
+                local EndHolo_e   = helper_point(EndHolo_n  , EndPos  )
+                
+                return helper_beam(Helper_n, StartHolo_n, EndHolo_n, Helper_color)
+            }
+            
+            
+            
+            holoCreate(1,vec(),vec(0.5),ang(),vec(255),"models/editor/axis_helper.mdl")
+            holoCreate(2,vec(),vec(0.25),ang(),vec(200),"hq_torus")
+            holoCreate(3,vec(),vec(0.25*0.8),ang(),vec(0,0,255),"cplane")
+            
+            timer("ITP", 1)
+            timer("FIND", 1)
+            exit()
+        }
+    break
+    
+    case "ITP",
+        timer("ITP", 50)
+        
+        #local LimbRadius = array(5,5,5,10,15,15,25)
+        
+        
+        ITP_DEBUG = "####////POLYGON\\\\\\\\####"
+        #
+        #
+        #
+        ITP_DEBUG += "\n--- поиск вершин полигона"
+        local Poly_vertex_Ent = array()
+        local Poly_vertex_Pos = array()
+        local Poly_vertex_Yaw = array()
+        local Poly_vertex_Rad = array()
+        local Poly_Center2 = vec2()
+        local Poly_Z = 9e9
+        rangerPersist(1)
+        rangerFilter(ITP_LimbList)
+        foreach(C, Limb:entity = ITP_LimbList) {
+            local Limb_R = rangerOffset(10,Limb:pos(),vec(0,0,-1))
+            if(Limb_R:hit()) {
+                local Limb_Pos = Limb_R:pos()
+                Poly_Z = Poly_Z > Limb_Pos[3] ? Limb_Pos[3] : Poly_Z
+                Poly_Center2 += Poly_vertex_Pos:pushVector2(vec2(Limb_Pos))
+                Poly_vertex_Rad:pushNumber(Limb:mass())
+                
+                Poly_vertex_Ent:pushEntity(Limb)
+                Limb:setColor(vec(0,190,255))
+                if(Limb:mass() >= 24) {Limb:setMass(random(8,20))}
+                continue
+            }
+            Limb:setColor(vec(150))
+        }
+        rangerPersist(0)
+        local Poly_vertex_Count = Poly_vertex_Pos:count()
+        
+        ITP_DEBUG += "\nvertex_Count = " + Poly_vertex_Count
+        
+        if(Poly_vertex_Count) {
+            Poly_Center2 /= Poly_vertex_Count
+            if(Poly_vertex_Count >= 3) {
+                ITP_DEBUG += "\n--- сортировка вершин по углу от центра"
+                local Poly_vertex_pos_Clone = Poly_vertex_Pos:clone()
+                local Poly_vertex_rad_Clone = Poly_vertex_Rad:clone()
+                local Poly_vertex_ent_Clone = Poly_vertex_Ent:clone()
+                Poly_vertex_Pos:clear()
+                Poly_vertex_Rad:clear()
+                Poly_vertex_Ent:clear()
+                foreach(Vertex_Index, Vertex_Pos2:vector2 = Poly_vertex_pos_Clone) {
+                    local Vertex_Yaw = (Vertex_Pos2-Poly_Center2):toAngle()
+                    local Insert = 1
+                    if(Vertex_Yaw > Poly_vertex_Yaw:max() | Vertex_Index == 1) {
+                        Insert = Vertex_Index
+                    }
+                    else {
+                        foreach(Vertex2_Index, Vertex2_Yaw:number = Poly_vertex_Yaw) {
+                            if(Vertex_Yaw > Vertex2_Yaw) {
+                                Insert = Vertex2_Index
+                                break
+                            }
+                        }
+                    }
+                    Poly_vertex_Ent:insertEntity(Insert, Poly_vertex_ent_Clone[Vertex_Index, entity])
+                    Poly_vertex_Yaw:insertNumber(Insert, Vertex_Yaw)
+                    Poly_vertex_Rad:insertNumber(Insert, Poly_vertex_rad_Clone[Vertex_Index, number])
+                    Poly_vertex_Pos:insertVector2(Insert, Vertex_Pos2)
+                }
+                foreach(C, Vertex_Yaw:number = Poly_vertex_Yaw) {ITP_DEBUG += "\n" + C + "  " + round(Vertex_Yaw,1)}
+                
+                holoPos(1, vec(Poly_Center2,Poly_Z))
+            }
+            if(Poly_vertex_Count >= 4) {
+                ITP_DEBUG += "\n--- исклбчить из полигона впадины"
+                local C = 0
+                local OK = 0
+                while(OK < Poly_vertex_Count) {
+                    C = C == Poly_vertex_Count ? 1 : C+1
+                    OK++
+                    
+                    local P1 = Poly_vertex_Pos[C==1 ? Poly_vertex_Count : C-1,vector2]-Poly_Center2
+                    local P2 = Poly_vertex_Pos[C,vector2]-Poly_Center2
+                    local P3 = Poly_vertex_Pos[C==Poly_vertex_Count ? 1 : C+1,vector2]-Poly_Center2
+                    
+                    local P3P1_yaw = (P1-P3):toAngle()
+                    local P2P3_local = (P2-P3):rotate(-P3P1_yaw)
+                    
+                    if(P2P3_local[2] < 0) {
+                        Poly_vertex_Yaw:remove(C)
+                        Poly_vertex_Pos:remove(C)
+                        Poly_vertex_Rad:remove(C)
+                        Poly_vertex_Ent:removeEntity(C):setColor(vec(230))
+                        C--
+                        OK=0
+                        Poly_vertex_Count--
+                    }
+                }
+                ITP_DEBUG += "\nvertex_Count = " + Poly_vertex_Count
+            }
+            
+            #- HELPER
+            #helper([Helper_n StartHolo_n EndHolo_n]:string, [StartPos EndPos Helper_color]:vector)
+            for(C = 1,10) {
+                local ID = 3e3 + C
+                if(!holoEntity(ID) & holoCanCreate()) {
+                    holoCreate(ID,vec(),vec(),ang(),vec(10,10,255),"cplane")
+                    holoCreate(ID+10,vec(),vec(1),ang(),vec(255),"models/sprops/misc/alphanum/alphanum_" + C + ".mdl")
+                    holoMaterial(ID, "models/wireframe")
+                }
+                local Pos = vec(Poly_vertex_Pos[C,vector2],Poly_Z)
+                holoPos(ID, Pos)
+                holoPos(ID+10, Pos+vec(0,0,15))
+                local Rad = Poly_vertex_Rad[C,number]/6
+                holoScale(ID, vec(Rad,Rad,1))
+            }
+            
+            
+            if(Poly_vertex_Count) {
+                ITP_DEBUG += "\n--- ограничить вектор"
+                
+                local Point_Pos = vec2(entity():pos())
+                holoPos(2, vec(Point_Pos,Poly_Z))
+                
+                
+                if(Poly_vertex_Count == 1) {
+                    local Vertex_Pos = Poly_vertex_Pos[1, vector2]
+                    local Vertex_Rad = Poly_vertex_Rad[1, number]
+                    local LocalPos = Point_Pos-Vertex_Pos
+                    if(LocalPos:length() <= Vertex_Rad) {
+                        ITP_DEBUG += "\nвектор в полигоне"
+                    }
+                    else {
+                        Point_Pos = Vertex_Pos + LocalPos:normalized() * Vertex_Rad
+                        ITP_DEBUG += "\nвектор вне полигона"
+                    }
+                }
+                else {
+                    
+                    local Vertex1_Index = 1
+                    local Vertex2_Index = 2
+                    
+                    if(Poly_vertex_Count > 2) {
+                        Vertex1_Index = Vertex2_Index = 0
+                        local Limited_Yaw = (Point_Pos-Poly_Center2):toAngle()
+                        local While_Dir = 1
+                        local Vertex_Index = 0
+                        while(!Vertex1_Index | !Vertex2_Index) {
+                            Vertex_Index += While_Dir
+                            if(!inrange(Vertex_Index,1,Poly_vertex_Count)) {Vertex_Index = Vertex_Index ? Poly_vertex_Count : 1}
+                            local Vertex_Yaw = Poly_vertex_Yaw[Vertex_Index, number]
+                            local While_NewDir = sign(Limited_Yaw-Vertex_Yaw)
+                            if(While_NewDir != While_Dir) {
+                                While_Dir = While_NewDir
+                                if(Vertex1_Index) {
+                                    Vertex2_Index = Vertex_Index
+                                    break
+                                }
+                                Vertex1_Index = Vertex_Index
+                            }
+                        }
+                        ITP_DEBUG+="\nVertex1_Index: " + Vertex1_Index
+                        ITP_DEBUG+="\nVertex2_Index: " + Vertex2_Index
+                        #[
+                        foreach(Vertex_Index, Vertex_Yaw:number = Poly_vertex_Yaw) {if(Limited_Yaw < Vertex_Yaw) {Vertex2_Index = Vertex_Index break}}
+                        ITP_DEBUG+="\nLimited_Yaw: " + floor(Limited_Yaw,2)
+                        ITP_DEBUG+="\nVertex2_Index: " + Vertex2_Index
+                        Vertex1_Index = Vertex2_Index==1 ? Poly_vertex_Count : Vertex2_Index-1
+                        ]#
+                    }
+                    
+                    local Vertex1_Pos = Poly_vertex_Pos[Vertex1_Index, vector2]
+                    local Vertex2_Pos = Poly_vertex_Pos[Vertex2_Index, vector2]
+                    local Length = Vertex1_Pos:distance(Vertex2_Pos)
+                    local Line = Vertex2_Pos-Vertex1_Pos
+                    local Yaw = Line:toAngle()
+                    local Point_DifPos = Point_Pos-Vertex1_Pos
+                    local Point_LocalPos = Point_DifPos:rotate(-Yaw)
+                    if(inrange(Point_LocalPos[1],0,Length)) {
+                        local Vertex1_Rad = Poly_vertex_Rad[Vertex1_Index, number]
+                        local Vertex2_Rad = Poly_vertex_Rad[Vertex2_Index, number]
+                        local Procent = Point_LocalPos[1]/Length
+                        local Radius = Vertex1_Rad*(1-Procent) + Vertex2_Rad*Procent
+                        if(inrange(Point_LocalPos[2],-Radius,Radius)) {
+                            ITP_DEBUG += "\nвектор в полигоне  #1"
+                        }
+                        else {
+                            Point_Pos = Vertex1_Pos+Point_LocalPos:setY(Radius*sign(Point_LocalPos[2])):rotate(Yaw)
+                            ITP_DEBUG += "\nвектор вне полигона  #1"
+                        }
+                    }
+                    else {
+                        local Vertex_Index = Point_LocalPos[1] < 0 ? Vertex1_Index : Vertex2_Index
+                        local Vertex_Pos = Poly_vertex_Pos[Vertex_Index, vector2]
+                        local Vertex_Rad = Poly_vertex_Rad[Vertex_Index, number]
+                        local Point_DifPos = Point_Pos-Vertex_Pos
+                        if(Point_DifPos:length() <= Vertex_Rad) {
+                            ITP_DEBUG += "\nвектор в полигоне  #2"
+                        }
+                        else {
+                            Point_Pos = Vertex_Pos+Point_DifPos:normalized()*Vertex_Rad
+                            ITP_DEBUG += "\nвектор вне полигона  #2"
+                        }
+                    }
+                    
+                    
+                    #[
+                    local Vertex1_Pos = Poly_vertex_Pos[1, vector2]
+                    local Vertex2_Pos = Poly_vertex_Pos[2, vector2]
+                    local Length = Vertex1_Pos:distance(Vertex2_Pos)
+                    local LocalPos = (Point_Pos-Vertex1_Pos):rotate((Vertex2_Pos-Vertex1_Pos):toAngle()) if(owner():keyPressed("mouse_4") & changed(0)) {print(LocalPos[1])}
+                    if(inrange(LocalPos[1],0,Length)) { ITP_DEBUG+= "there"
+                        local Vertex1_Rad = Poly_vertex_Rad[1, number]
+                        local Vertex2_Rad = Poly_vertex_Rad[2, number]
+                        local Procent = LocalPos[1] / Length
+                        local Radius = Vertex1_Rad*(1-Procent)+Vertex2_Rad*Procent
+                        if(inrange(LocalPos[2],-Radius,Radius)) {
+                            ITP_DEBUG += "\nвектор в полигоне"
+                        }
+                        else {
+                            ITP_DEBUG += "\nвектор вне полигона"
+                        }
+                    }
+                    else {
+                        local Vertex_Index = LocalPos[1] <= 0 ? 1 : 2
+                        local Vertex_Rad = Poly_vertex_Rad[Vertex_Index, number]
+                        if(inrange(LocalPos[2],-Vertex_Rad,Vertex_Rad)) {
+                            #ITP_DEBUG += "\nвектор в полигоне"
+                        }
+                        else {
+                            Point_Pos = select(Vertex_Index, Vertex1_Rad,Vertex2_Rad) + LocalPos[ + vec2(LocalPos[1],clamp(LocalPos[2],-Vertex_Rad,Vertex_Rad))
+                            #ITP_DEBUG += "\nвектор вне полигона"
+                        }
+                    }
+                    ]#
+                }
+                holoPos(3, vec(Point_Pos,Poly_Z))
+            }
+        }
+        #
+        #
+        #
+        ITP_DEBUG += "\n####\\\\\\\\POLYGON////####"
+    break
+    
+    case "FIND",
+        timer("FIND", 500)
+        if(findCanQuery()) {
+            local FIND_Pos = entity():pos()
+            local FIND_Length = 52.5 * 5
+            local FIND_Height = 52.5 * 2
+            
+            findClearBlackList()
+            findClearWhiteList()
+            findIncludeModel("models/sprops/cuboids/height06/size_1/cube_6x6x6.mdl")
+            findInBox(FIND_Pos-vec(FIND_Length,FIND_Length,FIND_Height)/2,FIND_Pos+vec(FIND_Length,FIND_Length,FIND_Height)/2)
+            ITP_LimbList = findToArray()
+        }
+    break
+}
+
+
+
+setName("Ragdoll_InsideThePolygon\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1e6))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

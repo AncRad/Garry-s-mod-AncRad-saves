@@ -1,0 +1,1525 @@
+@name EPBA
+
+@inputs 
+@outputs 
+@persist [E O]:entity [Q]:table [G Project Preset]:gtable
+
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+
+if(changed(0)) {
+    
+    ################(
+    #
+    #- PREINSTALLATION
+    #
+    #- INCLUDE
+    #
+    #include "EGPS"
+    #include "EGPS_extended_01"
+    #
+    #- RUN
+    #
+    runOnPlayerConnect(1)
+    runOnPlayerDisconnect(1)
+    #
+    #- CONSTANT
+    #
+    E = entity()
+    O = owner()
+    #
+    #- VARIABLE
+    #
+    
+    #
+    #- G TABLE
+    #
+    G = gTable("EPBA" + O:steamID())
+    if(G["entity", entity]) {
+        if(G["entity", entity] != E) {
+            printColor(vec(255,75,0),"[EPBA] ",vec(255,80,80), "У вас уже есть один такой чип. ", vec(255), "Имейте соверь, довольствуйтесь одним, пожалуйста.")
+            selfDestruct()
+            exit()
+        }
+    }
+    Project = gTable("EPBA" + O:steamID() + "project")
+    Preset = gTable("EPBA" + O:steamID() + "preset")
+    G["entity", entity] = E
+    #
+    #- OTHER
+    #
+    E:setSkin(1)
+    #
+    ################)
+    ################(
+    #
+    #- TIMERS
+    #
+    timer("", 1)
+    #
+    ################)
+    ################(
+    #
+    #- FUNCTIONS
+    #
+    #- ACT
+    #
+    function egpAddAct([E_n A_n]:string, A_T:table) {
+        local E_T = EGPS[E_n + "/table", table]
+        
+        E_T[A_n + "/actTable", table] = A_T
+        E_T["actList", array] = E_T["actList", array]:add(array(A_n))
+    }
+    function egpAddAct(A_n:string, A_T:table) {
+        egpAddAct(EGPS["lastName", string], A_n, A_T)
+    }
+    function egpStartAct(A_n:string, A_T:table) {
+        local A_i = Q["actCounter", number] = Q["actCounter", number] + 1
+        Q[A_i + "/actName" , string] = A_n
+        Q[A_i + "/actTable", table ] = A_T
+        Q["actList", array] = Q["actList", array]:add(array(A_i))
+    }
+    #
+    #- SCROLL
+    #
+    function egpAddScroll([P_n Cell_n]:string,Width:number) {
+        local P_s = egpGetSize(P_n)
+        
+        local SB_n = P_n + "_scrollBase"
+        local SB_s = Q[SB_n + "/scroll/size", vector2] = v(Width,P_s[2])
+        local SB_p = v((P_s[1]-SB_s[1])/2,0)
+        egpAddBox(SB_n,SB_s,SB_p)
+        egpSetParent(P_n)
+        local S_n = SB_n + "_scroll"
+        local S_s = v(SB_s[1],SB_s[2]/3)
+        local S_p = v(0)
+        egpAddBox(S_n,S_s,S_p)
+        egpSetParent(SB_n)
+        if(!Cell_n) {Cell_n = P_n + "/scroll"}
+        Q[P_n + "/scroll/sellName", string] = Cell_n
+    }
+    function egpAddScroll(P_n:string,Width:number) {
+        egpAddScroll(P_n,"",Width)
+    }
+    function number egpSetScroll(P_n:string, [ListSize FullSize MinSize]:number) {
+        local ListOut = max(FullSize - ListSize,0)
+        
+        local SB_n = P_n + "_scrollBase"
+        local SB_s = Q[SB_n + "/scroll/size", vector2] #= egpGetSize(SB_n)
+        local S_n  = SB_n + "_scroll"
+        
+        local Cell_n = Q[P_n + "/scroll/sellName", string]
+        local Scroll = Q[Cell_n, number] = clamp(Q[Cell_n, number],0,ListOut)
+        
+        local S_s = v(SB_s[1],SB_s[2]*max(ListSize/max(ListOut,1),1)/2)
+        if(MinSize) {
+            S_s = v(S_s[1],clamp(S_s[2],MinSize,SB_s[2]))
+        }
+        local Length = Q[SB_n + "/scroll/length", number] = (SB_s[2]-S_s[2])/2
+        local S_p = v(0,Length*Scroll/max(ListOut,1)*2-Length)
+        egpSetSize(S_n,S_s)
+        egpSetPos(S_n,S_p)
+    }
+    function number egpSetScrollMove(P_n:string, [ListSize FullSize StartCursorPosY CursorPosY]:number) {
+        
+        local LocalCursorPosY = CursorPosY - StartCursorPosY
+        if(changed(LocalCursorPosY)) {
+            local SB_n = P_n  + "_scrollBase"
+            local S_n  = SB_n + "_scroll"
+            
+            if(changed(StartCursorPosY)) {
+                Q[SB_n + "/scroll/startPosY", number] = egpGetPos(S_n)[2]
+            }
+            
+            local ListOut = max(FullSize - ListSize,0)
+            
+            local Length = Q[SB_n + "/scroll/length", number]
+            local S_py = clamp(Q[SB_n + "/scroll/startPosY", number] + LocalCursorPosY,-Length,Length)
+            if(ListOut) {egpSetPos(S_n,v(0,S_py))}
+            
+            local Cell_n = Q[P_n + "/scroll/sellName", string]
+            local Scroll = Q[Cell_n, number] = ListOut ? clamp(floor(ListOut/Length*(S_py+Length)/2),0,ListOut) : 0
+            return Scroll
+        }
+        return Q[Q[P_n + "/scroll/sellName", string], number]
+    }
+    #
+    #- EGP TARGET
+    #
+    function string egpGetTarget(Cursor_p:vector2, [ParentType Target_n]:string) {
+        local ParentType = "click#" + ParentType
+        
+        
+        local Targets_a = EGPS[ParentType + "/childList", array]
+        if(Target_n) {
+            Targets_a = EGPS[Target_n + "/table", table][ParentType + "/childList", array]
+        }
+        local Targets_c = Targets_a:count()
+        local C = 0
+        while(C < Targets_c) {
+            C++
+            
+            local E_n = Targets_a[C, string]
+            if(egpGlobalInrange(E_n,Cursor_p)) {
+                local E_T = EGPS[E_n + "/table", table]
+                
+                Target_n  = E_n
+                Targets_a = E_T[ParentType + "/childList", array]
+                Targets_c = Targets_a:count()
+                C = 0
+            }
+        }
+        return Target_n
+    }
+    function string egpGetTarget(Cursor_p:vector2, ParentType:string) {
+        return egpGetTarget(Cursor_p, ParentType, "")
+    }
+    #
+    ################)
+}
+
+if(clk("")) {
+    local Step = Q["step", number]
+        timer("", Step == -1 ? clamp(O:ping(),30,70) : 200)
+    
+    switch(Step) {
+            ################(
+            #
+            #- 
+            #
+        case 0,
+            local E_WT = E:isWeldedTo()
+            if(E_WT:type() == "gmod_wire_egp_hud") {
+                
+                egpSelect(E_WT:wirelink())
+                Q["step", number] = 1
+                printColor(vec(255,75,0), "[EPBA] ", vec(255), "Соединение с EPG HUD установлено.")
+                continue
+            }
+            elseif(changed(0)) {
+                printColor(vec(255,75,0), "[EPBA] ", vec(255), "Ожидается соединение с EPG HUD.")
+            }
+        break
+            #
+            ################)
+        case 228, print(228) break
+            ################(
+            #
+            #- FOUNDATIONS OF INTERFACE
+            #
+            #- STEP 1
+            #
+        case 1,
+            
+            egpClear()
+            
+            local FontSize = EGPS["fontSize", number] = 15
+            
+            local ToolsPanel_n = "toolsPanel"
+            local ToolsPanel_s = s(0.5,0) + floor(s(0,0.3)/FontSize)*FontSize
+            local ToolsPanel_p = s(0.5,1)-v(0,ToolsPanel_s[2]/2)
+            egpAddPanel(ToolsPanel_n,ToolsPanel_s,ToolsPanel_p,2)
+            egpSetColor()
+            egpClickMode()
+            
+            local PYRP_n = ToolsPanel_n + "_pyr"
+            egpAddPanel(PYRP_n,ToolsPanel_n,1,0,1)
+            egpClickMode()
+            egpSetColor()
+            local PYRPP_n = PYRP_n + "_p"
+            egpAddPanel(PYRPP_n,PYRP_n,1,0,1)
+            egpSetColor(5)
+            egpClickMode()
+            local PYRPY_n = PYRP_n + "_y"
+            egpAddPanel(PYRPY_n,PYRP_n,-1,0,1)
+            egpSetColor(10)
+            egpClickMode()
+            local PYRPR_n = PYRP_n + "_r"
+            egpAddPanel(PYRPR_n,PYRP_n,-1,0,1)
+            egpSetColor(5)
+            egpClickMode()
+            
+            
+            Q["step", number] = Step + 1
+        break
+            #
+            #- STEP 2
+            #
+        case 2,
+            
+            local InnerStep = Q["innerStep", number] = Q["innerStep", number] + 1
+            if(InnerStep == 1) {
+                local FontSize = EGPS["fontSize", number]
+                
+                local ToolsPanel_n = "toolsPanel"
+                local ToolsPanel_s = egpGetSize(ToolsPanel_n)
+                local ToolsPanel_p = egpGetPos(ToolsPanel_n)
+                
+                local PlayerPanel_n = "playerPanel"
+                local PlayerPanel_s = v(s(0.15)[1],ToolsPanel_s[2])
+                local PlayerPanel_p = ToolsPanel_p-v((ToolsPanel_s[1]+PlayerPanel_s[1])/2,0)
+                egpAddPanel(PlayerPanel_n,PlayerPanel_s,PlayerPanel_p,2)
+                egpSetColor()
+                egpClickMode()
+                
+                local SelectPlayer_n = PlayerPanel_n + "_selectPlayer"
+                egpAddPanel(SelectPlayer_n,PlayerPanel_n,1,FontSize,1)
+                egpSetColor(30)
+                egpClickMode()
+                egpAddAct("selectFromList", table(
+                    "elementName"     = SelectPlayer_n,
+                    "cellName"        = "selectedPlayer",
+                    "listName"        = "playersList",
+                    "displayListName" = "playersListNames"
+                ))
+                local SelectPlayerText_n = SelectPlayer_n + "_text"
+                local SelectPlayerText_t = "Выберите игрока"
+                if(Preset["selectedPlayer", entity]) {
+                    SelectPlayerText_t = Preset["selectedPlayer", entity]:toString()
+                }
+                local SelectPlayerText_p = v(2-PlayerPanel_s[1]/2,0)
+                egpAddText(SelectPlayerText_n,SelectPlayerText_t,SelectPlayerText_p)
+                egpSetAlign(0,1)
+                egpSetSize(FontSize)
+                egpSetParent(SelectPlayer_n)
+                
+                local SelectBoneListMode_n = PlayerPanel_n + "_selectBoneListMode"
+                egpAddPanel(SelectBoneListMode_n,PlayerPanel_n,-1,FontSize,1)
+                egpSetColor(30)
+                egpClickMode()
+                egpAddAct("selectFromList", table(
+                    "elementName"     = SelectBoneListMode_n,
+                    "cellName"        = "selectedBoneListMode",
+                    "listName"        = "boneListModeList",
+                    "displayListName" = "displayBoneListModeList"
+                ))
+                Q["boneListModeList/list/type"        , string] = "string"
+                Q["boneListModeList/list/array"       , array ] = array("for", "animated", "three")
+                Q["displayBoneListModeList/list/type" , string] = "string"
+                Q["displayBoneListModeList/list/array", array ] = array("Перебор", "Анимируемые", "Древо")
+                egpStartAct("bonePanel", table())
+                local SelectBoneListModeText_n = SelectBoneListMode_n + "_text"
+                local SelectBoneListModeText_t = "Выберите вид списка костей"
+                if(Preset["selectedBoneListMode", string]) {
+                    SelectBoneListModeText_t = Q["displayBoneListModeList/list/array", array][Q["boneListModeList/list/array", array]:getIndex(Preset["selectedBoneListMode", string]), string]
+                    
+                }
+                local SelectBoneListModeText_p = v(2-PlayerPanel_s[1]/2,0)
+                egpAddText(SelectBoneListModeText_n,SelectBoneListModeText_t,SelectBoneListModeText_p)
+                egpSetAlign(0,1)
+                egpSetSize(FontSize)
+                egpSetParent(SelectBoneListMode_n)
+                
+                local Bone_i = 0
+                local Bone_A = Project[1 + "/frame/bone/animated/" + Bone_i, number]
+                local Bone_n = Project["bone/name/" + Bone_i, string]
+                local A = Bone_A ? 1 : 2
+                local B = Bone_A ? 2 : 1
+                
+                Q["bonePanel/for/textNumbers" + A + "/array", array][Bone_i, string] = ""
+                Q["bonePanel/for/textNumbers" + B + "/array", array][Bone_i, string] = "" + Bone_i
+                Q["bonePanel/for/textNames"  + A + "/array", array][Bone_i, string] = ""
+                Q["bonePanel/for/textNames"  + B + "/array", array][Bone_i, string] = Bone_n
+                
+                
+            }
+            elseif(InnerStep == 2) {
+                
+                local PlayerPanel_n = "playerPanel"
+                local BonePanel_n = PlayerPanel_n + "_bonePanel"
+                egpAddPanel(BonePanel_n,PlayerPanel_n,1,0,1)
+                egpSetColor(20)
+                egpClickMode()
+                egpBuildPanel(PlayerPanel_n)
+                Q[BonePanel_n + "\size", vector2] = egpGetSize(BonePanel_n)
+                
+                Q["step", number] = Step + 1
+            }
+        break
+            #
+            #- STEP 3
+            #
+        case 3,
+            
+            local FontSize = EGPS["fontSize", number]
+            
+            local ToolsPanel_n = "toolsPanel"
+            local ToolsPanel_s = egpGetSize(ToolsPanel_n)
+            local ToolsPanel_p = egpGetPos(ToolsPanel_n)
+            
+            local FrameLine_n = ToolsPanel_n + "_frameLine"
+            egpAddPanel(FrameLine_n,ToolsPanel_n,1,FontSize*4,1)
+            egpSetColor(10)
+            egpClickMode()
+            egpAddAct("selectFromList", table(
+                "elementName"     = FrameLine_n,
+                "cellName"        = "frame/selected",
+                "listName"        = "frameList",
+                "displayListName" = "frameList"
+            ))
+            Q["frameList/list/type"        , string] = "number"
+            Q["frameList/list/array"       , array ] = array(1, 2, 3, 4, 5, 6)
+            #Q["displayframeList/list/type" , string] = "string"
+            #Q["displayframeList/list/array", array ] = array("frame1","frame2","frame3","frame4","frame5","frame6")
+            
+            egpAddText(FrameLine_n + "_text","0",v())
+            egpSetSize(FontSize)
+            egpSetParent(FrameLine_n)
+            egpBuildPanel(ToolsPanel_n)
+            
+            Q["step", number] = Step + 1
+        break
+            #
+            ################)
+            ################
+            #
+            #- WORKING PART OF THE INTERFACE
+            #
+        default,
+            if(changed(0)) {
+                Q["step", number] = -1
+            }
+            #
+            #- CURSOR POS
+            #
+            local LClick = O:keyPressed("mouse_left" ) | O:keyUse()
+            local RClick = O:keyPressed("mouse_right") | O:keyUse() & O:keyPressed("lalt")
+            local Click = (LClick | RClick) & O:keyPressed("C")
+            local Click_changed = changed(Click)
+            if(O:keyPressed("C")) {
+                local EyeAngles  = O:eyeAngles()
+                local Eye        = O:eye()
+                if(Q["cam/toggle", number]) {
+                    Eye = Eye:rotate(angnorm(EyeAngles-Q["cam/ang", angle]))
+                }
+                if(changed(Eye) | changed(EyeAngles)) {
+                    local EyeA       = EyeAngles:forward()
+                    local EgpScrSize = vec2(1920,1080) #egpScrSize(O)
+                    
+                    local Holo = holoEntity(454560)
+                    if(!Holo) {holoCreate(454560,vec(),vec())}
+                    holoAng(454560, EyeAngles)
+                    
+                    local Cos = Eye[1] * EyeA[1] + Eye[2] * EyeA[2] + Eye[3] * EyeA[3]
+                    local CursorV = (Holo:toLocal(Eye / Cos) / vec(1, -1.332, -0.75) + vec(0, 1, 1)) / 2
+                    
+                    local Cursor_p = vec2(CursorV[2], CursorV[3]) * EgpScrSize
+                    if(round(Cursor_p) != EgpScrSize/2) {
+                        Q["cursorPos", vector2] = Cursor_p
+                        
+                        local Target_n = Q["target_n", string] = egpGetTarget(Cursor_p, Q["threeName", string])
+                        
+                        
+                        #egpRemoveElement("cursor")
+                        if(changed(0)) {
+                            egpAddCircle("cursor", v(2), Cursor_p, "")
+                            
+                            egpAddText("cursorText", Target_n, vec2(1920,1080))
+                            egpSetAlign(2,2)
+                            
+                            egpAddBox("outline", v(123), v(), "o")
+                            egpSetSize(1)
+                            egpSetColor(255,100,0,50)
+                        }
+                        
+                        egpSetPos("cursor", Cursor_p)
+                        if(changed(Target_n)) {
+                            if(Target_n) {
+                                egpSetSize("outline", egpGetSize(Target_n))
+                                egpSetParent("outline", Target_n)
+                            }
+                            else {
+                                egpSetSize("outline", v())
+                            }
+                            
+                            egpSetText("cursorText", Target_n)
+                        }
+                    }
+                }
+            }
+            #
+            #- CLICK ACT
+            #
+            if(Click & Click_changed) {
+                local Target_n = Q["target_n", string]
+                
+                if(Target_n) {
+                    local E_T = EGPS[Target_n + "/table", table]
+                    foreach(C, A_n:string = E_T["actList", array]) {
+                        local A_T = E_T[A_n + "/actTable", table]
+                        
+                        egpStartAct(A_n, A_T)
+                        Q["target_n", string] = ""
+                    }
+                }
+            }
+            #
+            #- ACT SISTEM
+            #
+            local Clear = array()
+            foreach(C, A_i:number = Q["actList", array]) {
+                local A_n = Q[A_i + "/actName", string]
+                
+                local NoRemove = 0
+                switch(A_n) {
+                    ################
+                    #
+                    #- BONE PANEL
+                    #
+                    case "bonePanel",
+                        
+                        NoRemove = 1
+                        
+                        local ListMode = Preset["selectedBoneListMode", string]
+                        
+                        if(changed(ListMode)) {
+                            egpGroupRemove("bonePanel")
+                            break
+                        }
+                        local ListMode_changed = changed(ListMode)
+                        
+                        switch(ListMode) {
+                            #
+                            #- MODE FOR
+                            #
+                            case "for",
+                                if(ListMode_changed) {
+                                    egpGroupOpen("bonePanel")
+                                    
+                                    local FontSize = EGPS["fontSize", number]
+                                    
+                                    local PPBP_n = "playerPanel_bonePanel"
+                                    local PPBP_s = egpGetSize(PPBP_n)
+                                    local PPBP_c = vec(20)#egpGetColor(PPBP_n)
+                                    
+                                    egpAddDashedLine(PPBP_n,FontSize)
+                                    egpSetColor(17,150)
+                                    
+                                    local Select_n = PPBP_n + "_select"
+                                    local Select_s = v(PPBP_s[1],FontSize)
+                                    local Select_p = v(9e9)
+                                    egpAddBox(Select_n,Select_s,Select_p)
+                                    egpSetColor(v(0,75,255)/1.5,150)
+                                    egpSetParent(PPBP_n)
+                                    local Selector_n = PPBP_n + "_selector"
+                                    local Selector_s = v(PPBP_s[1],FontSize)
+                                    local Selector_p = v(9e9)
+                                    egpAddBox(Selector_n,Selector_s,Selector_p)
+                                    egpSetColor(0,200)
+                                    egpSetParent(PPBP_n)
+                                    
+                                    local Color1 = vec(255/3)
+                                    local Color2 = vec(255/1.2)
+                                    local Strings = Q["bonePanel/for/strings", number] = floor(PPBP_s[2] / FontSize)
+                                    local TNumb_n = "playerPanel_bonePanel_textNumbers"
+                                    local TNumb1_n = TNumb_n + 1
+                                    egpAddText(TNumb1_n,"",v(),v())
+                                    egpSetSize(FontSize)
+                                    egpSetColor(Color2)
+                                    egpSetAlign(2,0)
+                                    egpSetParent(PPBP_n)
+                                    local TNumb2_n = TNumb_n + 2
+                                    egpAddText(TNumb2_n,"",v(),v())
+                                    egpSetSize(FontSize)
+                                    egpSetColor(Color1)
+                                    egpSetAlign(2,0)
+                                    egpSetParent(TNumb1_n)
+                                    local TName_n = "playerPanel_bonePanel_textNames"
+                                    local TName1_n = TName_n + 1
+                                    egpAddText(TName1_n,"",v(),v())
+                                    egpSetSize(FontSize)
+                                    egpSetColor(Color2)
+                                    egpSetParent(PPBP_n)
+                                    local TName2_n = TName_n + 2
+                                    egpAddText(TName2_n,"",v(),v())
+                                    egpSetSize(FontSize)
+                                    egpSetColor(Color1)
+                                    egpSetParent(TName1_n)
+                                    
+                                    
+                                    local Scroll_s = FontSize*0.75
+                                    egpAddScroll(PPBP_n,"bonePanel/for/scroll",Scroll_s)
+                                    egpSetColor(30)
+                                    egpClickMode()
+                                    egpSetColor(PPBP_n + "_scrollBase",20,0)
+                                    egpClickMode(PPBP_n + "_scrollBase","")
+                                    
+                                    
+                                    
+                                    local B1_T = table("name" = "changeAnimated")
+                                    local B2_T = table("name" = "loli")
+                                    for(C = 1,1) {
+                                        local B_T = select(C,B1_T, B2_T)
+                                        local B_n = Selector_n + "_butBoneFunc_"+B_T["name", string]
+                                        local B_s = FontSize-2
+                                        egpAddBox(B_n,v(B_s),v(Selector_s[1]/2-Scroll_s-B_s*(C-0.5)-2*(C-1),0),"r")
+                                        egpSetColor(30)
+                                        egpClickMode("boneFunctions")
+                                        egpSetParent(Selector_n)
+                                    }
+                                    
+                                    
+                                    local SelectBoneListMode_n = "playerPanel" + "_selectBoneListMode"
+                                    local SelectBoneListMode_s = egpGetSize(SelectBoneListMode_n)
+                                    local ButSelectBoneListSettings_n = SelectBoneListMode_n + "_butSettings"
+                                    local ButSelectBoneListSettings_s = v(FontSize-2)
+                                    local ButSelectBoneListSettings_p = v((SelectBoneListMode_s[1]-ButSelectBoneListSettings_s[1])/2-1,0)
+                                    egpAddBox(ButSelectBoneListSettings_n,ButSelectBoneListSettings_s,ButSelectBoneListSettings_p,"r")
+                                    egpSetRadius(FontSize/7.5)
+                                    egpSetColor(50)
+                                    egpClickMode()
+                                    egpAddAct("forSettings", table(
+                                        "elementName" = ButSelectBoneListSettings_n
+                                    ))
+                                    #egpAddAct("bonePanelSettings"
+                                    egpSetParent(SelectBoneListMode_n)
+                                    
+                                    
+                                    egpGroupClose("bonePanel")
+                                }
+                                
+                                
+                                local Target = Q["target_n", string]
+                                local Target_changed = changed(Target)
+                                
+                                local Frame = Preset["frame/selected", number]
+                                local Frame_changed = changed(Frame)
+                                
+                                local Selector = Target == "playerPanel_bonePanel"
+                                if(changed(Selector) | Selector) {
+                                    
+                                    local Rendered = Q["bonePanel/for/textNumbers1/array" + Frame, array]:count()
+                                    if(Selector & Rendered) {
+                                        local CursorPos = Q["cursorPos", vector2]
+                                        if(changed(CursorPos)) {
+                                            local FontSize = EGPS["fontSize", number]
+                                            
+                                            local Length = egpGetSize("playerPanel_bonePanel")[2]
+                                            local CursorLocalPosY = CursorPos[2] - egpGetGlobalPos("playerPanel_bonePanel")[2] + Length/2
+                                            
+                                            local Selector_n = "playerPanel_bonePanel_selector"
+                                            local LocalSelect = floor(CursorLocalPosY/FontSize)
+                                            local Selector_py = (LocalSelect+0.5)*FontSize-Length/2
+                                            
+                                            
+                                            if(inrange(LocalSelect,0,Rendered-1)) {
+                                                Q["bonePanel/for/localSelect", number] = LocalSelect
+                                                egpSetPos("playerPanel_bonePanel_selector",v(0,Selector_py))
+                                            }
+                                            else {
+                                                Q["bonePanel/for/localSelect", number] = 0
+                                                egpSetPos("playerPanel_bonePanel_selector",v(9e9))
+                                            }
+                                        }
+                                    }
+                                    else {
+                                        egpSetPos("playerPanel_bonePanel_selector",v(9e9))
+                                    }
+                                }
+                                
+                                if(Click & Click_changed) {
+                                    
+                                    local CursorPos = Q["cursorPos", vector2]
+                                    local InnerTarget = egpGetTarget(CursorPos, "boneFunctions", "playerPanel_bonePanel_selector")
+                                    if(InnerTarget & InnerTarget != "playerPanel_bonePanel_selector") {
+                                        
+                                        if(InnerTarget == "playerPanel_bonePanel_selector_butBoneFunc_changeAnimated") {
+                                            local Bone_i = Q["bonePanel/for/scroll" + Frame, number] + Q["bonePanel/for/localSelect", number]
+                                            local Bone_A = Project[Frame + "/frame/bone/animated/" + Bone_i, number]
+                                            local A = Bone_A == 1 ? 1 : 2
+                                            local B = Bone_A == 1 ? 2 : 1
+                                            
+                                            local Bone_i2 = Bone_i + 1
+                                            local A_string = Q["bonePanel/for/textNumbers" + A + "/array" + Frame, array][Bone_i2, string]
+                                                             Q["bonePanel/for/textNumbers" + A + "/array" + Frame, array][Bone_i2, string] = Q["bonePanel/for/textNumbers" + B + "/array" + Frame, array][Bone_i2, string]
+                                                             Q["bonePanel/for/textNumbers" + B + "/array" + Frame, array][Bone_i2, string] = A_string
+                                            local A_string = Q["bonePanel/for/textNames"  + A + "/array"  + Frame, array][Bone_i2, string]
+                                                             Q["bonePanel/for/textNames"  + A + "/array"  + Frame, array][Bone_i2, string] = Q["bonePanel/for/textNames"   + B + "/array" + Frame, array][Bone_i2, string]
+                                                             Q["bonePanel/for/textNames"  + B + "/array"  + Frame, array][Bone_i2, string] = A_string
+                                            Project[Frame + "/frame/bone/animated/" + Bone_i, number] = !Bone_A
+                                            
+                                            local Bone_n = Project["bone/name/" + Bone_i, string]
+                                            if(!Bone_A) {
+                                                local Index = Project[Frame + "/frame/bone/animated/list", array]:getIndex(Bone_i + "")
+                                                if(!Index) {
+                                                    Project[Frame + "/frame/bone/animated/list", array] = Project[Frame + "/frame/bone/animated/list", array]:add(array(Bone_i))
+                                                }
+                                            }
+                                            else {
+                                                local Index = Project[Frame + "/frame/bone/animated/list", array]:getIndex(Bone_i + "")
+                                                if(!Index) {
+                                                    Project[Frame + "/frame/bone/animated/list", array]:remove(Index)
+                                                }
+                                            }
+                                            
+                                            local For_a = Q["bonePanel/for/a", number]
+                                            local For_b = Q["bonePanel/for/b", number]
+                                            egpSetText("playerPanel_bonePanel_textNumbers1",      Q["bonePanel/for/textNumbers1/array" + Frame, array]:concat("\n" ,For_a,For_b))
+                                            egpSetText("playerPanel_bonePanel_textNumbers2",      Q["bonePanel/for/textNumbers2/array" + Frame, array]:concat("\n" ,For_a,For_b))
+                                            egpSetText("playerPanel_bonePanel_textNames1"  ," " + Q["bonePanel/for/textNames1/array"   + Frame, array]:concat("\n ",For_a,For_b))
+                                            egpSetText("playerPanel_bonePanel_textNames2"  ," " + Q["bonePanel/for/textNames2/array"   + Frame, array]:concat("\n ",For_a,For_b))
+                                        }
+                                        elseif(InnerTarget == "playerPanel_bonePanel_selector_butBoneFunc_loli") {
+                                        }
+                                    }
+                                    elseif(Target == "playerPanel_bonePanel_scrollBase" | Target == "playerPanel_bonePanel_scrollBase_scroll") {
+                                        
+                                        
+                                        Q["target_n", string] = ""
+                                        Q["threeName", string] = "none"
+                                        Q["bonePanel/for/scrolling", number] = 1
+                                        Q["bonePanel/for/scrolling/startCursorPosY", number] = Q["cursorPos", vector2][2]
+                                    }
+                                    elseif(Target == "playerPanel_bonePanel") {
+                                        if(LClick & Click_changed) {
+                                            local LocalSelect = Q["bonePanel/for/localSelect", number]
+                                            Q["selectedBone/index", number] = Q["bonePanel/for/scroll" + Frame, number] + LocalSelect
+                                            
+                                            local Length = egpGetSize("playerPanel_bonePanel")[2]
+                                            local Selector_py = (LocalSelect+0.5)*EGPS["fontSize", number]-Length/2
+                                            
+                                            egpSetPos("playerPanel_bonePanel_select",v(0,Selector_py))
+                                        }
+                                    }
+                                }
+                                
+                                local DisplayBones         = Q["bonePanel/for/displayBones", number] = 140
+                                local DisplayBones_changed = changed(DisplayBones)
+                                local Strings              = Q["bonePanel/for/strings"     , number]
+                                local Strings_changed      = changed(Strings)
+                                
+                                if(Q["bonePanel/for/scrolling", number]) {
+                                    
+                                    local StartCursorPosY = Q["bonePanel/for/scrolling/startCursorPosY", number]
+                                    
+                                    Q["bonePanel/for/scroll" + Frame, number] = egpSetScrollMove("playerPanel_bonePanel", Strings, DisplayBones, StartCursorPosY, Q["cursorPos", vector2][2])
+                                    
+                                    if(!Click) {
+                                        Q["threeName", string] = ""
+                                        Q["bonePanel/for/scrolling", number] = 0
+                                    }
+                                }
+                                
+                                
+                                local Scroll               = Q["bonePanel/for/scroll" + Frame, number]
+                                local Scroll_changed       = changed(Scroll)
+                                
+                                if(Scroll_changed | ListMode_changed | Strings_changed | DisplayBones_changed | Frame_changed) {
+                                    local For_a                  = Q["bonePanel/for/a", number] = Scroll + 1
+                                    local For_b                  = Q["bonePanel/for/b", number] = Scroll + min(DisplayBones,Strings)
+                                    local DisplayStrings         = For_b-For_a + (For_a | 0)
+                                    local DisplayStrings_changed = changed(DisplayStrings)
+                                    
+                                    local TName1_a = Q["bonePanel/for/textNames1/array"   + Frame, array]
+                                    local TName2_a = Q["bonePanel/for/textNames2/array"   + Frame, array]
+                                    local TNumb2_a = Q["bonePanel/for/textNumbers2/array" + Frame, array]
+                                    local TNumb1_a = Q["bonePanel/for/textNumbers1/array" + Frame, array]
+                                    local TNumb1_c = TNumb1_a:count()
+                                    if(TNumb1_c < For_b) {
+                                        for(C = TNumb1_c, For_b) {
+                                            local Animated = Project[Frame + "/frame/bone/animated/" + C, number]
+                                            TNumb1_a:pushString(Animated ? C+"." : ""   )
+                                            TNumb2_a:pushString(Animated ? ""    : C+".")
+                                            
+                                            local Name = Project["bone/name/" + C, string]
+                                            if(!Name) {
+                                                Name = Project["bone/name/" + C, string] = "кость " + C
+                                                Project["bone/index/" + Name, number] = C
+                                            }
+                                            TName1_a:pushString(Animated ? Name : ""   )
+                                            TName2_a:pushString(Animated ? ""   : Name)
+                                            if(!perf(95)) {For_b = C break}
+                                        }
+                                        Q["bonePanel/for/textNumbers1/array" + Frame, array] = TNumb1_a
+                                        Q["bonePanel/for/textNumbers2/array" + Frame, array] = TNumb2_a
+                                        Q["bonePanel/for/textNames1/array"   + Frame, array] = TName1_a
+                                        Q["bonePanel/for/textNames2/array"   + Frame, array] = TName2_a
+                                        #print("render" + TNumb1_c + "#" + For_b)
+                                    }
+                                    
+                                    
+                                    local FontSize = EGPS["fontSize", number]
+                                    
+                                    egpSetText("playerPanel_bonePanel_textNumbers1",      TNumb1_a:concat("\n" ,For_a,For_b))
+                                    egpSetText("playerPanel_bonePanel_textNumbers2",      TNumb2_a:concat("\n" ,For_a,For_b))
+                                    egpSetText("playerPanel_bonePanel_textNames1"  ," " + TName1_a:concat("\n ",For_a,For_b))
+                                    egpSetText("playerPanel_bonePanel_textNames2"  ," " + TName2_a:concat("\n ",For_a,For_b))
+                                    local Otstyp = For_b:toString():length()
+                                    if(changed(Otstyp) | ListMode_changed) {
+                                        local PPBP_n = "playerPanel_bonePanel"
+                                        local PPBP_s = Q[PPBP_n + "\size", vector2]
+                                        
+                                        local TextNumbers_s = v(FontSize/15*8*(Otstyp+0.5),PPBP_s[2])
+                                        local TextNumbers_p = v(1,0)-PPBP_s/2
+                                        local TextNames_s = v(PPBP_s[1]-TextNumbers_s[1]+3,PPBP_s[2])
+                                        local TextNames_p = TextNumbers_p+v(0+TextNumbers_s[1]-3,0)
+                                        egpSetSize("playerPanel_bonePanel_textNumbers1", TextNumbers_s)
+                                        egpSetSize("playerPanel_bonePanel_textNumbers2", TextNumbers_s)
+                                        egpSetPos( "playerPanel_bonePanel_textNumbers1", TextNumbers_p)
+                                        egpSetSize("playerPanel_bonePanel_textNames1"  , TextNames_s  )
+                                        egpSetSize("playerPanel_bonePanel_textNames2"  , TextNames_s  )
+                                        egpSetPos( "playerPanel_bonePanel_textNames1"  , TextNames_p  )
+                                    }
+                                    
+                                    
+                                    if(ListMode_changed | Strings_changed | DisplayBones_changed | DisplayStrings_changed | Frame_changed) {
+                                        local PPBP_n = "playerPanel_bonePanel"
+                                        if(DisplayBones > Strings) {
+                                            Q["bonePanel/for/scroll", number] = Q["bonePanel/for/scroll" + Frame, number]
+                                            egpSetScroll(PPBP_n, Strings, DisplayBones, FontSize*2)
+                                        }
+                                        else { 
+                                            #local SB_s = PPBP_n + "_scrollBase"
+                                            #local PPBP_s = egpGetSize()
+                                            #local PPBP_sx = Q["playerPanel_bonePanel/scrollSizeX", number] = PPBP_s[1]
+                                            #egpSetSize(PPBP_n, v(0,PPBP_s[2]))
+                                            #egpSetSize(PPBP_n + "_scroll"
+                                        }
+                                    }
+                                    
+                                    local SelectedBone_i = Q["selectedBone/index", number]
+                                    if(inrange(SelectedBone_i,For_a,For_b)) {
+                                        local Scroll = Q["bonePanel/for/scroll" + Frame, number]
+                                        local Length = egpGetSize("playerPanel_bonePanel")[2]
+                                        local Selector_py = ((SelectedBone_i-Scroll)+0.5)*FontSize-Length/2
+                                        
+                                        egpSetPos("playerPanel_bonePanel_select",v(0,Selector_py))
+                                    }
+                                    else {
+                                        egpSetPos("playerPanel_bonePanel_select",v(9e9))
+                                    }
+                                }
+                            break
+                            #
+                            #- MODE ANIMATED -####################################
+                            #
+                            case "animated",
+                                if(ListMode_changed) {
+                                    egpGroupOpen("bonePanel")
+                                    
+                                    local FontSize = EGPS["fontSize", number]
+                                    
+                                    local PPBP_n = "playerPanel_bonePanel"
+                                    local PPBP_s = egpGetSize(PPBP_n)
+                                    local PPBP_c = vec(20)#egpGetColor(PPBP_n)
+                                    
+                                    egpAddDashedLine(PPBP_n,FontSize)
+                                    egpSetColor(17,150)
+                                    
+                                    local Select_n = PPBP_n + "_select"
+                                    local Select_s = v(PPBP_s[1],FontSize)
+                                    local Select_p = v(9e9)
+                                    egpAddBox(Select_n,Select_s,Select_p)
+                                    egpSetColor(v(0,75,255)/1.5,150)
+                                    egpSetParent(PPBP_n)
+                                    local Selector_n = PPBP_n + "_selector"
+                                    local Selector_s = v(PPBP_s[1],FontSize)
+                                    local Selector_p = v(9e9)
+                                    egpAddBox(Selector_n,Selector_s,Selector_p)
+                                    egpSetColor(0,200)
+                                    egpSetParent(PPBP_n)
+                                    
+                                    local Color1 = vec(255/3)
+                                    local Color2 = vec(255/1.2)
+                                    local Strings = Q["bonePanel/animated/strings", number] = floor(PPBP_s[2] / FontSize)
+                                    local TNumb_n = "playerPanel_bonePanel_textNumbers"
+                                    local TNumb1_n = TNumb_n + 1
+                                    egpAddText(TNumb1_n,"",v(),v())
+                                    egpSetSize(FontSize)
+                                    egpSetColor(Color2)
+                                    egpSetAlign(2,0)
+                                    egpSetParent(PPBP_n)
+                                    local TNumb2_n = TNumb_n + 2
+                                    egpAddText(TNumb2_n,"",v(),v())
+                                    egpSetSize(FontSize)
+                                    egpSetColor(Color1)
+                                    egpSetAlign(2,0)
+                                    egpSetParent(TNumb1_n)
+                                    local TName_n = "playerPanel_bonePanel_textNames"
+                                    local TName1_n = TName_n + 1
+                                    egpAddText(TName1_n,"",v(),v())
+                                    egpSetSize(FontSize)
+                                    egpSetColor(Color2)
+                                    egpSetParent(PPBP_n)
+                                    local TName2_n = TName_n + 2
+                                    egpAddText(TName2_n,"",v(),v())
+                                    egpSetSize(FontSize)
+                                    egpSetColor(Color1)
+                                    egpSetParent(TName1_n)
+                                    
+                                    
+                                    local Scroll_s = FontSize*0.75
+                                    egpAddScroll(PPBP_n,"bonePanel/animated/scroll",Scroll_s)
+                                    egpSetColor(30)
+                                    egpClickMode()
+                                    egpSetColor(PPBP_n + "_scrollBase",20,0)
+                                    egpClickMode(PPBP_n + "_scrollBase","")
+                                    
+                                    
+                                    
+                                    local B1_T = table("name" = "resetAngles")
+                                    local B2_T = table("name" = "loli")
+                                    for(C = 1,2) {
+                                        local B_T = select(C,B1_T, B2_T)
+                                        local B_n = Selector_n + "_butBoneFunc_"+B_T["name", string]
+                                        local B_s = FontSize-2
+                                        egpAddBox(B_n,v(B_s),v(Selector_s[1]/2-Scroll_s-B_s*(C-0.5)-2*(C-1),0),"r")
+                                        egpSetColor(30)
+                                        egpClickMode("boneFunctions")
+                                        egpSetParent(Selector_n)
+                                    }
+                                    
+                                    
+                                    local SelectBoneListMode_n = "playerPanel" + "_selectBoneListMode"
+                                    local SelectBoneListMode_s = egpGetSize(SelectBoneListMode_n)
+                                    local ButSelectBoneListSettings_n = SelectBoneListMode_n + "_butSettings"
+                                    local ButSelectBoneListSettings_s = v(FontSize-2)
+                                    local ButSelectBoneListSettings_p = v((SelectBoneListMode_s[1]-ButSelectBoneListSettings_s[1])/2-1,0)
+                                    egpAddBox(ButSelectBoneListSettings_n,ButSelectBoneListSettings_s,ButSelectBoneListSettings_p,"r")
+                                    egpSetRadius(FontSize/7.5)
+                                    egpSetColor(50)
+                                    egpClickMode()
+                                    egpAddAct("animatedSettings", table(
+                                        "elementName" = ButSelectBoneListSettings_n
+                                    ))
+                                    egpSetParent(SelectBoneListMode_n)
+                                    
+                                    
+                                    egpGroupClose("bonePanel")
+                                }
+                                
+                                local Target = Q["target_n", string]
+                                local Target_changed = changed(Target)
+                                
+                                local Frame = Preset["frame/selected", number]
+                                local Frame_changed = changed(Frame)
+                                
+                                local Selector = Target == "playerPanel_bonePanel"
+                                if(changed(Selector) | Selector) {
+                                    
+                                    local Rendered = Q["bonePanel/animated/textNumbers1/array" + Frame, array]:count()
+                                    if(Selector & Rendered) {
+                                        local CursorPos = Q["cursorPos", vector2]
+                                        if(changed(CursorPos)) {
+                                            local FontSize = EGPS["fontSize", number]
+                                            
+                                            local Length = egpGetSize("playerPanel_bonePanel")[2]
+                                            local CursorLocalPosY = CursorPos[2] - egpGetGlobalPos("playerPanel_bonePanel")[2] + Length/2
+                                            
+                                            local Selector_n = "playerPanel_bonePanel_selector"
+                                            local LocalSelect = floor(CursorLocalPosY/FontSize)
+                                            local Selector_py = (LocalSelect+0.5)*FontSize-Length/2
+                                            
+                                            
+                                            if(inrange(LocalSelect,0,Rendered-1)) {
+                                                Q["bonePanel/animated/localSelect", number] = LocalSelect
+                                                egpSetPos("playerPanel_bonePanel_selector",v(0,Selector_py))
+                                            }
+                                            else {
+                                                Q["bonePanel/animated/localSelect", number] = 0
+                                                egpSetPos("playerPanel_bonePanel_selector",v(9e9))
+                                            }
+                                        }
+                                    }
+                                    else {
+                                        egpSetPos("playerPanel_bonePanel_selector",v(9e9))
+                                    }
+                                }
+                                
+                                
+                                if(Click & Click_changed) {
+                                    
+                                    local CursorPos = Q["cursorPos", vector2]
+                                    local InnerTarget = egpGetTarget(CursorPos, "boneFunctions", "playerPanel_bonePanel_selector")
+                                    if(InnerTarget & InnerTarget != "playerPanel_bonePanel_selector") {
+                                        if(InnerTarget == "playerPanel_bonePanel_selector_butBoneFunc_loli") {
+                                            Project:clear()
+                                        }
+                                    }
+                                    elseif(Target == "playerPanel_bonePanel_scrollBase" | Target == "playerPanel_bonePanel_scrollBase_scroll") {
+                                        
+                                        
+                                        Q["target_n", string] = ""
+                                        Q["threeName", string] = "none"
+                                        Q["bonePanel/animated/scrolling", number] = 1
+                                        Q["bonePanel/animated/scrolling/startCursorPosY", number] = Q["cursorPos", vector2][2]
+                                    }
+                                    elseif(Target == "playerPanel_bonePanel") {
+                                        if(LClick & Click_changed) {
+                                            local LocalSelect = Q["bonePanel/animated/localSelect", number]
+                                            
+                                            local Animated_a = Project[Frame + "/frame/bone/animated/list", array]
+                                            local Animated_n = Animated_a[Q["bonePanel/animated/scroll" + Frame, number] + LocalSelect+0, string]
+                                            local Animated_i = Project["bone/index/" + Animated_n, number]
+                                            Q["selectedBone/index", number] = Animated_i
+                                            
+                                            local Length = egpGetSize("playerPanel_bonePanel")[2]
+                                            local Selector_py = (LocalSelect+0.5)*EGPS["fontSize", number]-Length/2
+                                            
+                                            egpSetPos("playerPanel_bonePanel_select",v(0,Selector_py))
+                                        }
+                                    }
+                                }
+                                
+                                local Animated_a           = Project[Frame + "/frame/bone/animated/list", array]
+                                local Animated_c_last      = Project[Frame + "/frame/bone/animated/count", number]
+                                local Animated_c           = Project[Frame + "/frame/bone/animated/count", number] = Animated_a:count()
+                                local Animated_c_changed   = changed(Animated_c) #Animated_c != Animated_c_last
+                                local Animated_c_dif       = Animated_c - Animated_c_last
+                                local Strings              = Q["bonePanel/animated/strings", number]
+                                local Strings_changed      = changed(Strings)
+                                
+                                if(Q["bonePanel/animated/scrolling", number]) {
+                                    
+                                    local StartCursorPosY = Q["bonePanel/animated/scrolling/startCursorPosY", number]
+                                    
+                                    Q["bonePanel/animated/scroll" + Frame, number] = egpSetScrollMove("playerPanel_bonePanel", Strings, Animated_c, StartCursorPosY, Q["cursorPos", vector2][2])
+                                    
+                                    if(!Click) {
+                                        Q["threeName", string] = ""
+                                        Q["bonePanel/animated/scrolling", number] = 0
+                                    }
+                                }
+                                
+                                
+                                local Scroll         = Q["bonePanel/animated/scroll" + Frame, number]
+                                local Scroll_changed = changed(Scroll)
+                                
+                                if(Scroll_changed | ListMode_changed | Strings_changed | Animated_c_changed | Frame_changed) {
+                                    if(Animated_c_changed) {
+                                        Q["bonePanel/animated/textNumbers1/array" + Frame, array]:clear()
+                                        Q["bonePanel/animated/textNumbers2/array" + Frame, array]:clear()
+                                        Q["bonePanel/animated/textNames1/array"   + Frame, array]:clear()
+                                        Q["bonePanel/animated/textNames2/array"   + Frame, array]:clear()
+                                    }
+                                    
+                                    local For_a                  = Q["bonePanel/animated/a", number] = Scroll + 1
+                                    local For_b                  = Q["bonePanel/animated/b", number] = Scroll + min(Animated_c,Strings)
+                                    local DisplayStrings         = For_b-For_a + (For_a | 0)
+                                    local DisplayStrings_changed = changed(DisplayStrings)
+                                    
+                                    local TName1_a = Q["bonePanel/animated/textNames1/array"   + Frame, array]
+                                    local TName2_a = Q["bonePanel/animated/textNames2/array"   + Frame, array]
+                                    local TNumb2_a = Q["bonePanel/animated/textNumbers2/array" + Frame, array]
+                                    local TNumb1_a = Q["bonePanel/animated/textNumbers1/array" + Frame, array]
+                                    local TNumb1_c = TNumb1_a:count()
+                                    if((TNumb1_c < For_b) & For_b) {
+                                        for(C = max(TNumb1_c,1), For_b) {
+                                            local Bone_i = Animated_a[C, number]
+                                            local Bone_n = Project["bone/name/" + Bone_i, string]
+                                            
+                                            local Ang = Project[Frame + "/frame/bone/angle/" + Bone_i, angle] != ang()
+                                            TNumb1_a:pushString(Ang ? Bone_i+"." : ""   )
+                                            TNumb2_a:pushString(Ang ? ""    : Bone_i+".")
+                                            
+                                            TName1_a:pushString(Ang ? Bone_n : ""  )
+                                            TName2_a:pushString(Ang ? ""   : Bone_n)
+                                            if(!perf(95)) {For_b = C break}
+                                        }
+                                        Q["bonePanel/animated/textNumbers1/array" + Frame, array] = TNumb1_a
+                                        Q["bonePanel/animated/textNumbers2/array" + Frame, array] = TNumb2_a
+                                        Q["bonePanel/animated/textNames1/array"   + Frame, array] = TName1_a
+                                        Q["bonePanel/animated/textNames2/array"   + Frame, array] = TName2_a
+                                        #print("render" + TNumb1_c + "#" + For_b)
+                                    }
+                                    
+                                    local FontSize = EGPS["fontSize", number]
+                                    
+                                    egpSetText("playerPanel_bonePanel_textNumbers1",      TNumb1_a:concat("\n" ,For_a,For_b))
+                                    egpSetText("playerPanel_bonePanel_textNumbers2",      TNumb2_a:concat("\n" ,For_a,For_b))
+                                    egpSetText("playerPanel_bonePanel_textNames1"  ," " + TName1_a:concat("\n ",For_a,For_b))
+                                    egpSetText("playerPanel_bonePanel_textNames2"  ," " + TName2_a:concat("\n ",For_a,For_b))
+                                    local Otstyp = 3#For_b:toString():length()
+                                    if(changed(Otstyp) | ListMode_changed) {
+                                        local PPBP_n = "playerPanel_bonePanel"
+                                        local PPBP_s = Q[PPBP_n + "\size", vector2]
+                                        
+                                        local TextNumbers_s = v(FontSize/15*8*(Otstyp+0.5),PPBP_s[2])
+                                        local TextNumbers_p = v(1,0)-PPBP_s/2
+                                        local TextNames_s = v(PPBP_s[1]-TextNumbers_s[1]+3,PPBP_s[2])
+                                        local TextNames_p = TextNumbers_p+v(0+TextNumbers_s[1]-3,0)
+                                        egpSetSize("playerPanel_bonePanel_textNumbers1", TextNumbers_s)
+                                        egpSetSize("playerPanel_bonePanel_textNumbers2", TextNumbers_s)
+                                        egpSetPos( "playerPanel_bonePanel_textNumbers1", TextNumbers_p)
+                                        egpSetSize("playerPanel_bonePanel_textNames1"  , TextNames_s  )
+                                        egpSetSize("playerPanel_bonePanel_textNames2"  , TextNames_s  )
+                                        egpSetPos( "playerPanel_bonePanel_textNames1"  , TextNames_p  )
+                                    }
+                                    
+                                    
+                                    if(ListMode_changed | Strings_changed | Animated_c_changed | DisplayStrings_changed | Frame_changed) {
+                                        local PPBP_n = "playerPanel_bonePanel"
+                                        if(Animated_c > Strings) {
+                                            Q["bonePanel/animated/scroll", number] = Q["bonePanel/animated/scroll" + Frame, number]
+                                            egpSetScroll(PPBP_n, Strings, Animated_c, FontSize*2)
+                                        }
+                                        else {
+                                            #local SB_s = PPBP_n + "_scrollBase"
+                                            #local PPBP_s = egpGetSize()
+                                            #local PPBP_sx = Q["playerPanel_bonePanel/scrollSizeX", number] = PPBP_s[1]
+                                            #egpSetSize(PPBP_n, v(0,PPBP_s[2]))
+                                            #egpSetSize(PPBP_n + "_scroll"
+                                        }
+                                    }
+                                    
+                                    local SelectedBone_i = Q["selectedBone/index", number]
+                                    local Bone_n = Project["bone/name/" + SelectedBone_i, string]
+                                    
+                                    local Animated_a = Project[Frame + "/frame/bone/animated/list", array]
+                                    local Animated_C = Animated_a:getIndex(Bone_n)
+                                    
+                                    if(inrange(Animated_C,For_a,For_b)) {
+                                        local Scroll = Q["bonePanel/animated/scroll" + Frame, number]
+                                        local Length = egpGetSize("playerPanel_bonePanel")[2]
+                                        local Selector_py = ((Animated_C-Scroll)+0.5)*FontSize-Length/2
+                                        
+                                        egpSetPos("playerPanel_bonePanel_select",v(0,Selector_py))
+                                    }
+                                    else {
+                                        egpSetPos("playerPanel_bonePanel_select",v(9e9))
+                                    }
+                                }
+                            break
+                            #
+                            #- MODE THREE
+                            #
+                            case "three",
+                                if(ListMode_changed) {
+                                    egpGroupOpen("bonePanel")
+                                    
+                                    local PPBP_n = "playerPanel_bonePanel"
+                                    egpAddText("bonePanel_text","В разработке...",v())
+                                    egpSetParent(PPBP_n)
+                                    egpSetAlign(1,1)
+                                    egpSetSize(15)
+                                    
+                                    egpGroupClose("bonePanel")
+                                    break
+                                }
+                            break
+                            #
+                            #
+                            #
+                        }
+                    break
+                    #
+                    #- 228
+                    #
+                    case "228", print(228) break
+                    #
+                    #- FOR SETTINGS
+                    #
+                    case "forSettings",
+                        local A_i_changed = changed(A_i)
+                        if(A_i_changed) {
+                            
+                            egpGroupOpen("forSettings")
+                            local FontSize = EGPS["fontSize", number]
+                            
+                            local A_T = Q[A_i + "/actTable", table ]
+                            
+                            local E_n = A_T["elementName", string]
+                            local E_s = egpGetSize(E_n)
+                            local E_P = egpGetGlobalPos(E_n)
+                            
+                            local FS_n = "forSettings"
+                            local FS_s = v(FontSize*1.5)
+                            local FS_p = E_P + (v(FS_s[1],-FS_s[2])-E_s)/2
+                            egpAddBox(FS_n,FS_s,FS_p)
+                            egpSetColor(20)
+                            egpClickMode("forSettings")
+                            
+                            
+                            local Cog_n = FS_n + "_cog"
+                            local Cog_s = v(FS_s[2]-2)
+                            local Cog_p = v((FS_s[1]-Cog_s[1])/2,0)
+                            egpAddBox(Cog_n,Cog_s,Cog_p)
+                            egpSetColor(50)
+                            egpSetMaterial("expression 2/cog")
+                            egpClickMode("forSettings")
+                            egpSetParent(FS_n)
+                            
+                            
+                            
+                            egpGroupClose("forSettings")
+                            Q["target_n", string] = ""
+                            Q["threeName", string] = "forSettings"
+                        }
+                        NoRemove = 1
+                        
+                        
+                        
+                        if(Click_changed & Click & !A_i_changed) {
+                            local Target_n = Q["target_n", string]
+                            
+                            if(Target_n == "forSettings") {
+                                
+                            }
+                            elseif(Target_n == "forSettings_cog") {
+                                #Project:clear()
+                                foreach(C, N:string = array("textNumbers1","textNumbers2","textNames1","textNames2")) {
+                                    Q["bonePanel/" + N + "/array", array] = array()
+                                    egpSetText("playerPanel_bonePanel_" + N,"")
+                                    NoRemove = 0
+                                }
+                            }
+                            else {
+                                NoRemove = 0
+                            }
+                        }
+                        
+                        if(!NoRemove) {
+                            
+                            egpGroupRemove("forSettings")
+                            Q["threeName", string] = ""
+                        }
+                    break
+                    #
+                    #- GET PLAYER LIST
+                    #
+                    case "getPlayersList",
+                        
+                        if(changed(A_i)) {
+                            if(changed(0)) {
+                                
+                                local ListName = "playersList"
+                                Q[ListName + "/list/type" , string] = "entity"
+                                local ListName = "playersListNames"
+                                Q[ListName + "/list/type" , string] = "string"
+                                
+                            }
+                            
+                            Q["getPlayersListEnable", number] = 1
+                        }
+                        #findIncludeClass("prop")
+                        findInSphere(vec(),9e9)
+                        local F = select(1,players(),findToArray())
+                        Q["playersList"      + "/list/array", array] = F #players()
+                        Q["playersListNames" + "/list/array", array] = (F:count() ? F:concat("\n"):replace("Player ",""):explode("\n") : array()) #players():concat("\n"):explode("\n")
+                        
+                        
+                        #local SP = Preset["selectedPlayer", entity]
+                        NoRemove = Q["getPlayersListEnable", number]
+                    break
+                    #
+                    #- SELECT FROM LIST
+                    #
+                    case "selectFromList",
+                        
+                        local A_i_changed = changed(A_i)
+                        
+                        local A_T = Q[A_i + "/actTable", table]
+                        local ChangeMoment = A_T["changeMoment", string]
+                        
+                        local DisplayListName = A_T["displayListName", string]
+                        local DisplayList_a = Q[DisplayListName + "/list/array", array]
+                        local DisplayList_c = DisplayList_a:count()
+                        
+                        
+                        if(changed(DisplayList_c) | A_i_changed) {
+                            
+                            local FontSize = EGPS["fontSize", number]
+                            
+                            
+                            egpGroupRemove("selectFromList")
+                            egpGroupOpen("selectFromList")
+                            local E_n = A_T["elementName", string]
+                            local E_s = egpGetSize(E_n)
+                            local E_P = egpGetGlobalPos(E_n)
+                            
+                            local ListSize = Q["selectFromList/listSize", number] = clamp(DisplayList_c,1,35)
+                            local ListOut = DisplayList_c-ListSize
+                            
+                            local SFL_n = "selectFromList"
+                            local SFL_s = v(E_s[1],FontSize*ListSize)
+                            local SFL_p = E_P + v(0,(-SFL_s[2]-E_s[2])/2)
+                            egpAddBox(SFL_n,SFL_s,SFL_p)
+                            egpSetColor(20)
+                            egpClickMode("selectFromList")
+                            local SFLF_n = SFL_n + "_fon"
+                            local SFLF_s = SFL_s + v(2)
+                            egpAddBox(SFLF_n,SFLF_s,v())
+                            egpSetOrder(SFL_n, 0)
+                            egpSetParent(SFL_n)
+                            
+                            egpAddDashedLine(SFL_n, FontSize)
+                            egpSetColor(17)
+                            
+                            local SFLS_n = SFL_n + "_selector"
+                            local SFLS_s = v(SFL_s[1],FontSize-2*0)
+                            local SFLS_p = v(9e9)
+                            egpAddBox(SFLS_n,SFLS_s,SFLS_p)
+                            egpSetColor(0,200)
+                            egpSetParent(SFL_n)
+                            
+                            local SFLT_n = SFL_n + "_text"
+                            local Scroll = Q[DisplayListName + "/selectFromList/scroll", number] = min(Q[DisplayListName + "/selectFromList/scroll", number],ListOut)
+                            local SFLT_t = (DisplayList_c ? DisplayList_a:concat("\n",1+Scroll,ListSize+Scroll) : "Список пуст!")
+                            local SFLT_s = SFL_s-v(2,0)
+                            local SFLT_p = v(2,0)-SFL_s/2
+                            egpAddText(SFLT_n,SFLT_t,SFLT_s,SFLT_p)
+                            egpSetSize(FontSize)
+                            egpSetParent(SFL_n)
+                            
+                            
+                            if(DisplayList_c > ListSize) {
+                                egpAddScroll(SFL_n,DisplayListName + "/selectFromList/scroll",FontSize*0.75)
+                                egpSetColor(30)
+                                egpClickMode("selectFromList")
+                                egpSetColor(SFL_n + "_scrollBase",20,0)
+                                egpClickMode(SFL_n + "_scrollBase","selectFromList")
+                                egpSetScroll(SFL_n,ListSize,DisplayList_c,FontSize*2)
+                            }
+                            
+                            Q["target_n", string] = ""
+                            Q["threeName", string] = "selectFromList"
+                            egpGroupClose("selectFromList")
+                        }
+                        
+                        local Scrolling = Q["selectFromList/scrolling", number]
+                        if(Scrolling) {
+                            local CursorPos = Q["cursorPos", vector2]
+                            if(changed(CursorPos)) {
+                                
+                                local StartCursorPosY = Q["selectFromList/scrolling/startCursorPosY", number]
+                                if(!StartCursorPosY) {
+                                    Q["selectFromList/scrolling/startCursorPosY", number] = Q["cursorPos", vector2][2]
+                                }
+                                
+                                local ListSize = Q["selectFromList/listSize", number]
+                                local ListOut = DisplayList_c-ListSize
+                                
+                                local Scroll = egpSetScrollMove("selectFromList", ListSize, DisplayList_c, StartCursorPosY, CursorPos[2])
+                                #local Scroll = Q[DisplayListName + "/selectFromList/scroll", number]
+                                if(changed(Scroll)) {
+                                    local SFLT_t = DisplayList_a:concat("\n",1+Scroll,ListSize+Scroll)
+                                    egpSetText("selectFromList_text",SFLT_t)
+                                }
+                            }
+                            
+                            if(!Click) {
+                                Q["selectFromList/scrolling", number] = 0
+                                Q["selectFromList/scrolling/startCursorPosY", number] = 0
+                            }
+                        }
+                        
+                        local Target_n = Q["target_n", string]
+                        if(DisplayList_c) {
+                            
+                            local Target_n = Scrolling ? "" : Target_n
+                            
+                            if(Target_n == "selectFromList") {
+                                
+                                local Cursor_p = Q["cursorPos", vector2]
+                                if(changed(Cursor_p)) {
+                                    local FontSize = EGPS["fontSize", number]
+                                    
+                                    
+                                    local SFL_n = "selectFromList"
+                                    local SFL_sy = egpGetSize(SFL_n)[2]
+                                    local SFL_Py = egpGetGlobalPos(SFL_n)[2]
+                                    
+                                    local Cursor_py = Cursor_p[2] - SFL_Py + SFL_sy/2
+                                    local Select = floor(Cursor_py / FontSize)
+                                    
+                                    local SFLS_n = SFL_n + "_selector"
+                                    local SFLS_sy = egpGetSize(SFLS_n)[2]
+                                    egpSetPos(SFLS_n, v(0,(SFLS_sy-SFL_sy)/2 + Select*FontSize))
+                                    Q["selectFromList/select", number] = Select + 1
+                                }
+                            }
+                            if(changed(Target_n) & Target_n != "selectFromList") {
+                                egpSetPos("selectFromList" + "_selector", v(9e9))
+                            }
+                        }
+                        
+                        NoRemove = 1
+                        if(Click & Click_changed & !A_i_changed) {
+                            
+                            if(Target_n == "selectFromList") {
+                                
+                                local Scroll = Q[DisplayListName + "/selectFromList/scroll", number]
+                                local Select = Q["selectFromList/select", number] + Scroll
+                                local List_n = A_T["listName", string]
+                                local List_t = Q[List_n + "/list/type" , string]
+                                switch(List_t) {
+                                    case "entity",
+                                        local CellName = A_T["cellName", string]
+                                        Preset[CellName, entity] = Q[List_n + "/list/array", array][Select, entity]
+                                    break
+                                    case "string",
+                                        local CellName = A_T["cellName", string]
+                                        Preset[CellName, string] = Q[List_n + "/list/array", array][Select, string]
+                                    break
+                                    case "number",
+                                        local CellName = A_T["cellName", string]
+                                        Preset[CellName, number] = Q[List_n + "/list/array", array][Select, number]
+                                    break
+                                }
+                                local E_n = A_T["elementName", string]
+                                egpSetText(E_n + "_text",DisplayList_a:concat(Select,Select))
+                                
+                                NoRemove = !(DisplayList_c & !RClick)
+                            }
+                            elseif(Target_n == "selectFromList_scrollBase" | Target_n == "selectFromList_scrollBase_scroll") {
+                                
+                                Q["selectFromList/scrolling", number] = 1
+                                Q["selectFromList/scrolling/startCursorPosY", number] = Q["cursorPos", vector2][2]
+                            }
+                            else {
+                                
+                                NoRemove = 0
+                            }
+                        }
+                        
+                        if(!NoRemove) {
+                            Q["threeName", string] = ""
+                            egpGroupRemove("selectFromList")
+                            if(ChangeMoment == "end") {
+                                local CellName  = A_T["changeCellName" , string]
+                                local CellValue = A_T["changeCellValue", number]
+                                Q[CellName, number] = CellValue
+                            }
+                        }
+                    break
+                    #
+                    ################
+                }
+                if(!NoRemove) {
+                    Clear = Clear:add(array(C))
+                }
+            }
+            foreach(C, I:number = Clear) {
+                local A_i = Q["actList", array]:removeNumber(I)
+                Q:remove(A_i + "/actTable")
+                Q:remove(A_i + "/actName")
+            }
+        break
+        #
+        ################
+    }
+}
+
+if(playerConnectClk() | playerDisconnectClk() | changed(0)) {
+    if(changed(0)) {
+        
+        local ListName = "playersList"
+        Q[ListName + "/list/type" , string] = "entity"
+        local ListName = "playersListNames"
+        Q[ListName + "/list/type" , string] = "string"
+        
+    }
+    
+    local Ar = array()
+    foreach(C, P:entity = players()) {
+        
+        Ar:pushString(P:name())
+    }
+    #Q["playersList"      + "/list/array", array]:clear()
+    #Q["playersListNames" + "/list/array", array]:clear()
+    Q["playersListNames" + "/list/array", array] = Ar
+    Q["playersList"      + "/list/array", array] = players()
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###ONLY FOR DEVELOPER###
+if(changed(0)) {
+    
+    if(entity():getName() == "EPBA") {
+        if(0) {
+            local UTS = dateUTC()
+            local Code = getCode():explode("###ONLY FOR DEVELOPER###")[1, string]
+            #Code = Code:replace("E_", "Element_"):replace("E1_", "Element1_"):replace("E2_", "Element2_"):replace("P_", "Parent_")
+            #Code = Code:replace("Q[", "EPBA["):replace("[Q]", "[EPBA]"):replace("Q:", "EPBA:"):replace("egp_w", "egp/wirelink")
+            while(1) {
+                local Find1 = Code:find("#[")
+                local Find2 = Code:find("]#")
+                if(Find1 & Find2) {
+                    Code = Code:left(Find1-1) + Code:sub(Find2+2,Code:length())
+                }
+                else {
+                    break
+                }
+            }
+            Code+= "if(entity():getName() == \"EPBA\") {\n        setName(\"EPBA\\nVer. "+UTS["day", number]+"."+UTS["month", number]+"."+UTS["year", number]
+            Code+= "  "+(UTS["hour", number]+3)+":"+(UTS["min", number] < 10 ? "0" : "")+UTS["min", number] + "\")\n    }"
+            Code+= "\n}"
+            entity():remoteSetCode(Code)
+        }
+    }
+}
+setName("EPBA\nVERSION ONLY FOR DEVELOPER\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage() * 1e6))
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,279 @@
+@name Copter
+
+@inputs [Pod]:entity [Cam_w EYE_w]:wirelink
+
+@inputs [V1 V1_L1 V1_L2 V1_L3  V2 V2_L1 V2_L2 V2_L3  Base]:entity
+
+@outputs V_needVel V_needVel_ V1_vel V2_vel DIF
+@persist [E O]:entity [Q]:table V1_ok V2_ok V_needDIF NeedAng:angle
+
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+
+if(changed(0)) {
+    
+    E = entity() E:setSkin(1)
+    O = owner()
+    
+    
+    timer("driver", 1)
+    timer("forces", 1)
+    timer("structure", 1)
+    
+}
+
+
+
+if(clk("driver")) {
+        timer("driver", 50)
+    
+    if(changed(0)) {
+        
+    }
+    
+    local Driver = Pod:driver()
+    if(Driver) {
+        
+        local Start = Driver:keyReload()
+        if(changed(Start) & Start) {
+            V_needVel = V_needVel ? 0 : 1060
+        }
+        
+        V_needVel_ = 150 * (Driver:keyForward()-Driver:keyBack())
+        
+        V_needDIF = 200 * (Driver:keyLeft()-Driver:keyRight())
+        
+        local EYE = Pod:toLocal(Driver:eyeAngles()-ang(0,90,0))
+        NeedAng = ang(-EYE[1],0,EYE[2]) * ang(0.5,0,1)
+    }
+    if(changed(Driver)) {
+        
+        V_needDIF = 0
+        NeedAng = ang()
+    }
+    
+    
+    #[
+    local LastCurtime = Q["lastCurtime", number]
+    local Curtime = Q["lastCurtime", number] = curtime()
+    local Interval = Curtime - LastCurtime
+    local Loop = Interval / 0.015625
+    ]#
+    
+    
+    
+}
+
+
+if(clk("structure")) {
+        timer("structure", 100)
+    
+    if(changed(0)) {
+        V1_ok = V2_ok = 1
+    }
+    
+    if(V1_ok) {
+        if(Base:toLocal(V1:boxCenterW()):distance(vec(0,0,13.75)) < 15) {
+            local Last = V1_ok
+            V1_ok = (V1_L1:isWeldedTo()|0) + (V1_L2:isWeldedTo()|0) + (V1_L3:isWeldedTo()|0)
+            
+            if(changed(V1_ok)) {
+                if(V1_ok < Last) {
+                    V1:soundPlay("loopBroken1" + Last, 0.8, "physics/metal/metal_sheet_impact_hard6.wav")
+                }
+            }
+        }
+        else {
+            V1_ok = 0
+        }
+        if(!V1_ok) {
+            soundStop("loop1")
+            V1:soundPlay("vintBroken1", 0.7, "physics/metal/metal_sheet_impact_hard8.wav")
+        }
+    }
+    if(V2_ok) {
+        if(Base:toLocal(V2:boxCenterW()):distance(vec(0,0,7.75)) < 15) {
+            local Last = V2_ok
+            V2_ok = (V2_L1:isWeldedTo()|0) + (V2_L2:isWeldedTo()|0) + (V2_L3:isWeldedTo()|0)
+            
+            if(changed(V2_ok)) {
+                if(V2_ok < Last) {
+                    V2:soundPlay("loopBroken2" + Last, 0.8, "physics/metal/metal_sheet_impact_hard6.wav")
+                }
+            }
+        }
+        else {
+            V2_ok = 0
+        }
+        if(!V2_ok) {
+            soundStop("loop2")
+            V2:soundPlay("vintBroken2", 0.7, "physics/metal/metal_sheet_impact_hard8.wav")
+        }
+    }
+    
+    
+    
+    setName("Copter\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1e6))
+}
+
+
+
+
+if(clk("forces")) {
+        timer("forces", 10)
+    
+    if(changed(0)) {
+        
+        V1:soundPlay("loop1", 0, "NPC_AttackHelicopter.RotorsLoud") soundVolume("loop1", 0) soundPitch("loop1", 0)
+        V2:soundPlay("loop2", 0, "NPC_AttackHelicopter.RotorsLoud") soundVolume("loop2", 0) soundPitch("loop2", 0)
+        
+        
+        Q["forces_lastCurtime", number] = curtime()
+    }
+    local LastCurtime = Q["forces_lastCurtime", number]
+    local Curtime = Q["forces_lastCurtime", number] = curtime()
+    local Interval = Curtime - LastCurtime
+    local Loop = Interval / 0.015625
+    
+    
+    
+    if(V1_ok | V2_ok) {
+        
+        
+        
+        
+        
+         V1_vel =  V1:angVel()[2]   if(V1_vel < 850) {V1_vel = (max(V1_vel,0)/850)^1.1*850}
+         V2_vel = -V2:angVel()[2]   if(V2_vel < 850) {V2_vel = (max(V2_vel,0)/850)^1.1*850}
+        V1_vel = V1_vel*V1_ok/3
+        V2_vel = V2_vel*V2_ok/3
+        
+        local SUB = V1_vel+V2_vel
+         DIF = V1_vel-V2_vel
+        DIF = clamp((V_needDIF-Base:angVel()[2])*8-DIF,-200,200)
+        
+        if(V1_ok) {
+            local V1_needVel = V_needVel + DIF + V_needVel_
+                 V1_dif = clamp(V1_vel-V1_needVel,-100,100)
+            local V1_f = Q["V1_f", number]
+            local V1_f = Q["V1_f", number] = clamp(V1_f - clamp( V1_dif / 20 + $V1_dif * 0.5 ,-0.5,0.5)  ,0,35*clamp((V1_vel-500)/1000,0,1))
+            local V1_f = clamp(V1_f - clamp(V1_dif / 10,-6,6) ,0,40)/35 * 1700
+            V1:applyAngForce(ang(0,V1_f*Loop*35,0))
+            ###
+            local V1_soundVel = abs(V1_vel)
+            local V1_soundVol = min(V1_soundVel / 1000,1) ^ 1.5
+            local V1_soundPit = V1_soundVel / 1600 * 130
+            soundVolume("loop1", V1_soundVol) soundPitch("loop1", V1_soundPit)
+        }
+        
+        if(V2_ok) {
+            local V2_needVel = V_needVel - DIF + V_needVel_
+                 V2_dif = clamp(V2_vel-V2_needVel,-100,100)
+            local V2_f = Q["V2_f", number]
+            local V2_f = Q["V2_f", number] = clamp(V2_f - clamp( V2_dif / 20 + $V2_dif * 0.5 ,-0.5,0.5)  ,0,35*clamp((V1_vel-500)/1000,0,1))
+            local V2_f = clamp(V2_f - clamp(V2_dif / 10,-3,3) ,0,40)/35 * 1700
+            V2:applyAngForce(ang(0,-V2_f*Loop*35,0))
+            ###
+            local V2_soundVel = abs(V2_vel)
+            local V2_soundVol = min(V2_soundVel / 1000,1) ^ 1.5
+            local V2_soundPit = V2_soundVel / 1600 * 130
+            soundVolume("loop2", V2_soundVol) soundPitch("loop2", V2_soundPit)
+        }
+        
+        
+        
+        local F = SUB / 2000 * 1199
+        local BA = (Base:toWorld(NeedAng))+(Base:angVel())/3
+        local V = vec(-2.832983,-0.183000,0) + clamp(vec(BA[1],-BA[3],0) * 2 ,-15,15)
+        Base:applyOffsetForce(Base:up()*F*9*Loop, Base:toWorld(V:setZ(10.75)))
+        
+        
+        Base:applyAngForce(ang(0,DIF * 500,0))
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+if(dupefinished()) {reset()}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

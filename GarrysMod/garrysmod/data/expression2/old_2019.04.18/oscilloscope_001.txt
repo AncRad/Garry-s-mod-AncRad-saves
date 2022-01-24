@@ -1,0 +1,155 @@
+@name oscilloscope_001
+
+@inputs 
+@outputs 
+@persist [E O]:entity
+@persist [Q]:table [Log Points]:array Curtime
+@persist Size:vector2
+@persist Offset_x Offset_x_start Offset_starPos
+@persist Start
+
+
+
+if(changed(0)) {
+    
+    #include "EGPS"
+    
+    
+    
+    function number graph(Graph_name:string) {
+        local Box_n = Graph_name + "_box"
+        local Box_s = v(254,126)*2 Size = Box_s/2
+        local Box_p = v(256)
+        egpAddBox(Box_n,Box_s,Box_p, 1)
+        egpSetColor(20)
+        
+        local Name_n = Graph_name + "_name"
+        local Name_t = Graph_name
+        local Name_p = v(Box_s[1]-2,-Box_s[2])/2
+        egpAddText(Name_n,Name_t,Name_p)
+        egpSetAlign(2,0)
+        egpSetSize(12)
+        egpSetAlpha(128)
+        egpSetParent(Graph_name + "_box")
+        
+        
+        local LineStrip_n = Graph_name + "_lineStrip"
+        egpAddBox(LineStrip_n + "_center",v(),v(-Box_s[1],Box_s[2])/2)
+        egpSetParent(Graph_name + "_box")
+        egpAddLine(LineStrip_n,array())
+        egpSetParent(LineStrip_n + "_center")
+        return 1
+    }
+    function number graph(Graph_name:string, Points:array) {
+        local LineStrip_n = Graph_name + "_lineStrip"
+        egpSetLine(LineStrip_n, Points)
+        egpSetParent(LineStrip_n, LineStrip_n + "_center")
+        return 1
+    }
+    
+    
+    O = owner()
+    
+    egpSelect()
+    egpClear()
+    
+    graph("graph")
+    
+    egpAddBox("cursor",v(2),v())
+    EGPS_w:egpParentToCursor(EGPS["cursor/table", table]["index", number])
+    egpAddText("cursor_text","",v(50),v())
+    egpSetSize(10)
+    egpSetAlign(0,0)
+    egpSetParent("cursor")
+    
+    
+    timer("egp", 1)
+    timer("", 1)
+}
+
+if(clk("")) {
+        timer("", 1)
+    
+    Curtime = curtime()
+    
+    Log:pushNumber($Curtime)
+    
+    if(!Start) {
+        Start = Curtime
+    }
+    if(Curtime-Start > 3) {
+        stoptimer("")
+    }
+    
+    exit()
+}
+
+
+if(clk("egp")) {
+        timer("egp", 300)
+    
+    
+    local Diapazon = 60
+    local Scale = 150/0.015625
+    local Offset1 = -0.015625
+    local Offset2 = Size[2]
+    
+    local Count = Log:count()-Offset_x
+    
+    local Points = array()
+    for(C = max(Count-Diapazon,0),Count) {
+        local Number = (Log[C, number] + Offset1) * Scale + Offset2
+        Points:pushVector2(vec2(((Count-C+Diapazon)/Diapazon-1)*Size[1]*2,-Number))
+    }
+    graph("graph", Points)
+    
+    
+    local Key_use = O:keyUse()
+    if(changed(Key_use) | Key_use) {
+        if(Key_use) {
+            if(Offset_x_start == 0) {
+                Offset_x_start = Offset_x
+                Offset_starPos = EGPS_w:egpCursor(O)[1]
+                print(23)
+            }
+        }
+        else {
+            Offset_starPos = 0
+            Offset_x_start = 0
+        }
+        local Add = round((EGPS_w:egpCursor(O)[1]-Offset_starPos)/Size[1]*Diapazon) #print(Offset_starPos)
+        Offset_x = clamp(Offset_x_start + Add ,0,max(Count-Diapazon,0))
+    }
+    
+    
+    
+    local Cursor_P = EGPS_w:egpCursor(O)
+    local Cursor_p = Cursor_P
+    local Text = round(Cursor_p,1)
+    egpSetText("cursor_text", Text[1]+"\n"+Text[2])
+    
+    
+    exit()
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

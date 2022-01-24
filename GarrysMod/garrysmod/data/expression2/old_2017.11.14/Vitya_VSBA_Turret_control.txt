@@ -1,0 +1,121 @@
+@name Vitya VSBA Turret control
+@model models/props_combine/combine_emitter01.mdl
+@persist [E O]:entity
+@persist [Turrets]:array
+@persist [WhiteList BadGuys]:table
+
+interval(1000)
+if(first()){
+    
+    #Settings----------
+    
+    local SetWhiteList = array(
+        "$❤ В▒И▒Т▒Я❤€",
+        "",
+        "",
+        "",
+        "",
+        ""
+   
+    )
+    
+    #Code--------------
+    
+    E = entity()
+    O = owner()
+    
+    runOnHook("PlayerHurt",1)
+    runOnChat(1)
+    
+    WhiteList[O:name(), number] = 1
+    
+    foreach(I, Name:string = SetWhiteList){WhiteList[Name, number] = 1}    
+        
+}
+
+else{
+    
+    foreach(I, Turret:entity = Turrets){Turret:npcGoRun(O:pos() - O:forward()*30)}
+
+    findIncludePlayerProps(O)  
+    findExcludeEntities(Turrets)  
+    findByClass("npc_*")  
+    findSortByDistance(E:pos())  
+    local NewTurrets = findToArray()
+    
+    foreach(I, Turret:entity = NewTurrets){
+        
+        Turret:npcRelationship("player", "like", 999)        
+   
+        foreach(I, Hater:entity = BadGuys){Turret:npcRelationship(Hater, "hate", 999)}
+        
+        Turrets:pushEntity(Turret)
+        
+    }
+    
+                                                                                                                                                        
+    if(hookClk("PlayerHurt")){
+        
+        Victim = hookArgs()[1, entity]
+        Killer = hookArgs()[2, entity] 
+        
+        if(WhiteList:exists(Victim:name()) & !WhiteList:exists(Killer:name()) & !BadGuys:exists(Killer:name())){
+            
+            BadGuys:pushEntity(Killer) 
+            BadGuys[Killer:name(), number] = 1                               
+           
+            foreach(I, Turret:entity = Turrets){
+          
+                Turret:npcRelationship(Killer, "hate", 999)              
+                
+            } 
+                        
+        }
+               
+    } 
+        
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                                                                                                                                                                                                                                                                                                                                                                  setName("Daniel's VSBA Turret control")

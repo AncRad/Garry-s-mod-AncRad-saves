@@ -1,0 +1,191 @@
+@name gas test
+
+@inputs 
+@outputs DEBUG:array
+@persist [E O]:entity [Q]:table
+
+@trigger none
+
+
+
+if(changed(0)) {
+    
+    
+    E = entity()
+    O = owner()
+    
+    
+    #holoCreate(0, vec(), vec(50/12), ang()) holoMaterial(0, "models/wireframe")
+    
+    timer("", 50)
+}
+
+
+
+if(clk("")) {
+        timer("", 50)
+    
+    if(changed(0)) {
+        
+        function toFly([Pos Vel]:vector) {
+            if(holoCanCreate()) {
+                
+                local Part = Q["id", number] = Q["id", number] + 1
+                local Holo = holoCreate(Part, Pos, vec(0), ang(), vec(100,255,0), "models/hunter/blocks/cube2x2x2.mdl") Holo:ignite(1010)
+                Holo:setTrails(1.5, 0, 3, "trails/laser", vec(100,255,0), 255)
+                
+                Q[Part + "/vel" , vector] = Vel
+                Q[Part + "/pos" , vector] = Pos
+                #Q[Part + "/time", number] = Curtime
+                Q["part", array] = Q["part", array]:add(array(Part))
+            }
+        }
+        #[
+        local EP = E:pos()
+        toFly(EP + vec(20,0,0):rotate(ang(0,0,0)), vec())
+        toFly(EP + vec(20,0,0):rotate(ang(0,120,0)), vec())
+        toFly(EP + vec(20,0,0):rotate(ang(0,240,0)), vec())
+        toFly(EP + vec(0,0,20), vec())
+        ]#
+        
+        
+        Q["lastCurtime", number] = curtime()
+    }
+    local LastCurtime = Q["lastCurtime", number]
+    local Curtime = curtime()
+    Q["lastCurtime", number] = Curtime
+    local Interval = Curtime - LastCurtime
+    
+    
+    
+    
+    local GasScale = 50
+    
+    local Fire = O:keyPressed("mouse_4")
+    if(Fire) {
+        local Pos = E:toWorld(vec(10,0,0)) #O:shootPos()
+        local Vel = E:forward() * 52.5 * 30 #O:eye() * 52.5 * 20
+        toFly(Pos, Vel)
+    }
+    
+    foreach(C, Part:number = Q["part", array]) {
+        local Vel = Q[Part + "/vel", vector]
+        local Pos = Q[Part + "/pos", vector]
+        
+        
+        local Length = Vel:length() * Interval
+        rangerFilter(O)
+        local R = rangerOffset(Length, Pos, Vel)
+        if(R:hit()) {
+            local Norm = R:hitNormal()
+            local VelN = Vel:normalized()
+            Vel = -Vel:rotateAroundAxis(Norm, 180) * 0.5 #* max((1 - abs(Norm[1] * VelN[1] + Norm[2] * VelN[2] + Norm[3] * VelN[3])) ^ 2,0)
+        }
+        else {
+            Vel = Vel - (vec(0,0,600) + Vel * 0.8) * Interval
+        }
+        #[
+        else {
+            local Time =Curtime - Q[Part + "/time", number]
+            local Mul = min(Time / 2 ,1)
+            local Acc = 100 * (1-Mul) - 600 * Mul
+            Vel = Vel + vec(0,0,Acc*Interval)
+        }
+        ]#
+        
+        local SectorS = Q[Part + "/sector", string]
+        local SectorList = Q[SectorS + "/list", array]
+        local Count = SectorList:count()
+        if(Count > 1) {
+            local Acc = vec()
+            foreach(C, CPart:number = SectorList) {
+                if(CPart == Part) {
+                }
+                else {
+                    Acc = Acc + holoEntity(CPart):pos()
+                }
+            }
+            Acc = Acc / (Count - 1)
+            local Dif = Acc - Pos
+            local Length = Dif:length()
+            local Mul = Count * 1000 / clamp(Length^2/50,0,1)
+            Vel = Vel - (Dif):normalized() * Mul * Interval
+        }
+        
+        Pos = R:pos()
+        
+        local NewSectorS = ceil(Pos / GasScale):toString()
+        if(NewSectorS != SectorS) {
+            
+            Q[Part + "/sector", string] = NewSectorS
+            Q[NewSectorS + "/list", array] = Q[NewSectorS + "/list", array]:add(array(Part))
+            foreach(C, CPart:number = SectorList) {
+                if(CPart == Part) {
+                    Q[SectorS + "/list", array]:remove(C)
+                    break
+                }
+            }
+        }
+        
+        Q[Part + "/pos", vector] = Pos
+        Q[Part + "/vel", vector] = Vel
+        holoPos(Part, Pos)
+    }
+    
+    
+    
+    
+    
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

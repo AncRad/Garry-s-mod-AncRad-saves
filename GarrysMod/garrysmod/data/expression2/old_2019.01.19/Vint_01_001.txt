@@ -1,0 +1,100 @@
+@name Vint_01_001
+
+@inputs [RootZ RootXY Vint Base]:entity
+@outputs DEBUG:string
+@persist [E O]:entity [Q]:table
+
+@model models/bull/gates/processor.mdl
+
+
+
+if(changed(0)) {
+    
+    O = owner()
+    E = entity() E:setSkin(1)
+    
+    
+    timer("", 1)
+}
+
+
+
+
+
+
+
+
+
+
+
+if(clk("")) {
+    timer("", 1)
+    
+    if(changed(0)) {
+        
+        Q["curtime", number] = curtime()
+    }
+    local LastCurtime = Q["curtime", number]
+    local Curtime = curtime()
+    Q["curtime", number] = Curtime
+    local Interval = Curtime - LastCurtime
+    local Loop = Interval / 0.015625
+    
+    local Z = Q["z", number]
+    local Z = clamp(Z + (O:keyPressed("pad_9") - O:keyPressed("pad_7")) * Interval * 2,-1,0.2)
+    Q["z", number] = Z
+    
+    
+    local XY = Q["xy", vector2]
+    local XY = clamp(XY + vec2(O:keyPressed("pad_8") - O:keyPressed("pad_2"),O:keyPressed("pad_4") - O:keyPressed("pad_6")) * Interval * 3,-1,1) * !O:keyPressed("pad_5")
+    Q["xy", vector2] = XY
+    
+    
+    RootZ:setMass(500)
+    RootXY:setMass(500)
+    
+    RootZ:propFreeze(1)
+    RootXY:propFreeze(1)
+    
+    RootZ:setAng( Base:toWorld(ang( 0 , Z * 75 , 0 )))
+    RootXY:setAng(Base:toWorld(ang( XY[1] , 0 , XY[2] ) * 15))
+    
+    
+    DEBUG = "================="
+    DEBUG+="\nZ = " + floor(Z * 75)
+    DEBUG+="\nX = " + floor(XY[1] * 15)
+    DEBUG+="\nY = " + floor(XY[2] * 15)
+    
+    #Vint:applyAngForce(ang(1000000,0,0))
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

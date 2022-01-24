@@ -1,0 +1,88 @@
+@name cube roller
+
+@inputs 
+@outputs A_p A_y A_r
+@persist [E O H]:entity
+
+@model models/hunter/blocks/cube1x1x1.mdl
+
+
+
+if(changed(0)) {
+    
+    E = entity()
+    O = owner()
+    
+    E:setAng(ang())
+    
+    H = holoCreate(0, vec(), vec(), E:angles())
+    holoParent(0, E)
+    
+    
+    
+    holoCreate(1, E:toWorld(vec(40,0,0)), vec(0.5,0.2,0.2), E:toWorld(ang(0,180,0)), vec(255), "models/editor/spot_cone.mdl")
+    holoParent(1, E)
+    
+    
+    holoCreate(2, E:toWorld(vec(40,0,0)), vec(5,5,5) / 5, E:angles(), vec(255), "models/editor/axis_helper.mdl")
+    holoParent(2, E)
+}
+
+interval(50)
+
+A = H:angles()
+A_p = A[1]
+A_y = A[2]
+A_r = A[3]
+
+Dir = ang(0,A_y,0):forward()
+holoPos(1, E:pos() + Dir * 40)
+holoAng(1, Dir:toAngle())
+
+
+if(abs(A_p) >= 45) {
+    holoAng(0, H:toWorld(ang(90 * -sign(A_p),0,0)))
+}
+
+
+
+if(abs(A_r) >= 45) {
+    holoAng(0, H:toWorld(ang(0,0,90 * -sign(A_r))))
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName("cube roller\nA_p=" + floor(A_p,0) + "\nA_y=" + floor(A_y,0) + "\nA_r=" + floor(A_r,0))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

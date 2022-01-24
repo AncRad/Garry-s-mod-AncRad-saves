@@ -1,0 +1,166 @@
+@name eidot_001
+
+@inputs [Pod EGPH]:entity
+@outputs Debug:string
+@persist [E]:entity
+
+@persist [G]:gtable [Q]:table
+
+
+
+if(changed(0)) {
+    ##include "EGPS"
+    
+    G = gTable(owner():steamID() + "/eidot_001")
+    
+    timer("user", 1)
+}
+
+if(clk("user")) {
+        timer("user", 50)
+    
+    if(changed(0)) {
+        function number entity:userKey(Key:string) {
+            switch(Key) {
+                case "keyForward", return This:keyForward()
+                case "keyBack"   , return This:keyBack()
+                case "keyLeft"   , return This:keyLeft()
+                case "keyRight"  , return This:keyRight()
+                case "keyJump"   , return This:keyJump()
+                case "keyDuck"   , return This:keyDuck()
+                case "keyWalk"   , return This:keyWalk()
+                case "keySprint" , return This:keySprint()
+                case "keyUse"    , return This:keyUse()
+                case "keyReload" , return This:keyReload()
+                case "keyZoom"   , return This:keyZoom()
+                case "keyAttack1", return This:keyAttack1()
+                case "keyAttack2", return This:keyAttack2()
+                case "none"      , return 0
+            }
+            return This:keyPressed(Key)
+        }
+        
+        cameraCreate(1, G["user/camera/pos", vector])
+        Q["user/curtime", number] = curtime()
+    }
+    local LastCurtime = Q["user/curtime", number]
+    local Curtime = curtime()
+    Q["user/curtime", number] = Curtime
+    local Interval = Curtime - LastCurtime
+    
+    local User = Pod:driver()
+    if(changed(User)) {
+        if(User) {
+            
+        }
+        else {
+            
+        }
+        
+        cameraToggle(1, User | 0, Pod)
+    }
+    
+    if(User) {
+        
+        local EyeAngles = angnorm(Pod:toLocal(User:eyeAngles())-ang(0,90,0))
+        cameraAng(1, EyeAngles)
+        
+        local Move = vec(User:userKey("keyForward")-User:userKey("keyBack"),User:userKey("keyLeft")-User:userKey("keyRight"),User:userKey("keyJump")-User:userKey("keyDuck"))
+        if(changed(!Move) & Move) {Q["user/camera/moveStartTime", number] = Curtime}
+        if(Move) {
+            local Mul = min((Curtime-Q["user/camera/moveStartTime", number]) / 1,1) ^ 1.5
+            local Vel = 52.5 * (User:userKey("keySprint") ? 20 : (User:userKey("keyWalk") ? 0.5 : 3))
+            local Camera_P = G["user/camera/pos", vector]
+            G["user/camera/pos", vector] = Camera_P = Camera_P + Move:rotate(EyeAngles) * (Vel * Mul * Interval)
+            cameraPos(1, Camera_P)
+        }
+        
+        
+        Debug = floor(EyeAngles):toString()
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName("eidot_001\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage() * 1e6))

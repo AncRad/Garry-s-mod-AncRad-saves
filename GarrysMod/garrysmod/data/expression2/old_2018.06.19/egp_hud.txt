@@ -1,0 +1,226 @@
+@name egp_hud
+@inputs 
+@outputs 
+@persist [O]:entity [SID]:string [Project Interface]:gtable   [ActList]:table [ActStep]:number
+@trigger 
+
+
+
+if(changed(0)) {
+    
+    #include "old_2018.04.22/EGPS"
+    
+    
+    
+    O = owner()
+    SID = O:steamID()
+    
+    Project   = gTable(SID + "/egp_hud/project")
+    Interface = gTable(SID + "/egp_hud/interface") #Interface:clear()
+    
+    if(!Interface["preset/name", string]) {
+        Interface["preset/name", string] = "default"
+        
+    }
+    
+    
+    
+    
+    timer("", 1)
+}
+
+if(clk("")) {
+        timer("", 50)
+    
+    if(changed(0)) {
+        
+        egpSelect()
+        egpClear()
+        
+        #cursor
+        egpAddCircle("cursorCircle",v(2),v())
+        egpAddBox("cursorBox",v(),v(),1) egpSetColor(255,100,0,200)
+        
+        
+        #test
+        local S = Interface["preset/baseBox/size", vector2] = Interface["preset/baseBox/size", vector2] ? Interface["preset/baseBox/size", vector2] : s(0.5,0.3)
+        local P = Interface["preset/baseBox/pos" , vector2] = Interface["preset/baseBox/pos" , vector2] ? Interface["preset/baseBox/pos" , vector2] : s(0.5,1.0)-v(0,S[2]/2)
+        
+        local N = "baseBox"
+        egpAddBox(N,S,P)
+        egpSetColor(20)
+        egpClickMode("")
+        EGPS[N + "/table", table] = EGPS[N + "/table", table]:add(
+            table(
+                "verticalBorder" = 0.3,
+                "leftClick" = table(
+                    table("actType" = "boxMove")
+                )
+            )
+        )
+        
+        
+    }
+    
+    
+    #cursor
+    local KeyCursor = O:keyPressed("C")
+    local KeyLClick = (O:keyUse() | O:keyAttack1()) & KeyCursor
+    
+    CursorPos = KeyCursor ? O:egpGetCursorPos_FOV90()*egpScrSize(O) : vec2()
+    
+    if(changed(CursorPos)) {
+        egpSetPos("cursorCircle", CursorPos)
+    }
+    
+    if(changed(KeyCursor) | KeyCursor) {
+        #keys
+        
+        
+        #targets
+        local Target = egpGetTarget(CursorPos, "")
+        
+        if(changed(Target)) {
+            if(Target) {
+                egpSetParent("cursorBox", Target)
+                egpSetSize("cursorBox", egpGetSize(Target)+v(2))
+            }
+            else {
+                egpSetSize("cursorBox", v())
+            }
+        }
+        
+        if(changed(KeyLClick) & KeyLClick) {
+            if(Target) {
+                
+                local T_T = EGPS[Target + "/table", table]
+                local T_AL = T_T["leftClick", table]
+                local T_AL_count = T_AL:count()
+                if(T_AL_count) {
+                    for(C = 1, T_AL_count) {
+                        
+                        local AT = T_AL[C, table]
+                        
+                        local Act_T = table(
+                            "actType" = AT["actType", string],
+                            "elementName" = Target,
+                            "cursorPos" = CursorPos
+                        )
+                        
+                        ActList:pushTable(Act_T)
+                        
+                        printTable(AT)
+                    }
+                }
+            }
+        }
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    #act
+    local C = 0
+    local Clear = 0
+    local ActList_count = ActList:count()
+    while(C < ActList_count & perf(80)) {
+        C++
+        ActStep++ if(ActStep > ActList_count) {ActStep=1}
+        
+        local Act_T = ActList[ActStep, table]
+        local ActType = Act_T["actType", string]
+        
+        switch(ActType) {
+            case "boxMove",
+                if(!KeyLClick) {
+                    Clear = 1
+                }
+                else {
+                    local ElementName = Act_T["elementName", string]
+                    local ElementStartPos = Act_T["elementStartPos", vector2] if(ElementStartPos == v()) {ElementStartPos = Act_T["elementStartPos", vector2] = egpGetPos(ElementName)}
+                    local ElementSize = egpGetSize(ElementName)/2
+                    local S = s(1)
+                    local StartCursorPos = Act_T["cursorPos", vector2]
+                    
+                    local Pos = ElementStartPos + CursorPos-StartCursorPos
+                    local Pos = clamp(Pos,ElementSize,S-ElementSize)
+                    egpSetPos(ElementName,Pos)
+                    
+                    Interface["preset/" + ElementName + "/pos" , vector2] = Pos
+                }
+            break
+            default,
+                Clear = 1
+            break
+        }
+        
+        if(Clear) {
+            ActList:remove(ActStep)
+            C--
+            Clear = 0
+            ActStep--
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName("egp_hud\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1e6))

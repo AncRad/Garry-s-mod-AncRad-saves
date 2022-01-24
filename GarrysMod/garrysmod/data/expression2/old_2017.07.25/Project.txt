@@ -1,0 +1,345 @@
+@name Project
+
+@inputs 
+@outputs OPS CPU
+
+@persist [O User]:entity
+
+@persist [Q CI]:table
+
+@trigger none
+
+
+
+if(changed(0)) {
+    
+    #include "EGPS"
+    
+    function number addPrint( Print:array ) {
+        local PrintID = CI["print/count", number] = CI["print/count", number] + 1
+        
+        CI["prints/" + PrintID + "/print"  , array ] = Print
+        CI["prints/" + PrintID + "/curtime", number] = curtime()
+        CI["printList", array] = CI["printList", array]:add(array( PrintID ))
+        
+        return PrintID
+    }
+    function string toText000( Number , MaxNumber ) {
+        local Text = ""
+        for(C = 1, MaxNumber - (Number + ""):length()) {Text = Text + "  "}
+        Text = Number + Text
+        
+        return Text
+    }
+    
+    O = owner()
+    
+    
+    
+    addPrint(array(vec(255), "Project запущен, запускаю ядро."))
+    timer("core", 1)
+}
+
+########################
+######################## PROCEDURAL CORE
+########################
+if(clk("core")) {
+        timer("core", 50)
+    
+    if(changed(0)) {
+        
+        addPrint(array(vec(255), "Ядро запущено, запускаю чат интерфейс."))
+        timer("chatInterface", 1)
+        addPrint(array(vec(255), "Запускаю HUD."))
+        timer("hud", 1)
+        
+    }
+}
+########################
+######################## procedural core
+########################
+
+
+
+
+
+
+
+
+
+
+########################
+######################## CHAT INTERFACE
+########################
+if(clk("chatInterface") | chatClk(User)) {
+    if(changed(0)) {
+        addPrint(array(vec(255), "Чат интерфейс запущен."))
+        runOnChat(1)
+        timer("print", 1)
+        
+        if(1) {
+            User = O
+            addPrint(array(vec(255), "Пользователь назначен: ", vec( 255 , 120 , 0 ), User:name()))
+        }
+    }
+    
+    
+    local LastSaid = User:lastSaid()
+    if(LastSaid) {
+        
+        switch(LastSaid) {
+            case "",
+                
+            break
+            case "",
+                
+            break
+        }
+    }
+}
+
+if(clk("print")) {
+    
+    local PrintList = CI["printList", array]
+    local Count = PrintList:count()
+    if(Count) {
+        local Curtime = curtime()
+        local PRINT = array()
+        
+        local Clear = array()
+        foreach(C, PrintID:number = PrintList) {
+            local Interval = floor((Curtime - CI["prints/" + PrintID + "/curtime", number]) * 1000)
+            Print = CI["prints/" + PrintID + "/print", array]
+            Print = array(
+                vec( 0 , 255 , 255 ), (Count > 1 ? "\n" : "") + "#Project ",
+                vec( 0 , 255 , 175 ), toText000( Interval , 4 ) + "мс ",
+                vec( 0 , 175 , 255 ), toText000( PrintID  , 3 ) + ": "
+            ):add( Print )
+            PRINT = PRINT:add(Print)
+            Clear = array(C):add(Clear)
+        }
+        foreach(C, I:number = Clear) {
+            CI["printList", array]:remove(I)
+        }
+        
+        #printColor(PRINT)
+        
+        
+        timer("print", 200)
+    } else {
+        timer("print", 500)
+    }
+}
+########################
+######################## chat interface
+########################
+
+
+########################
+######################## HUD
+########################
+if(clk("hud")) {
+        timer("hud", 50)
+    
+    if(changed(0)) {
+        addPrint(array(vec(255), "HUD запушен."))
+        
+        egpSelect(entity():isWeldedTo():wirelink())
+        egpClear()
+        
+        
+        egpAddCircle("cursor", v() , v(), "o")
+        egpAddText("cursorPos", "", v())
+        egpSetSize(13)
+        holoCreate(0, vec(), vec())
+        
+        
+        
+        
+        
+        
+        
+        
+        local TextSize = 20
+        local Size = v( 400 , 200 )
+        egpAddBox("box", v(1920,1080) / 2, Size, "o")
+        egpAddBox("select", v(), v( Size[2] * 2 , TextSize - 2 ), "")
+        egpSetColor(v( 10 , 150 , 255 ))
+        egpSetAlpha(50)
+        egpSetParent("box")
+        
+        egpAddTextLayout("test", "000", v(8,0)-Size / 2, Size)
+        egpSetSize(TextSize)
+        egpSetParent("test", "box")
+        
+        
+        
+    }
+    
+    
+    #####
+    ##
+    Eye        = O:eye()
+    EyeAngles  = O:eyeAngles()
+    EyeA       = EyeAngles:forward()
+    EgpScrSize = egpScrSize(O)
+    
+    holoAng(0, EyeAngles)  ##  **
+    
+    Cos = Eye[1] * EyeA[1] + Eye[2] * EyeA[2] + Eye[3] * EyeA[3]
+    CursorV = (holoEntity(0):toLocal( Eye / Cos ) / vec( 1 , -1.332 , -0.75 ) + vec( 0 , 1 , 1 )) / 2  ##  **
+    ##
+    
+    Cursor = vec2( CursorV[2] , CursorV[3] ) * EgpScrSize
+    egpSetPos("cursor", Cursor)
+    egpSetPos("cursorPos", clamp( Cursor + v( 15 , 5 ), vec2(), EgpScrSize - v( 65 , 15 )))
+    egpSetText("cursorPos", floor(Cursor):toString() + "   " + Q["selected", number])
+    #####
+    
+    
+    
+    
+    if(1) {
+        findIncludeClass("prop")
+        findIncludeClass("player")
+        findInSphere(vec(), 9999999999)
+        local Find = findToArray()
+        local Text = ""
+        
+        local Max = 10
+        for(C = 1 + Q["scrolling", number],Max + Q["scrolling", number]) {
+            local Ent = Find[C, entity]
+            if(Text) {Text = Text + "\n"}
+            
+            Text = Text + toText000(C,3) + "  " + Ent:toString()
+        }
+        
+        egpSetText("test", Text)
+        
+        
+        local KeyC = User:keyPressed("C")
+        if(KeyC) {
+            local BoxPos = v( 960 , 540 )
+            local BoxSize = v( 400 , 200 )
+            local TextSize = 20
+            if(inrange( Cursor , BoxPos - BoxSize / 2 , BoxPos + BoxSize / 2 )) {
+                local LocalCursor = Cursor - BoxPos
+                local NumberString = floor( LocalCursor[2] / TextSize )
+                
+                
+                local M45 = User:keyPressed("mouse_5") - User:keyPressed("mouse_4")
+                if(changed(M45) & M45) {
+                    Q["scrolling", number] = clamp(Q["scrolling", number] + M45 ,0,Find:count() - Max)
+                }
+                
+                if(changed(NumberString) | changed(M45)) {
+                    local Pos = v( 0 , (NumberString + 0.5) * TextSize )
+                    Q["selected", number] = NumberString + Q["scrolling", number] + 1 + round(BoxSize[2] / 2 / TextSize)
+                    egpSetPos("select", Pos)
+                }
+                if(O:keyPressed("E")) {
+                    O:setPos(Find[Q["selected", number], entity]:pos() + vec( 0 , 0 , 100 ))
+                }
+                
+            }
+        }
+        if(changed(KeyC)) {
+            Q["selected", number] = 0
+        }
+    }
+}
+########################
+######################## hud
+########################
+
+
+
+
+
+
+
+
+
+OPS = ops()
+CPU = cpuUsage() * 1000000
+#[
+if(changed(0)) {
+    
+    #include "EGPS"
+    
+    
+    egpSelect( entity():isWeldedTo():wirelink() )
+    egpClear()
+    
+    
+    egpAddBox("rt", v( 960 , 540 ) , v(), "")
+    
+    
+    
+    egpAddCircle("cursor", v() , v(), "o")
+    egpAddText("cursorPos", "", v())
+    egpSetSize(13)
+    
+    
+}
+
+
+
+
+timer("", 100)
+
+O = owner()
+
+#####
+##
+Eye        = O:eye()
+EyeAngles  = O:eyeAngles()
+EyeA       = EyeAngles:forward()
+EgpScrSize = egpScrSize(O)
+
+holoAng(0, EyeAngles)  ##  **
+
+Cos = Eye[1] * EyeA[1] + Eye[2] * EyeA[2] + Eye[3] * EyeA[3]
+CursorV = (holoEntity(0):toLocal( Eye / Cos ) / vec( 1 , -1.332 , -0.75 ) + vec( 0 , 1 , 1 )) / 2  ##  **
+##
+
+Cursor = vec2( CursorV[2] , CursorV[3] ) * EgpScrSize
+#####
+
+
+egpSetPos("cursor", Cursor)
+egpSetPos("cursorPos", clamp( Cursor + v( 15 , 5 ), vec2(), EgpScrSize - v( 65 , 15 )))
+egpSetText("cursorPos", floor(Cursor):toString())
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

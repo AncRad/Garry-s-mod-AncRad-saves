@@ -1,0 +1,81 @@
+@name wing_test
+
+@inputs 
+
+@outputs 
+
+@persist [W_l]:table W_tT
+
+@persist 
+
+@trigger none
+
+
+
+if(changed(0)) {
+    
+    W_l:pushEntity(entity():isWeldedTo())
+    W_l["A", entity] = entity():isWeldedTo()
+    
+    
+    timer("wings", 1) W_tT = curtime()
+}
+
+switch(clkName()) {
+    case "wings",
+            timer("wings", 1)
+        
+        local Curtime = curtime()
+        
+        foreach(C, W_T:table = W_l) {
+            print(C)
+            if(W_T == table()) {
+                W_T = table(
+                     "entity" = W_T[C, entity]
+                    ,"lastCalcTime" = Curtime
+                )
+                local W_e = W_T["entity", entity]
+                holoCreate(1, W_e:boxCenterW(), W_e:boxSize()/6, W_e:angles(), vec(255), "cube")
+                holoParent(1, W_e)
+                holoMaterial(1, "models/wireframe")
+                print(123)
+            }
+            
+            local W_e = W_T["entity", entity]
+            local W_t = W_T["lastCalcTime", number]
+        }
+    break
+    case "",
+        
+    break
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

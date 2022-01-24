@@ -1,0 +1,865 @@
+@name UMP_0.1
+
+@inputs 
+@outputs 
+@persist [E O EGP_e]:entity [EGP_w]:wirelink
+
+@persist STEP [EGPP ActTable]:table [User]:entity [EGP_resolution]:vector2
+@persist [EGP_color1 EGP_color2 EGP_color3 EGP_color4 EGP_color5]:vector
+
+@persist [HTTP_status]:string [HTTP_requestList]:table HTTP_maxTime DATA:table
+
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+
+if(changed(0)) {
+    noDuplications()
+    
+    #include "EGPS"
+    
+    E = entity() E:setSkin(1)
+    O = owner()
+    User = O
+    
+    HTTP_maxTime = 10
+    
+    runOnChat(1)
+    runOnHTTP(1)
+    
+    
+    function string parser_request([Parser_name Request_song]:string) {
+        
+        switch(Parser_name) {
+                #
+                #
+                #
+            case "music-pesni.ru",
+                
+            return "http://music-pesni.ru/mp3-music/" + httpUrlEncode(Request_song)
+                #
+                #
+                #
+            default, return ""
+        }
+    }
+    
+    function table parser_data([Parser_name HTTP_data]:string) {
+        
+        switch(Parser_name) {
+                #
+                #
+                #
+            case "music-pesni.ru",
+                
+                local HTTP_data = HTTP_data:replace("&quot;", "\""):replace("&amp;", "&"):replace("&lt;", "<"):replace("&gt;", ">")
+                local DATA = table(
+                    "array_url"   = HTTP_data:gmatch("/play/[0-9a-zA-Z+%%]*"),
+                    "array_name1" = HTTP_data:gmatch("class%=\"author\"%>%<span class%=\"b%-link%_%_inner\" onclick%=\"getText%_author%(this%)%;scroll%(0%,0%)%; return false\"%>(.-)%<"),
+                    "array_name2" = HTTP_data:gmatch("class%=\"song\"%>%<span class%=\"b%-link%_%_inner\" onclick%=\"getText%_author%(this%)%;scroll%(0%,0%)%; return false\"%>(.-)%<"),
+                    "array_time"  = HTTP_data:gmatch("duration%-real\"%>([0-9%:]*)%<")
+                )
+            return DATA
+                #
+                #
+                #
+            default, return table()
+        }
+    }
+    
+    
+    function http_addRequest([Parser_name Request_song]:string) {
+        HTTP_requestList:pushTable(
+            table(
+                "parserName" = Parser_name,
+                "requestSong" = Request_song
+            )
+        )
+        
+        if(HTTP_status == "") {
+            timer("HTTP_timer", 1)
+        }
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    timer("egp", 1)
+}
+
+if(chatClk(User)) {
+    
+    local LS = User:lastSaid()
+    if(LS:index(1) == "!") {
+        LS = LS:right(LS:length()-1)
+        hideChat(1)
+        
+        http_addRequest("music-pesni.ru", LS)
+        
+        if(egpGetIndex("app/search/requestPanel/text")) {
+            egpSetText("app/search/requestPanel/text", LS)
+        }
+    }
+}
+
+if(clk("HTTP_timer") | httpClk()) {
+    
+    
+    
+    if(HTTP_status == "") {
+        if(HTTP_requestList:count()) {
+            
+            HTTP_status = "accessWaiting"
+            timer("HTTP_timer", 1)
+        }
+        else {
+            stoptimer("HTTP_timer")
+        }
+        
+    }
+    elseif(HTTP_status == "accessWaiting") {
+        
+        if(httpCanRequest()) {
+            local R_T = HTTP_requestList[1, table]
+            local R_parserName  = R_T["parserName" , string]
+            local R_requestSong = R_T["requestSong", string]
+            
+            HTTP_status = "dataWaiting"
+            httpRequest(parser_request(R_parserName,R_requestSong))
+            EGPS["http/witing/startTime", number] = 0
+        }
+        elseif(EGPS["http/witing/startTime", number]) {
+            if(curtime() - EGPS["http/witing/startTime", number] > HTTP_maxTime) {
+                HTTP_status = ""
+                HTTP_requestList:remove(1)
+                EGPS["http/witing/startTime", number] = 0
+                print("HTTP WAIT ERROR 1")
+            }
+        }
+        else {
+            EGPS["http/witing/startTime", number] = curtime()
+        }
+        
+        timer("HTTP_timer", 100)
+    }
+    elseif(HTTP_status == "dataWaiting") {
+        if(httpClk()) {
+            local HTTP_data = httpData()
+            
+            DATA = parser_data(HTTP_requestList:removeTable(1)["parserName", string], HTTP_data)
+            EGPS["app/search/resultRealVer", number] = curtime()
+            ActTable:pushTable(table("actType" = "appChange","targetApp" = "search"))
+            
+            HTTP_status = ""
+        }
+        timer("HTTP_timer", 100)
+    }
+    else {
+        
+    }
+}
+
+
+if(clk("egp")) {
+        timer("egp", 50)
+    
+    if(changed(0)) {
+        ################
+        #
+        #- first
+        #
+        #
+        #- data
+        #
+        EGPP["#RUS#search"   , string] = "Поиск"
+        EGPP["#RUS#playLists", string] = "Плейлисты"
+        EGPP["#RUS#settings" , string] = "Настройки"
+        #
+        ################
+    }
+    
+    
+    
+    if(STEP >= 0) {
+        
+            
+        EGP_color1 = vec(0)
+        EGP_color2 = vec(40)
+        
+        EGP_color3 = vec(100)
+        EGP_color4 = vec(200)
+        EGP_color5 = vec(255)
+        
+        
+        
+        
+        if(STEP == 0) {
+            local EW = E:isWeldedTo()
+            local EW_t = EW:type()
+            switch(EW_t) {
+                case "gmod_wire_egp",
+                    EGP_e = EW
+                    EGP_w = EGP_e:wirelink()
+                    egpSelect(EGP_w)
+                    egpClear()
+                    
+                    EGP_resolution = v(512)
+                    
+                    
+                    
+                    STEP++
+                    timer("egp", 100)
+                break
+            }
+        }
+        elseif(STEP == 1) {
+            
+            
+            local Base_n = "panel"
+            local Base_s = v(508)
+            local Base_p = v(256)
+            egpAddBox(Base_n, Base_s, Base_p)
+            egpSetColor(EGP_color1)
+            egpClickMode()
+            
+            
+            ####
+            #trackPanel
+            local TP_n = "trackPanel"
+            local TP_s = v(Base_s[1],40)
+            local TP_p = v(0,(TP_s-Base_s)[2]/2)
+            egpAddBox(TP_n, TP_s, TP_p)
+            egpSetColor(EGP_color2)
+            egpSetParent(Base_n)
+            egpClickMode()
+            #
+            ####
+            
+            STEP++
+            timer("egp", 100)
+        }
+        elseif(STEP == 2) {
+            
+            local Base_n = "panel"
+            local Base_s = egpGetSize(Base_n)
+            local TP_n = "trackPanel"
+            local TP_s = egpGetSize(TP_n)
+            local TP_p = egpGetPos(TP_n)
+            
+            ####
+            #globalPanel
+            local GP_n = "globalPanel"
+            local GP_s = v(Base_s[1],22)
+            local GP_p = v(0,TP_p[2] + (TP_s+GP_s)[2]/2 +2)
+            egpAddBox(GP_n, GP_s, GP_p)
+            egpSetColor(EGP_color2)
+            egpSetParent(Base_n)
+            egpClickMode()
+            
+            
+            local Ar = array("search","playLists","settings", "lel")
+            local Co = Ar:count()
+            local FontSize = 20
+            local L = GP_s[1]
+            local H = GP_s[2]
+            local L1 = L / Co
+            
+            
+            local SB_n = GP_n + "/selectBox"
+            local SB_s = v(L1-8,2)
+            local SB_p = v(9e9,(GP_s-SB_s)[2]/2)
+            egpAddBox(SB_n, SB_s, SB_p)
+            egpSetColor(EGP_color4)
+            egpSetParent(GP_n)
+            
+            foreach(C, Name:string = Ar) {
+                local F = C - 1
+                
+                local Title = "#" + Name
+                
+                local EGPP_text = EGPP["#RUS#" + Name, string]
+                if(EGPP_text) {Title = EGPP_text}
+                
+                
+                local T_n = GP_n + "/but#" + Name
+                local T_s = v(L1,FontSize)
+                local T_p = v(L1 * F -L/2,-T_s[2]*0.55)
+                egpAddText(T_n, Title, T_s, T_p)
+                egpSetColor(EGP_color3)
+                egpSetAlign(1,0)
+                egpSetSize(FontSize)
+                egpSetParent(GP_n)
+                egpClickMode()
+                EGPS[T_n + "/table", table] = EGPS[T_n + "/table", table]:add(
+                    table(
+                        "leftClickActs" = table(
+                            table(
+                                "actType" = "appChange",
+                                "targetApp" = Name
+                            )
+                        )
+                    )
+                )
+            }
+            
+            #
+            ####
+            
+            STEP++
+            timer("egp", 100)
+        }
+        elseif(STEP == 3) {
+            
+            
+            local Base_n = "panel"
+            local Base_s = egpGetSize(Base_n)
+            local GP_n = "globalPanel"
+            local GP_s = egpGetSize(GP_n)
+            local GP_p = egpGetPos(GP_n)
+            
+            ####
+            #app
+            local AP_n = "appPanel"
+            local AP_h = Base_s[2] - GP_s[2]/2 - 2  -(Base_s[2]/2+GP_p[2])  -0.1
+            local AP_s = v(Base_s[1],AP_h)
+            local AP_p = v(0,(Base_s[2]-AP_h)/2)
+            egpAddBox(AP_n, AP_s, AP_p)
+            egpSetColor(EGP_color1)
+            egpSetParent(Base_n)
+            egpClickMode()
+            
+            ActTable:pushTable(table("actType" = "appChange","targetApp" = "hello"))
+            
+            #
+            ####
+            
+            STEP++
+            timer("egp", 100)
+        }
+        elseif(STEP == 4) {
+            
+            local Panel_P = EGP_resolution
+            local Panel_offset = floor(Panel_P/256)
+            
+            egpAddText("debugUser", User:name(), Panel_P)
+            egpSetAlign(Panel_offset)
+            egpSetSize(15)
+                    
+            egpAddCircle("cursor",v(1),v(256))
+            egpAddText("cursorTarget","d",v())
+            egpSetSize(10)
+            egpSetParent("cursor")
+            
+            #egpAddBox("cursorBox",v(),v(),3)
+            #egpSetColor(255,100,0,50)
+            
+            STEP++
+            timer("egp", 100)
+        }
+        else {
+            
+            STEP = -1
+        }
+    }
+    else {
+        
+        
+        local Target = EGPS["cursorTarget", string]
+        local Click = 0
+        
+        switch(EGP_e:type()) {
+            case "gmod_wire_egp",
+                
+                if(User:aimEntity() == EGP_e) {
+                    local AimPos = EGP_e:toLocal(User:aimPos())
+                    
+                    local CursorPos = v(256) + vec2(AimPos):rotate(90)*v(-1,1)/93.125*(EGP_resolution)
+                    
+                    egpSetPos("cursor", CursorPos)
+                    
+                    
+                    if(changed(CursorPos)) {Target = EGPS["cursorTarget", string] = egpGetTarget(CursorPos, "")}
+                    if(changed(Target)) {
+                        egpSetText("cursorTarget", Target)
+                        
+                        #[
+                        if(Target) {
+                            local Size = egpGetSize(Target)
+                            egpSetPos("cursorBox", egpGetType(Target) == "textLayout" ? Size/2 : v())
+                            egpSetSize("cursorBox", Size)
+                            egpSetParent("cursorBox", Target)
+                        }
+                        else {
+                            egpSetSize("cursorBox", v())
+                            egpSetParent("cursorBox", "panel")
+                        }
+                        ]#
+                    }
+                    
+                    Click = User:keyAttack1() | User:keyUse()
+                }
+            break
+            default,
+                
+            break
+        }
+        
+        if(changed(Click) & Click) {
+            local LCA_T = EGPS[Target + "/table", table]["leftClickActs", table]
+            local LCA_c = LCA_T:count()
+            if(LCA_c) {
+                for(C = 1,LCA_c) {
+                    ActTable:pushTable(LCA_T[C, table])
+                }
+            }
+        }
+        
+        local Act_c = ActTable:count()
+        local C1 = EGPS["actC1", number]
+        local C2 = 0
+        while(perf(90) & C2 < Act_c & Act_c) {
+            C1++ if(C1 > Act_c) {C1 = 1}
+            C2++
+            
+            local Act_T = ActTable[C1, table]
+            local Act_t = Act_T["actType", string]
+            
+            
+            ###############################################################
+            ################################################################
+            ################################################################
+            ###############################################################
+            
+            
+            
+            local Remove = 1
+            switch(Act_t) {
+                    #
+                    #
+                    #
+                case "appChange",
+                    
+                    local AppReal = EGPS["appSelected", string]
+                    local AppNeed = Act_T["targetApp", string]
+                    
+                    
+                    if(AppReal) {
+                        local RealBut_n = "globalPanel/but#" + AppReal
+                        if(egpGetIndex(RealBut_n)) {
+                            egpSetColor(RealBut_n, EGP_color3)
+                        }
+                    }
+                    local NeedBut_n = "globalPanel/but#" + AppNeed
+                    if(egpGetIndex(NeedBut_n)) {
+                        egpSetColor(NeedBut_n, EGP_color4)
+                        
+                        local GP_SB_n = "globalPanel/selectBox"
+                        local GP_SB_py = egpGetPos(GP_SB_n)[2]
+                        egpSetPos(GP_SB_n, v(egpGetPos(NeedBut_n)[1]+egpGetSize(NeedBut_n)[1]/2,GP_SB_py))
+                    }
+                    else {
+                        local GP_SB_n = "globalPanel/selectBox"
+                        egpSetPos(GP_SB_n, v(9e9,egpGetPos(GP_SB_n)[2]))
+                    }
+                    
+                    
+                    
+                    
+                    egpGroupRemove("appPanel")
+                    #build panel
+                    
+                    local AP_n = "appPanel"
+                    
+                    egpGroupOpen("appPanel")
+                    if(AppNeed == "search") {
+                        
+                        
+                        local FontSize = 12
+                        local AP_s = egpGetSize(AP_n)
+                        
+                        local APP_n = "app/search"
+                        
+                        local RP_n = APP_n + "/requestPanel"
+                        local RP_s = v(AP_s[1],FontSize)
+                        local RP_p = v(0,(RP_s-AP_s)[2]/2)
+                        egpAddBox(RP_n,RP_s,RP_p)
+                        egpSetColor(EGP_color2)
+                        egpSetParent(AP_n)
+                        egpClickMode()
+                        local RT_n = RP_n + "/text"
+                        local RT_p = v(2-RP_s[1]/2,0)
+                        egpAddText(RT_n,"Seether - Roses",RT_p)
+                        egpSetAlign(0,1)
+                        egpSetColor(EGP_color5)
+                        egpSetSize(FontSize)
+                        egpSetParent(RP_n)
+                        
+                        
+                        local SL_n = APP_n + "/result"
+                        local SL_s = v(AP_s[1],round((AP_s[2]-2-RP_s[2])/FontSize)*FontSize)
+                        local SL_p = v(0,RP_p[2]+(SL_s+RP_s)[2]/2+2)
+                        egpAddBox(SL_n,SL_s,SL_p)
+                        egpSetColor(EGP_color2)
+                        egpSetParent(AP_n)
+                        egpClickMode()
+                        
+                        
+                        local SL_SB_n = SL_n + "/scrollBase"
+                        local SL_SB_s = v(FontSize,SL_s[2])
+                        local SL_SB_p = v((SL_s-SL_SB_s)[1]/2,0)
+                        egpAddBox(SL_SB_n,SL_SB_s,SL_SB_p)
+                        egpSetColor(0,0)
+                        egpSetParent(SL_n)
+                        local SL_S_n = SL_SB_n + "/scroll"
+                        local SL_S_s = v(SL_SB_s[1],SL_SB_s[2]/4)
+                        local SL_S_p = v(0,(SL_S_s-SL_SB_s)[2]/2)
+                        egpAddBox(SL_S_n,SL_S_s,SL_S_p)
+                        egpSetColor(EGP_color1,100)
+                        egpSetParent(SL_SB_n)
+                        
+                        
+                        local SLS_n = SL_n + "/selector"
+                        local SLS_s = v(SL_s[1],FontSize)
+                        local SLS_p = v(0,9e9)
+                        egpAddBox(SLS_n,SLS_s,SLS_p)
+                        egpSetColor(EGP_color3)
+                        egpSetParent(AP_n)
+                        
+                        local Text = "" #for(C = 1, 28) {Text = Text ? Text + "\n000" : "000"}
+                        local T1_n = SL_n + "/text1"
+                        local T1_s = v(FontSize*3/1.85,SL_s[2])
+                        local T1_p = v(2,0)-SL_s/2
+                        egpAddText(T1_n, Text,T1_s,T1_p)
+                        egpSetAlign(2,0)
+                        egpSetColor(EGP_color4)
+                        egpSetSize(FontSize)
+                        egpSetParent(SL_n)
+                        
+                        local Text = "" #for(C = 1, 28) {Text = Text ? Text + "\n00:00" : "00:00"}
+                        local T3_n = SL_n + "/text3"
+                        local T3_s = v(FontSize*5.2/1.85,SL_s[2])
+                        local T3_p = v(SL_s[1]/2-SL_SB_s[1]-T3_s[1],-SL_s[2]/2)
+                        egpAddText(T3_n, Text,T3_s,T3_p)
+                        egpSetAlign(2,0)
+                        egpSetColor(EGP_color4)
+                        egpSetSize(FontSize)
+                        egpSetParent(SL_n)
+                        
+                        local Text = "" #for(C = 1, 28) {Text = Text ? Text + "\nSeether - Roses" : "Seether - Roses"}
+                        local T2_n = SL_n + "/text2"
+                        local T2_s = v(3000,SL_s[2])
+                        local T2_p = v(T1_p[1]+T1_s[1]+4,-SL_s[2]/2)
+                        #local T2_s = v(SL_s[1]-T1_s[1] -T3_s[1]-SL_SB_s[1]-4,T2_s[2])
+                        egpAddText(T2_n, Text,T2_s,T2_p)
+                        egpSetSize(FontSize)
+                        egpSetParent(SL_n)
+                        
+                        
+                        local Strings_c = round(SL_s[2] / FontSize)
+                        local Scroll = 0
+                        local Strings_IN = 1 + Scroll
+                        local Strings_TO = Strings_IN-1 + Strings_c
+                        local T1 = EGPS["app/search/text1", array]
+                        local T2 = EGPS["app/search/text2", array]
+                        local T3 = EGPS["app/search/text3", array]
+                        egpSetText("app/search/result/text1", T1:concat("\n",Strings_IN,Strings_TO))
+                        egpSetText("app/search/result/text2", T2:concat("\n",Strings_IN,Strings_TO))
+                        egpSetText("app/search/result/text3", T3:concat("\n",Strings_IN,Strings_TO))
+                        
+                        
+                        #[
+                        egpAddBox("a", v(26), v())
+                        egpSetMaterial("expression 2/cog")
+                        egpSetParent(AP_n)
+                        ]#
+                        
+                        ActTable:pushTable(table("actType" = "appSearch"))
+                    }
+                    elseif(AppNeed == "playLists") {
+                        
+                    }
+                    elseif(AppNeed == "settings") {
+                        
+                    }
+                    elseif(AppNeed == "hello") {
+                        local AP_s = egpGetSize(AP_n)
+                        
+                        local C1_n = "app/hello/cog1"
+                        local C2_n = "app/hello/cog2"
+                        local C1_s = AP_s[2]*0.65
+                        local C1_p = v(C1_s/2,0):rotate(45)
+                        local C2_s = C1_s*0.5
+                        local C2_p = v(-C2_s/2*0.85,0):rotate(45)
+                        local C_p = (C1_p+C2_p)*0.75
+                        local C1_p = C1_p - C_p
+                        local C2_p = C2_p - C_p
+                        egpAddBox(C1_n, v(C1_s), C1_p)
+                        egpSetMaterial("expression 2/cog")
+                        egpSetColor(255,1)
+                        egpSetParent(AP_n)
+                        egpAddBox(C2_n, v(C2_s), C2_p)
+                        egpSetMaterial("expression 2/cog")
+                        egpSetColor(255,1)
+                        egpSetParent(AP_n)
+                        
+                        
+                        
+                        local HT_n = "app/hello/text"
+                        local HT_s = v(400,100)
+                        local HT_p = -HT_s/2
+                        egpAddText(HT_n,"Universal E2 music player\nvresion 0.1",HT_s,HT_p)
+                        egpSetAlign(1,1)
+                        egpSetSize(30)
+                        egpSetParent(AP_n)
+                        
+                        ActTable:pushTable(table("actType" = "appHello"))
+                    }
+                    else {
+                        local ET_n = "app/error/text"
+                        local ET_s = v(400,100)
+                        local ET_p = -ET_s/2
+                        egpAddText(ET_n,"error\nunknown app",ET_s,ET_p)
+                        egpSetAlign(1,1)
+                        egpSetSize(30)
+                        egpSetParent(AP_n)
+                    }
+                    egpGroupClose("appPanel")
+                    
+                    EGPS["appSelected", string] = AppNeed
+                break
+                    #
+                    #
+                    #
+                case "appHello",
+                    
+                    if(EGPS["appSelected", string] == "hello") {
+                        local C1_n = "app/hello/cog1"
+                        local C2_n = "app/hello/cog2"
+                        
+                        local Koeff = EGPS["appHello/koeff", number]
+                        if(!Koeff) {Koeff = EGPS["appHello/koeff", number] = egpGetSize(C2_n)[1]/egpGetSize(C1_n)[1]}
+                        
+                        egpSetAng(C1_n, -curtime()*5 * Koeff)
+                        egpSetAng(C2_n,  curtime()*5 + 22.5/2)
+                        
+                        Remove = 0
+                    }
+                break
+                    #
+                    #
+                    #
+                case "appSearch",
+                    
+                    if(EGPS["appSelected", string] == "search") {
+                        
+                        if(EGPS["app/search/resultRealVer", number] != EGPS["app/search/resultNeedVer", number]) {
+                            EGPS["app/search/resultRealVer", number] = EGPS["app/search/resultNeedVer", number]
+                            EGPS:remove("app/search/text1")
+                            EGPS:remove("app/search/text2")
+                            EGPS:remove("app/search/text3")
+                        }
+                        
+                        local DATA_name1_a = DATA["array_name1", table]
+                        local T1 = EGPS["app/search/text1", array]
+                        
+                        local DATA_c = DATA_name1_a:count()
+                        local Count = T1:count()
+                        
+                        if(DATA_c != Count) {
+                            
+                            
+                            local DATA_name2_a = DATA["array_name2", table]
+                            local DATA_time_a  = DATA["array_time" , table]
+                            local T2 = EGPS["app/search/text2", array]
+                            local T3 = EGPS["app/search/text3", array]
+                            
+                            
+                            
+                            local FontSize = 12
+                            local SL_n = "app/search/result"
+                            local SL_sy = egpGetSize(SL_n)[2]
+                            local Strings_c = round(SL_sy / FontSize)
+                            local Scroll = 0
+                            local Strings_IN = 1 + Scroll
+                            local Strings_TO = Strings_IN-1 + Strings_c
+                            
+                            
+                            
+                            Count++
+                            T1:pushString(Count+"")
+                            T2:pushString((DATA_name1_a[Count, array]:string(1)  + " - " + DATA_name2_a[Count, array]:string(1)):sub(1,75))
+                            T3:pushString(DATA_time_a[Count, array]:string(1))
+                            
+                            if(inrange(Count,Strings_IN,Strings_TO)) {
+                                egpSetText("app/search/result/text1", T1:concat("\n",Strings_IN,Strings_TO))
+                                egpSetText("app/search/result/text2", T2:concat("\n",Strings_IN,Strings_TO))
+                                egpSetText("app/search/result/text3", T3:concat("\n",Strings_IN,Strings_TO))
+                            }
+                            EGPS["app/search/text1", array] = T1
+                            EGPS["app/search/text2", array] = T2
+                            EGPS["app/search/text3", array] = T3
+                        }
+                        Remove = 0
+                    }
+                break
+                    #
+                    #
+                    #
+            }
+            if(Remove) {
+                ActTable:remove(C1)
+                C1--
+                Act_c--
+            }
+            
+            
+            
+            ###############################################################
+            ################################################################
+            ################################################################
+            ###############################################################
+        }
+        EGPS["actC1", number] = C1 == Act_c ? 0 : C1
+    }
+}
+
+
+
+setName("Universal E2 music player\nvresion 0.1\nOPS: " + ops() + "\nCPU: " + round(cpuUsage()*1e6))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

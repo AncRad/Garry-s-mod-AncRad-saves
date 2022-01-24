@@ -1,0 +1,26 @@
+@name EGPS_v02
+
+@persist 
+#- element
+@persist [EGPS]:table
+@persist [EGPS_w]:wirelink
+@persist [EGPS_freeIndexes]:array [EGPS_egpMaxObjects EGPS_usedIndexCounter EGPS_noNameCounter]:number
+@persist [EGPS_lastName]:string [EGPS_lastIndex]
+#- groups
+@persist 
+################
+
+#- protection from idiot
+if(!changed(0) & changed(0)) {
+    local E2_name = entity():getName()
+    if(E2_name == "EGPS_v02") {
+        printColor(vec(255),"[",vec(255,50,0),E2_name,vec(255),"] Это библиотека, а не код для чипа. Используй ",vec(160,240,240),"#inlude")
+        selfDestruct()
+        exit()
+    }
+    else {
+        printColor(vec(255),"[",vec(255,50,0),E2_name:explode("\n")[1, string],vec(255),"] Повторный вызов библиотеки"," \"",vec(160,240,240),"EGPS_v02",vec(255),"\"")
+    }
+}
+
+EGPS_egpMaxObjects = egpMaxObjects()

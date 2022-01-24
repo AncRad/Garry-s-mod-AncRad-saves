@@ -1,0 +1,208 @@
+@name train_animator_001
+
+
+
+@inputs 
+@outputs 
+
+
+
+#- gate base
+@persist [E]:entity [Q]:table [Gate_name]:string
+
+#- helper
+@persist [Helper]:table
+
+#- owner
+@persist [O]:entity
+
+#- railway
+@persist [RailWay]:array
+
+#- train
+@persist 
+
+
+
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+
+#include "AddHolo"
+
+
+
+if(changed(0)) {
+    
+    
+    
+    #- gate
+    E = entity() E:setSkin(1)
+    Gate_name = E:getName():explode("\n"):string(1)
+    
+    #- helper
+    function entity helper_point(Point_n:string, [Point_p]:vector, [Point_s]:number) {
+        local StartHolo_e = Helper[Point_n + "/entity", entity]
+        if(!StartHolo_e) {
+            if(holoCanCreate()) {
+                local StartHolo_i = 0
+                StartHolo_i = Helper[Point_n + "/index" , number] = Helper["indexCounter", number] = max(Helper["indexCounter", number] + 1 ,2281448)
+                StartHolo_e = Helper[Point_n + "/entity", entity] = holoCreate(StartHolo_i, Point_p, vec(Point_s/6), ang(), vec(255), "models/editor/axis_helper.mdl")
+            } else {return noentity()}
+        } elseif(Point_p) {holoPos(Helper[Point_n + "/index", number], Point_p)}
+        return StartHolo_e
+    }
+    function entity helper_point(Point_n:string, [Point_p Point_s]:vector, [Point_a]:angle) {
+        local StartHolo_e = Helper[Point_n + "/entity", entity]
+        if(!StartHolo_e) {
+            if(holoCanCreate()) {
+                local StartHolo_i = 0
+                StartHolo_i = Helper[Point_n + "/index" , number] = Helper["indexCounter", number] = max(Helper["indexCounter", number] + 1 ,2281448)
+                StartHolo_e = Helper[Point_n + "/entity", entity] = holoCreate(StartHolo_i, Point_p, Point_s/6, Point_a, vec(255), "cube")
+                holoMaterial(StartHolo_i, "lights/white")
+            } else {return noentity()}
+        } elseif(Point_p) {holoPos(Helper[Point_n + "/index", number], Point_p)}
+        return StartHolo_e
+    }
+    function entity helper_beam([Beam_n PointStart_n PointEnd_n]:string, [Helper_color]:vector, Width:number) {
+        local PointStart_e = Helper[PointStart_n + "/entity", entity]
+        local PointEnd_e   = Helper[PointEnd_n   + "/entity", entity]
+        if(PointStart_e & PointEnd_e & !Helper[Beam_n + "/beam/entity", entity]) {
+            local Helper_e = PointStart_e:drawBeam("trails/physbeam",PointStart_e:pos(),PointEnd_e:pos(),Helper_color,254,Width)
+            Helper_e:setBeamEndEnt(PointEnd_e)
+            Helper[Beam_n + "/beam/entity", entity] = Helper_e
+            return Helper_e
+        }
+        else {
+            return noentity()
+        }
+    }
+    
+    #- owner
+    O = owner()
+    
+    #- railway
+    function number array:railWay_addPoint(NewPoint_p:vector) {
+        local This_c = This:count()
+        if(This_c > 1) {
+            local Point1_p = This[This_c  , vector]
+            local Point2_p = This[This_c-1, vector]
+            
+            local DIF1 = NewPoint_p-Point1_p
+            local DIF2 = Point1_p-Point2_p
+            local DIF1_n = DIF1:normalized()
+            local DIF2_n = DIF2:normalized()
+            
+            local Distance = DIF1:length()
+            local Cos = DIF1_n:dot(DIF2_n)
+            local Angle = acos(Cos)
+            if(Distance > 15 & (Angle > 2 | Distance > 350)*Angle < 45) {
+                local Cross = DIF1_n:cross(-DIF2_n) Cross*=sign(Cross[3])
+                NewPoint_p = Point1_p + DIF1:rotateAroundAxis(Cross, max(-Angle,0)):normalized()*clamp(Distance,15,350)
+                This:pushVector(NewPoint_p)
+                return 1
+            }
+            return 0
+        }
+        if(RailWay[1,vector]:distance(NewPoint_p) >= 52.5 * 0.25) {
+            This:pushVector(NewPoint_p)
+            return 1
+        }
+        return 0
+    }
+    
+    
+    
+    
+    
+    timer("", 1)
+}
+
+
+if(clk("")) {
+        timer("", 50)
+    
+    local Key_addPoint = O:keyPressed("R")
+    local Key_addPoint_changed = changed(Key_addPoint)
+    if(Key_addPoint) {
+        
+        if(RailWay:railWay_addPoint(O:aimPos())) {
+            local RailWay_c = RailWay:count()
+            if(RailWay_c > 1) {
+                local RailWay_helperCount = 0
+                RailWay_helperCount = Q["", number] = Q["", number] + 1
+                
+                local Point1_p = RailWay[RailWay_c  , vector]
+                local Point2_p = RailWay[RailWay_c-1, vector]
+                local DIF = Point2_p-Point1_p
+                
+                local Helper_p = Point1_p+DIF/2
+                local Helper_s = vec(DIF:length()/2,3,0.2)
+                local Helper_a = DIF:toAngle()
+                helper_point("railWay_helper" + RailWay_helperCount, Helper_p, Helper_s, Helper_a)
+            }
+            print("RailWayPoint: " + RailWay:count())
+        }
+    }
+    elseif(Key_addPoint_changed) {
+        holoDelete(Helper["addPoint_rt" + "/index" , number])
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName(Gate_name + "\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1e6))

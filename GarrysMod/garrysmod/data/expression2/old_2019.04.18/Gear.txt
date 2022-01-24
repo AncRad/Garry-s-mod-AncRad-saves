@@ -1,0 +1,137 @@
+@name Gear
+@inputs Gear
+@outputs 
+
+@persist E:entity
+
+#- model
+@persist Base:entity
+#string
+@persist Length Scale Color:vector [Indexes]:array Count
+
+@trigger Gear
+@model models/sprops/trans/misc/gauge_2.mdl
+
+if(changed(0)) {
+    
+    E = entity()
+    Color = vec(255)
+    Scale = 1
+    
+    Base = holoCreate(0,E:toWorldAxis(),vec(),E:angles())
+    holoParent(0,E)
+    holoCreate(1,Base:pos(),vec(),Base:angles())
+    holoParent(1,0)
+}
+
+interval(50)
+
+LastLength = Length
+
+Array = "-12346789":explode("")  print()#Gear:toString()
+Length = Array:count()
+
+for(C = 1,max(Length,LastLength)) {
+    
+    local ID = Indexes:number(C)
+    if(holoEntity(ID) & ID) {
+        if(C < Length) {
+            local S = Array[C, string]
+            if(S == "-") {S = "min"}
+            holoModel(ID, "models/sprops/misc/alphanum/alphanum_"+S+".mdl")
+            holoScale(ID,vec(Scale))
+            holoPos(1, E:toWorld())
+        }
+        else {
+            holoScale(ID,vec())
+        }
+    }
+    elseif(holoCanCreate()) {
+        while(!!holoEntity(ID)) {ID++}
+        Indexes[C, number] = ID
+        holoCreate(ID, Base:toWorld(vec(Scale*(C-1)*10,0,0)), vec(), Base:toWorld(ang()), Color, "cube")
+        holoParent(ID, 0)
+        Count++
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

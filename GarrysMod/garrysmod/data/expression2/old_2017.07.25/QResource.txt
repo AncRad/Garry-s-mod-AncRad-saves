@@ -1,0 +1,18 @@
+@name QResource
+@persist [QR]:table
+
+
+
+if(changed(0)) {
+    
+    function qResource() {
+        
+    }
+    
+    function qr_add(TypeName:string) {
+        
+        QR[TypeName + "/list", array] = array()
+        
+        QR["type", array] = QR["type", array]:add(array( TypeName ))
+    }
+}

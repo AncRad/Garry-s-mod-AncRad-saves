@@ -1,0 +1,73 @@
+@name 
+@inputs [P1 P2 P3]:entity
+@outputs Debug:string
+
+@persist Joint_l
+
+interval(50)
+
+Debug = ""
+
+
+
+if(changed(0)) {
+    
+    Joint_l = 40
+    
+    holoCreate(1,vec()) holoColor(1, vec(255,0,0))
+    
+    holoCreate(2,vec(0,0,0),vec()) holoParent(2,1)
+    holoCreate(3,vec(Joint_l/2,0,0),vec(Joint_l/2,2,2)/6) holoParent(3,2)
+    
+    holoCreate(4,vec(Joint_l,0,0),vec(3)/6) holoParent(4,3) holoColor(4, vec(0,0,255))
+    holoCreate(5,vec(Joint_l/2*3,0,0),vec(Joint_l/2,2,2)/6) holoParent(5,4)
+    
+    holoCreate(6,vec(Joint_l*2,0,0),vec(3)/6) holoParent(6,5) holoColor(6, vec(0,255,0))
+    #holoCreate(3,vec(0,0,10),vec(1,1,10)/6) holoParent(3,1)
+    
+    
+}
+
+
+
+V1 = P1:boxCenterW() P1:setColor(vec(255,0,0))
+V2 = P2:boxCenterW() P2:setColor(vec(0,255,0))
+V3 = P3:boxCenterW() P3:setColor(vec(0,0,255))
+
+DIF = V2-V1
+
+A1 = angnorm((V2-V1):toAngle())
+
+
+# toLocal(vector localpos,angle localang,vector worldpos,angle worldang)
+V = toLocal(V3,ang(),V1,A1)
+Roll = angnorm(V:rotate(90,0,0):toAngle()[2])
+A1[3] = -Roll
+
+
+Debug+="\n" + floor(Roll) + "\n" + floor(V) + "\n" + floor(A1)
+
+holoPos(1,V1)
+holoAng(1,A1)
+
+
+Leg_l = Joint_l*2
+Dits = clamp(DIF:length(),Leg_l*0.3,Leg_l*0.95)
+ACOS = acos(Dits/Leg_l)
+
+holoAng(2, holoEntity(1):toWorld(ang(-ACOS,0,0)))
+holoAng(4, holoEntity(3):toWorld(ang( ACOS*2,0,0)))
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,1102 @@
+@name Turret_01_004_model
+
+@inputs 
+@outputs 
+@persist [T]:table
+
+#@persist [Turret_phys]:entity
+
+#- base
+@persist Radius
+
+#- lapki
+@persist Length0 Length1 Length2 Length3 Length4   Length12 Length123 Length1123   Fingertip_height AxisOffSet  [Min Max] Offset  Height4
+
+#- radar
+@persist Radar_offset Radar_innerCylinder
+
+#- bashnya
+@persist Neck0_offset Neck1_offset Neck2_offset Neck012_offset PichMax PichMin
+
+#- gun
+@persist Gun_lenght
+
+#- camera
+@persist CameraLight
+
+#- test
+@persist Height Dno_height
+
+
+
+@model models/sprops/cylinders/size_5/cylinder_12x3.mdl
+
+
+
+#include "AddHolo"
+
+
+
+if(changed(0)) {
+    noDuplications()
+    
+    local Color1 = vec(255)
+    local Color2 = vec(255)
+    local Mater1 = "phoenix_storms/OfficeWindow_1-1"
+    local Mater2 = "models/gibs/metalgibs/metal_gibs"
+    local Material_glow = "lights/white"
+    
+    local Scale = 1
+    "local" Radius = 8   *Scale
+    "local" Height = 1.3 *Scale
+    
+    PichMax = 40
+    PichMin = -50
+    PitchMAX = abs(PichMax) > abs(PichMin) ? abs(PichMax) : abs(PichMin)
+    
+    local Clip = Height
+    
+    
+    "local" Dno_height = Height*0.05
+    
+    local Height0 = Height+Dno_height*1.0
+    local Height1 = Height0*0.89
+    local Height2 = Height1*0.89
+    local Height3 = Height2*0.85
+    "local" Height4 = Height3*0.75
+    "local" Fingertip_height = Height4
+    
+    "local" AxisOffSet = Height1
+    
+    local LengthClip = Radius/2 * sin(acos(Clip/Radius))*0.995
+    "local" Length0 = LengthClip * 1.0
+    "local" Length1 = Length0
+    "local" Length4 = Length0-Fingertip_height/2
+    "local" Length3 = Length4*0.98
+    "local" Length2 = Length3*0.98
+    "local" Offset = Radius * 1.02 + (Length0-LengthClip)*2
+    
+    local E = entity()
+    ################
+    #
+    #- base
+    #
+    #bones
+    addHolo("rt",E:boxCenter()+vec(0,0,Height+Dno_height-E:boxSize()[3]/2),vec(),ang(),vec(),"cube","","") addHolo_INTO(E) if(E:getName() == "Turret_01_004_model") {E:setAlpha(0)}
+    addHolo("base",vec(),vec(),ang(),vec(),"cube","","rt")
+    for(Lapka_i = 1,3) {
+        local A = (Lapka_i-1)*120
+        
+        #
+        #names
+        local RT0 = "RT0" + Lapka_i
+        local RAX = "RAX" + Lapka_i
+        local AXI = "AXI" + Lapka_i
+        local RT1 = "RT1" + Lapka_i
+        local RT2 = "RT2" + Lapka_i
+        local RT3 = "RT3" + Lapka_i
+        local RT4 = "RT4" + Lapka_i
+        #
+        #bones
+        addHolo(RT0,vec(0,0,-AxisOffSet),vec(),ang(0,A,0),vec(),"cube","","base") addHolo_offset(vec((LengthClip-Length0)*2,0,0)) #none
+        addHolo(RAX,vec(),vec(),ang(),vec(),"cube","",RT0)                        #move
+        addHolo(AXI,vec(),vec(),ang(),vec(),"cube","",RAX)                        #rotate
+        addHolo(RT1,vec(0,0,+AxisOffSet),vec(),ang(),vec(),"cube","",AXI)         #none
+        addHolo(RT2,vec(),vec(),ang(),vec(),"cube","",RT1)                        #move
+        addHolo(RT3,vec(),vec(),ang(),vec(),"cube","",RT2)                        #move
+        addHolo(RT4,vec(),vec(),ang(),vec(),"cube","",RT3)                        #move
+        #
+        #visual
+        addHolo("",vec(),vec(Radius,Radius,Height),ang(),Color1,"hq_tube_thin",Mater1,"base")
+        addHolo_clip(vec(),ang(0,A+30,0),Clip)
+        addHolo_clip(vec(),ang(0,A+90,0),Clip)
+        local Dverka_radius = Radius-Radius/6*0.02
+        addHolo("dverka"+Lapka_i,vec(),vec(Dverka_radius,Dverka_radius,Height+Dno_height),ang(),Color1*2,"hq_tube_thin",Mater1,Lapka_i == 1 ? "base" : "dverka"+(Lapka_i-1)) #addHolo_clip(vec(),ang(45,90,0),Height/2)
+        addHolo_clip(vec(),ang(0,A+90,0),-Clip*1.1)
+        addHolo_clip(vec(),ang(0,A-90,0),-Clip*1.1)
+        addHolo_clip(vec(),ang(0,A,0),Dverka_radius*0.95)
+        #
+        addHolo("",vec(Length0,0,+AxisOffSet),vec(Height0,Height0,Length0),ang(90,0,0),Color1,"hq_stube_thin",Mater1,RT0) #addHolo_clip(vec(),ang(0,45,0),-Height0/2)
+        addHolo_clip(vec(),ang(  0,0,0),-Height)
+        addHolo_clip(vec(),ang(180,0,0),-Height)
+        #
+        local Koleno_height = Height1*0.95
+        addHolo("",vec(),vec(Koleno_height*2,Koleno_height,0.005),ang(),Color1*2,"cube",Mater1,RAX)
+        addHolo_clip(vec(),ang(0,180,0),0)
+        addHolo("",vec(),vec(Koleno_height*2,Koleno_height*2,Koleno_height),ang(0,0,90),Color1*2,"hq_cylinder",Mater1,RAX)
+        addHolo_clip(vec(),ang(0,90,0),0)
+        #
+        addHolo("",vec(Length1,0,0),vec(Height1,Height1,Length1),ang(90,0,0),Color1,"hq_stube_thin",Mater1,RT1)
+        addHolo("",vec(0,0,Length1*0.2),vec(Height1*0.97,Height1*0.97,-Length1*0.5),ang(0,0,0),vec(5),"pyramid",Mater1,AddHolo_lastName)
+        addHolo_clip(vec(),ang(90,0,0),-Length0*0.5*0.95)
+        #
+        addHolo("",vec(Length2,0,0),vec(Height2,Height2,Length2),ang(90,0,0),Color1,"rcube_thin",Mater1,RT2)
+        #
+        addHolo("",vec(Length3,0,0),vec(Height3,Height3,Length3),ang(90,0,0),Color1,"hq_cylinder",Mater1,RT3)
+        #
+        addHolo("",vec(Length4,0,0),vec(Height4,Height4,Length4),ang(90,0,0),Color1,"hq_cylinder",Mater1,RT4)
+        addHolo("fingertip"+Lapka_i,vec(Length4*2,0,0),vec(Fingertip_height),ang(90,0,0),Color1,"hq_sphere",Mater1,RT4)
+        addHolo_clip(vec(),ang(-90,0,0),0)
+    }
+    #
+    #visual
+    addHolo("baseDown",vec(0,0,(-Dno_height-Height)),vec(Radius,Radius,Dno_height),ang(),Color1,"hq_cylinder",Mater1,"base")
+    addHolo("baseUp"  ,vec(0,0,(+Dno_height+Height)),vec(Radius,Radius,Dno_height),ang(),Color1,"hq_cylinder",Mater1,"base")
+    #
+    #addHolo("",vec(0,0,(-Dno_height*2-Height)),vec(Radius*4,Radius*4,0.01),ang(),Color1*0.5,"cube","","rt")
+    #
+    ################
+    
+    ################
+    #
+    #- neck
+    #
+    #bones
+    local UpHeight = Height*1.25
+    local Coef = 0.25
+    local BashHeight1 = UpHeight /2*(1+Coef)
+    local BashHeight2 = UpHeight /2*(1-Coef)
+    local BashnyaRootHeight = Height+Dno_height*(2+2)+BashHeight1*1
+    addHolo("neck0",vec(),vec(),ang(),vec(),"cube","","base")
+    addHolo("neck1",vec(),vec(),ang(),vec(),"cube","","neck0")
+    addHolo("neck2",vec(),vec(),ang(),vec(),"cube","","neck1")
+    addHolo("bashnyaRoot"   ,vec(0,0,BashnyaRootHeight),vec(Scale*0.25*0),ang(),vec(255,255,0),"models/editor/axis_helper.mdl","","neck2")
+    addHolo("bashnyaRootYaw",vec(0,0,BashnyaRootHeight),vec(0.1,0.1,1)*Scale,ang(),vec(0,0,255),"cube","","neck2")
+    #
+    #visual
+    #neck
+    local Neck0_base_radius = Radius * 0.25
+    local Neck0_base_height = Height * 0.15
+    local Neck0_cone_radius = Neck0_base_radius*1.195
+    local Neck0_cone_height = Neck0_cone_radius*0.5
+    addHolo("",vec(0,0,Neck0_base_height+Dno_height),vec(Neck0_base_radius,Neck0_base_radius,Neck0_base_height),ang(),Color1*0.7,"hq_tube_thin",Mater1,"baseUp")
+    addHolo("",vec(0,0,Neck0_cone_height-Neck0_base_height),vec(Neck0_cone_radius,Neck0_cone_radius,Neck0_cone_height),ang(),Color1,"hq_cone",Mater1,AddHolo_lastName)
+    addHolo_clip(vec(),ang(90,0,0),Neck0_cone_height-Neck0_base_height*2)
+    local Neck0_radius = Neck0_base_radius*0.895
+    local Neck0_height = Height+Neck0_base_height+Dno_height
+    local Neck1_radius = Neck0_radius * 0.8
+    local Neck1_height = Neck0_height * 0.6
+    local Neck2_radius = Neck1_radius * 0.8
+    local Neck2_height = Neck0_height * 0.6
+    local Neck2_gearHeight = Height*0.5
+    local Neck2_addHeight = BashnyaRootHeight/2-Neck2_height-Neck2_gearHeight/2
+    "local" Neck0_offset = Neck0_height*2-Neck0_base_height
+    "local" Neck1_offset = Neck1_height*2
+    "local" Neck2_offset = Neck2_height*2
+    "local" Neck012_offset = Neck0_offset+Neck1_offset+Neck2_offset
+    addHolo("neck0_holo",vec(0,0,Height+Dno_height*2+Neck0_base_height*2-Neck0_height),vec(Neck0_radius,Neck0_radius,Neck0_height),ang(),Color1*0.7,"hq_cylinder",Mater1,"neck0")
+    addHolo("",vec(0,0,Neck0_height-Neck1_height+Neck2_addHeight/2),vec(Neck1_radius,Neck1_radius,Neck1_height+Neck2_addHeight/2),ang(),Color1*0.7,"hq_cylinder",Mater1,"neck0_holo") addHolo_parent("neck1")
+    addHolo("neck2_holo",vec(0,0,Neck0_height-Neck2_height+Neck2_addHeight),vec(Neck2_radius,Neck2_radius,Neck2_height+Neck2_addHeight),ang(),Color2,"hq_cylinder",Mater2,"neck0_holo") addHolo_parent("neck2")
+    
+    if(0) {
+        local Neck2_gearRadius = Neck2_radius*0.89
+        local Neck2_gearHeight_ = Neck2_gearHeight*0.25
+        addHolo("neck2_gear",vec(0,0,Neck2_height+Neck2_gearHeight+Neck2_addHeight),vec(Neck2_gearRadius,Neck2_gearRadius,Neck2_gearHeight)/vec(27.5,27.5,12.2),ang(),Color2,"models/Mechanics/gears2/gear_24t3.mdl",Mater2,"neck2_holo")
+        addHolo("",vec(0,0,Neck2_gearHeight_-Neck2_gearHeight),vec(Neck2_gearRadius,Neck2_gearRadius,Neck2_gearHeight_),ang(),Color2,"hq_cylinder",Mater2,"neck2_gear")
+        addHolo("",vec(0,0,Neck2_gearHeight-Neck2_gearHeight_),vec(Neck2_gearRadius,Neck2_gearRadius,Neck2_gearHeight_),ang(),Color2,"hq_cylinder",Mater2,"neck2_gear")
+        
+    }
+    #
+    ################
+    
+    
+    ################
+    #
+    #- bashnya
+    #
+    #bone
+    addHolo("bashnya",vec(0,0,Height+Dno_height*2),vec(),ang(),vec(),"cube","","base") addHolo_parent("bashnyaRoot")
+    #
+    #- visual
+    addHolo("",vec(0,0,0),vec(Neck2_radius,Neck2_radius,Neck2_gearHeight*1.07),ang(),Color1,"hq_cylinder",Mater1,"bashnyaRootYaw")
+    
+    addHolo("",vec(0,0,Dno_height),vec(Radius,Radius,Dno_height),ang(),Color1,"hq_tube_thick",Mater1,"bashnya") #addHolo("",vec(0,0,0),vec(Radius*0.5,Radius*0.5,Dno_height),ang(),Color1,"hq_tube",Mater1,AddHolo_lastName)
+    addHolo("",vec(0,0,Dno_height*3),vec(Radius*0.85,Radius*0.6,Dno_height),ang(),Color1,"hq_tube_thick",Mater1,"bashnya")
+    addHolo("",vec(0,0,Dno_height*4),vec(Radius*0.85*0.5,Radius*0.6*0.5,BashnyaRootHeight/2+Neck2_gearHeight+Neck2_radius/2*sin(abs(PitchMAX)))/0.9,ang(),Color1,"hq_hdome_thin",Mater1,"bashnya")
+    
+    addHolo("",vec(0,0,0),vec(Neck2_radius*0.6,Neck2_radius*0.6,Neck2_radius*1.3),ang(0,0,90),Color1,"hq_tube",Mater1,"bashnyaRootYaw")
+    addHolo("",vec(0,0,0),vec(Neck2_radius*0.6*0.75,Neck2_radius*0.6*0.75,Neck2_radius*1.3*2),ang(0,0,90),Color2,"hq_cylinder",Mater2,"bashnyaRootYaw") addHolo_parent("bashnyaRoot")
+    
+    
+    
+    addHolo("",vec(0,0,Dno_height*2+BashHeight1),vec(Radius,Radius,BashHeight1),ang(),Color1,"hq_tube_thin",Mater1,"bashnya")
+    local Cone_angle = 45
+    local Cone_radius = Radius
+    local Cone_height = Cone_radius*tan(Cone_angle)
+    local Cone_offset = Cone_height*0.343/2
+    local Cone_radius = Cone_radius*(Cone_height/(Cone_height-Cone_offset))
+    local Cone_height = Cone_height*(Cone_height/(Cone_height-Cone_offset))
+    local Cone_offset = Cone_height*0.343/2
+    local Cone_height = Cone_height / 2
+    addHolo("cone",vec(0,0,Dno_height*2+BashHeight1*2+Cone_height-Cone_offset),vec(Cone_radius,Cone_radius,Cone_height),ang(),Color1,"hq_cone",Mater1,"bashnya")
+    addHolo_clip(vec(0,0,-Cone_height+Cone_offset),ang(-90,0,0),0)
+    addHolo_clip(vec(0,0,-Cone_height+Cone_offset),ang(90,0,0),-BashHeight2*2)
+    local BashyaUp_posZ = -Cone_height+Cone_offset+BashHeight2*2
+    local BashyaUp_height = 0.1
+    local BashyaUp_radius = (Cone_radius/(Cone_height*2))*(Cone_height-BashyaUp_posZ)
+    addHolo("bashnyaUP",vec(0,0,BashyaUp_posZ-BashyaUp_height),vec(BashyaUp_radius,BashyaUp_radius,BashyaUp_height),ang(),Color1,"hq_cylinder",Mater1,"cone")
+    
+    
+    
+    local Cube_x = Radius/5
+    local Cube_y = Radius/2.5
+    local Cube_z = UpHeight*0.95
+    local Gun_r = 1.0*Scale
+    local Gun_r2 = Gun_r*0.75 #/0.
+    local Gun_l = Radius*0.95
+    local Gun_l1 = Cube_x*1.3
+    local Gun_l2 = Gun_l1*0.8
+    local Gun_l3 = Gun_l2*0.2
+    local Gun_l2 = Gun_l2-Gun_l3*2
+    
+    Gun_lenght = Gun_l*2-Gun_l3*1.5
+    
+    addHolo("cube",vec(Radius-Cube_x*0.9,0,Dno_height*2+UpHeight),vec(Cube_x,Cube_y,Cube_z),ang(),Color1,"rcube_thin",Mater1,"bashnya")
+    addHolo("gun0",vec(Cube_x,Cube_y-Gun_r/2,Cube_z-Gun_r),vec(),ang(),vec(),"cube","","cube")
+    addHolo("gun1",vec(),vec(),ang(),vec(),"cube","","gun0")
+    addHolo("",vec(-Cube_x,0,0),vec(Gun_r,Gun_r,Gun_l1),ang(90,0,0),Color1,"hq_tube",Mater1,"gun0")
+    addHolo("",vec(Gun_l1-Cube_x-Gun_l+Gun_l3,0,0),vec(Gun_r2,Gun_r2,Gun_l),ang(90,0,0),Color1,"hq_tube_thick",Mater1,"gun1")
+    
+    addHolo("gun2",vec(Gun_l1-Cube_x+Gun_l3,0,0),vec(Gun_r,Gun_r,Gun_l3),ang(90,0,0),Color1,"hq_tube",Mater1,"gun1")
+    
+    for(C = 1,2) {
+        local Clip = Gun_r*0.5
+        
+        addHolo("gun2" + C,vec(0,0,Gun_l2+Gun_l3),vec(Gun_r,Gun_r,Gun_l2),ang(),Color1,"hq_tube",Mater1,"gun2")
+        addHolo_clip(vec(),ang(0,C == 2 ? 180 : 0,0),Clip)
+        
+        #local Offset = Gun_r*cos(asin(Clip/Gun_r))
+        local A1 = asin(Clip/Gun_r)
+        local A2 = asin(Clip/(Gun_r*0.75))
+        local Size = (Gun_r*cos(A1)-Gun_r*0.75*cos(A2))/2
+        local Offset = (Gun_r*cos(A1)+Gun_r*0.75*cos(A2))/2*(C==1 ? 1 : -1)
+        addHolo("",vec(0,Offset,0),vec(Clip/0.9,Gun_l2/0.9,Size),ang(0,0,C==1 ? 90 : -90),Color1,"hq_stube_thin",Mater1,"gun2" + C)
+        addHolo_clip(vec(),ang(0,90,0),-Gun_l2)
+        addHolo_clip(vec(),ang(0,270,0),-Gun_l2)
+        
+        addHolo_clip(vec(-Clip,0,-Size*1.1),ang(-45,0,0),0)
+        addHolo_clip(vec( Clip,0,-Size*1.1),ang(-135,0,0),0)
+    }
+    addHolo("gun3",vec(0,0,Gun_l3*2+Gun_l2*2),vec(Gun_r,Gun_r,Gun_l3),ang(),Color1,"hq_tube",Mater1,"gun2")
+    addHolo("gunRT",vec(),vec(),ang(-90,0,0),vec(),"cube","","gun3")
+    #
+    ################
+    
+    ################
+    #
+    #- camera
+    #
+    if(1) {
+        local Cam_darkColor = vec(5)
+        
+        
+        
+        
+        #[
+        local Cam_darkColor = vec(5)
+        local Cam_size = Cube_y*0.5*0.8
+        local Cam_sizeX = Cam_size * 2
+        local Cam_inner_size = Cam_size * 0.67/0.9
+        local Cam_inner = Cam_sizeX*0.275
+        addHolo("camera",vec(Cube_x-Cam_sizeX*0.67,-Cam_size*0.5,Cam_size*1.4*0-Cube_z*0.93*0),vec(Cam_sizeX,Cam_size,Cam_size),ang(),Color1,"rcube_thick",Mater1,"cube")
+        addHolo_clip(vec(),ang(0,180,0),-Cam_sizeX*0.95)
+        
+        addHolo("camera_inner",vec(Cam_sizeX-Cam_inner_size*1.09,0,0),vec(Cam_inner_size),ang(90,0,0),Color1,"hq_stube_thin",Mater1,"camera")
+        
+        local Cam_inner = Cam_inner_size*0.9
+        addHolo("camera_glass",vec(0,0,Cam_inner_size),vec(Cam_inner),ang(),vec(255),"plane","phoenix_storms/pack2/glass","camera_inner") addHolo_alpha(254)
+        addHolo("",vec(0,0,-Cam_inner*0.02),vec(Cam_inner),ang(180,0,0),Cam_darkColor*10,"hq_hdome","","camera_glass")
+        
+        #addHolo("",vec(0,0,-Cam_inner_size*),vec(Cam_inner,Cam_inner,Cam_inner_size),ang(),Cam_darkColor*10,"hq_stube","","camera_glass")
+        
+        
+        
+        
+        #camera_glow
+        
+        #addHolo("",vec(),vec(Cam_inner_size*0.9,Cam_inner_size*0.9,Cam_inner),ang(),Material_glow,"hq_stube_thin","","camera_dark")
+        
+        #[
+        local Cam_inner_size = Cam_inner_size*0.9*0.9
+        
+        CameraLightCount = 5
+        for(C = 1,CameraLightCount) {
+            local F = C - 1
+            
+            addHolo("",vec(-Cam_inner_size+Cam_inner_size*0.5*F,0,0),vec(Cam_inner_size*0.4,Cam_inner_size,Cam_inner*0.9),ang(),Cam_darkColor,"prism","","camera_dark")
+            addHolo("camera_glow",vec(-Cam_inner_size+Cam_inner_size*0.5*F,0,0),vec(Cam_inner_size*0.4,Cam_inner_size*1.1,Cam_inner_size*0.4*0.5),ang(0,0,0),vec(255,0,0)*0,"hexagon",Material_glow,"camera_dark")
+        }
+        ]#
+    }
+    #
+    ################
+    
+    
+    ################
+    #
+    #- radar
+    #
+    local Radar_color = Color1 * 1.0
+    local Radar_darkColor = vec(6)
+    local Radar_radius = Radius / 5
+    local Radar_downHeight = Height*0.29 /2
+    local Radar_downCone_radius = Radar_radius+Radar_downHeight*2 *1.25
+    local Radar_downCone_height = Radar_radius/2+Radar_downHeight *0.15
+    local Radar_pos = vec2((BashyaUp_radius-Radar_downCone_radius)*0.95,0):rotate(-60)
+    #razrez
+    for(C = 0,3) {
+        local A = 90 * C
+        local HoloName = "bashnyaUP" + (C ? C+"" : "")
+        
+        if(C != 0) {
+            addHolo(HoloName,vec(),vec(BashyaUp_radius,BashyaUp_radius,BashyaUp_height),ang(),Color1,"hq_cylinder",Mater1,"bashnyaUP")
+        }
+        addHolo_clip(HoloName, vec(Radar_pos,0),ang(0,A+ 0,0), Radar_radius*0.9)
+        if(C == 1 | C == 3) {
+            addHolo_clip(HoloName, vec(Radar_pos,0),ang(0,A+90,0),-Radar_radius*0.9)
+            addHolo_clip(HoloName, vec(Radar_pos,0),ang(0,A-90,0),-Radar_radius*0.9)
+        }
+    }
+    #
+    #bones
+    addHolo("radar",vec(Radar_pos,BashyaUp_height),vec(),ang(),vec(),"cube","","bashnyaUP")
+    addHolo("radarRotor",vec(),vec(),ang(),vec(),"cube","","radar")
+    #
+    #visual
+    #down
+    addHolo("radar_down",vec(0,0,Radar_downHeight),vec(Radar_radius,Radar_radius,Radar_downHeight),ang(),Radar_color,"hq_tube_thin",Mater1,"radar")
+    addHolo("",vec(0,0,Radar_downCone_height),vec(Radar_downCone_radius,Radar_downCone_radius,Radar_downCone_height),ang(),Color1,"hq_cone",Mater1,"radar")
+    addHolo_clip(vec(),ang(90,0,0),Radar_downCone_height-Radar_downHeight*2)
+    local Radar_shadow_height = Radar_downHeight*4
+    addHolo("",vec(0,0,Radar_downHeight-Radar_shadow_height),vec(Radar_radius*0.895,Radar_radius*0.895,-Radar_shadow_height),ang(),vec(),"hq_cylinder","","radar_down")
+    addHolo_clip(vec(),ang(90,0,0),-Radar_shadow_height*0.95)
+    #up
+    local Radar_radius = Radar_radius * 0.885
+    local Radar_dnoHeight = Radar_downHeight
+    local Radar_innerHeight = Radar_radius * 0.5 - Radar_dnoHeight
+    local Radar_innerRadius = Radar_radius * 0.6
+    addHolo("",vec(0,0,Radar_dnoHeight),vec(Radar_radius,Radar_radius,Radar_dnoHeight),ang(),Radar_color,"hq_cylinder",Mater1,"radarRotor")
+    addHolo("radar_innerCylinder",vec(0,0,Radar_innerHeight+Radar_dnoHeight*2),vec(Radar_innerRadius*1.1,Radar_innerRadius*1.1,Radar_innerHeight*0.98),ang(),vec(255,30,30)*0,"hq_cylinder",Material_glow,"radarRotor")
+    addHolo("",vec(),vec(Radar_radius,Radar_radius,Radar_innerHeight*1.2),ang(),Radar_color,"hq_tube_thin","phoenix_storms/pack2/glass","radar_innerCylinder") addHolo_alpha(254)
+    addHolo_clip(vec(),ang( 90,0,0),-Radar_innerHeight)
+    addHolo_clip(vec(),ang(-90,0,0),-Radar_innerHeight)
+    addHolo("",vec(0,0, Radar_innerHeight*0.5-Radar_innerHeight),vec(Radar_radius*0.9,Radar_radius*0.9,Radar_innerHeight*0.5),ang(  0,0,0),Radar_darkColor*1.5,"hq_cone","","radar_innerCylinder")
+    addHolo("",vec(0,0,-Radar_innerHeight*0.5+Radar_innerHeight),vec(Radar_radius*0.9,Radar_radius*0.9,Radar_innerHeight*0.5),ang(180,0,0),Radar_darkColor*1.5,"hq_cone","","radar_innerCylinder")
+    local RadarLightCount = 8
+    local A = 360/RadarLightCount/2
+    local Radar_prism_height =  Radar_innerRadius*sin(A)
+    local Radar_prism_length = -Radar_innerRadius*cos(A)+Radar_radius*0.9
+    for(C = 1,RadarLightCount) {
+        local Yaw = A * C * 2
+        addHolo("",vec(Radar_radius*0.9-Radar_prism_length/2,0,0):rotate(ang(0,Yaw,0)),vec(Radar_prism_height,Radar_innerHeight*0.99,Radar_prism_length/2),ang(0,90+Yaw,90),Radar_darkColor,"prism","","radar_innerCylinder")
+    }
+    addHolo("",vec(0,0,Radar_innerHeight+Radar_dnoHeight/2),vec(Radar_radius,Radar_radius,Radar_dnoHeight/2),ang(),Radar_color,"hq_cylinder",Mater1,"radar_innerCylinder")
+    Radar_offset = Radar_innerHeight*2+Radar_dnoHeight
+    addHolo_offset("radarRotor",table(vec(0,0,-Radar_offset)))
+    #
+    ################
+    addHolo_timer("animations")
+    addHolo_start(500)
+    
+    
+    
+    
+    if(0) {
+        if(1) {
+            addHolo("chell",vec(),vec(1),ang(),vec(255),"models/player/p2_chell.mdl","","") addHolo_INTO(E)
+            unshiftHolo()
+            addHolo_INTO("base","chell","chest")
+        }
+        else {
+            addHolo_INTO("base",owner(),"chest")
+        }
+        addHolo_offset("base", table(vec(-8,0,-2), ang(-90,0,0)))
+    }
+}
+
+
+
+
+
+
+if(clk("animations")) {
+        timer("animations", 50)
+    
+    
+    if(changed(0)) {
+        T["lastCurtime", number] = curtime()
+        
+        Length0*=2 Length1*=2*0.95 Length2*=2 Length3*=2 Length4*=2
+        Length12   = Length1 + Length2
+        Length123  = Length1 + Length2 + Length3 - Fingertip_height
+        Length1123 = Length1 + Length123
+        Min = Radius * 1.02+Length0
+        Max = Min + Length123
+        
+        
+        Radar_innerCylinder = AddHolo["radar_innerCylinder/index", number]
+        CameraLight = AddHolo["camera_glow/index", number]
+        
+        ################
+        #
+        #- math
+        #
+        #- smooth
+        function number smooth(Value:number) {
+            return 0.5-sin(90 + clamp(Value,0,1) * 180)/2
+        }
+        function number smooth([Value IN TO]:number) {
+            local Min = (IN < TO ? IN : TO)
+            local Max = (TO > IN ? TO : IN)
+            Value = clamp(Value,Min,Max)
+            Value = clamp((Value-Min)/(Max-Min),0,1)
+            return 0.5-sin(90 + Value * 180)/2
+        }
+        #
+        ################
+        
+        ################
+        #
+        #- dverki
+        function anim_dverki(Mul:number) {
+            local Base_e = AddHolo["base/entity", entity]
+            
+            local Dverka_i = AddHolo["dverka" + 1 + "/index", number]
+            
+            holoAng(Dverka_i, Base_e:toWorld(ang(0,20*Mul,0)))
+        }
+        #
+        #- lapka   AXI-1-2-3
+        function anim_lapka([Lapka_i Length Angle]:number) {
+            #
+            #- length   1-2-3
+            local Length_r = T["lengthReal" + Lapka_i, number]
+            local Length_n = clamp(Length,0,Length123+Fingertip_height)
+            
+            if(Length_r != Length_n) {
+                
+                local Last = 1 + (Length_r > Length1) + (Length_r > Length12)
+                local Cont = 1 + (Length_n > Length1) + (Length_n > Length12)
+                
+                local In = Last < Cont ? Last : Cont
+                local To = Last < Cont ? Cont : Last
+                
+                for(C = In, To) {
+                    #
+                    #- "RT" + (1 + C)
+                    local Segment1 = C
+                    local Segment2 = C + 1
+                    local Segment1_e = AddHolo["RT" + Segment1 + Lapka_i + "/entity", entity]
+                    local Segment2_i = AddHolo["RT" + Segment2 + Lapka_i + "/index" , number]
+                    
+                    local Segment2_pX = clamp(max(Length_n - select(C,0,Length1,Length12),0),0,select(C,Length1,Length2,Length3))
+                    holoPos(Segment2_i, Segment1_e:toWorld(vec(Segment2_pX,0,0)))
+                }
+                
+                T["lengthReal" + Lapka_i, number] = Length_n
+            }
+            #
+            #- angle   AXI
+            local Angle_r = T["angleReal" + Lapka_i, number]
+            local Angle_n = clamp(Angle,0,85)
+            
+            if(Angle_r != Angle_n) {
+                T["angleReal" + Lapka_i, number] = Angle_n
+                local RAX_e = AddHolo["RAX" + Lapka_i + "/entity", entity]
+                local AXI_i = AddHolo["AXI" + Lapka_i + "/index" , number]
+                
+                holoAng(AXI_i, RAX_e:toWorld(ang(Angle_n,0,0)))
+            }
+        }
+        #
+        #- lapka   RAX
+        function anim_lapka([Lapka_i Length]:number) {
+            #
+            #- RAX
+            local RT0_e = AddHolo["RT0" + Lapka_i + "/entity", entity]
+            local RAX_i = AddHolo["RAX" + Lapka_i + "/index" , number]
+            holoPos(RAX_i, RT0_e:toWorld(vec(Length,0,0))) #Radius*1.02*clamp(Mul,0,1)
+        }
+        #
+        ################
+        
+        ################
+        #
+        #- radar
+        #
+        function anim_radar(AddYaw:number) {
+            local Rotor_i = AddHolo["radarRotor/index" , number]
+            local Rotor_e = AddHolo["radarRotor/entity", entity]
+            
+            holoAng(Rotor_i, Rotor_e:toWorld(ang(0,AddYaw*T["radarStep1_real", number],0)))
+        }
+        #
+        ################
+        
+        ################
+        #
+        #- bashnya
+        #
+        #- neck   0-1-2
+        function anim_neck(Mul:number) {
+            
+            local Base_e  = AddHolo["base/entity" , entity]
+            local Neck0_i = AddHolo["neck0/index" , number]
+            
+            local Neck0_e = AddHolo["neck0/entity", entity]
+            local Neck1_i = AddHolo["neck1/index" , number]
+            
+            local Neck1_e = AddHolo["neck1/entity", entity]
+            local Neck2_i = AddHolo["neck2/index" , number]
+            
+            
+            holoPos(Neck0_i,  Base_e:toWorld(vec(0,0,Neck0_offset*Mul)))
+            holoPos(Neck1_i, Neck0_e:toWorld(vec(0,0,Neck1_offset*Mul)))
+            holoPos(Neck2_i, Neck1_e:toWorld(vec(0,0,Neck2_offset*Mul)))
+        }
+        #
+        #- bashnyaRoot
+        #
+        function anim_bashnya(BR_lA_need:angle, ClampAdd:number) {
+            local Neck2_e   = AddHolo["neck2/entity"        , entity]
+            #local Root_e    = AddHolo["bashnyaRoot/entity"  , entity]
+            local GunRT_e   = AddHolo["gun0/entity"         , entity]
+            local Root_i    = AddHolo["bashnyaRoot/index"   , number]
+            local RootYaw_i = AddHolo["bashnyaRootYaw/index", number]
+            
+            local BR_lA_need = clamp(BR_lA_need,-ang(-PichMin,180,0),ang(PichMax,180,0))
+            local BR_lA_real = Neck2_e:toLocal(GunRT_e:angles())
+            
+            local LocalADDAng = angnorm(BR_lA_need-BR_lA_real)
+            if(ClampAdd) {LocalADDAng = clamp(LocalADDAng*0.8,-ClampAdd,ClampAdd)}
+            
+            local BR_lA_real = BR_lA_real + LocalADDAng
+            T["bashnyaRoot_localAng", angle] = BR_lA_real
+            holoAng(Root_i   , Neck2_e:toWorld(BR_lA_real))
+            holoAng(RootYaw_i, Neck2_e:toWorld(ang(0,BR_lA_real[2],0)))
+            
+            anim_radar(-LocalADDAng[2])
+        }
+        #
+        ################
+        
+        print("Использованно голограмм: " + AddHolo_counter)
+        
+        T["testMode", number] = entity():getName():explode("\n")[1,string] == "Turret_model"
+    }
+    local LastCurtime = T["lastCurtime", number]
+    local Curtime     = curtime()
+    T["lastCurtime", number] = Curtime
+    local Interval    = Curtime - LastCurtime
+    
+    
+    if(T["testMode", number]) {
+        local O = owner()
+        local KeyBase    = O:keyPressed("pad_1") #| O:keyPressed("mouse_4")
+        local KeyBashnya = O:keyPressed("pad_2") #| O:keyPressed("mouse_5")
+        local KeyRadar   = O:keyPressed("pad_3")
+        local KeyGun     = O:keyPressed("pad_4")
+        local KeyCamera  = O:keyPressed("pad_5")
+        if(changed(KeyBase) & KeyBase) {
+            T["baseStepNeed", number] = !T["baseStepNeed", number] * 4
+        }
+        if(changed(KeyBashnya) & KeyBashnya) {
+            T["bashnyaStepNeed", number] = !T["bashnyaStepNeed", number] * 1
+        }
+        if(changed(KeyRadar) & KeyRadar) {
+            T["radarStepNeed", number] = !T["radarStepNeed", number] * 1
+        }
+        if(changed(KeyGun) & KeyGun) {
+            T["gunStepNeed", number] = !T["gunStepNeed", number] * 1
+        }
+        if(changed(KeyCamera) & KeyCamera) {
+            T["cameraStepNeed", number] = !T["cameraStepNeed", number] * 1
+        }
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    local BaseStepNeed = T["baseStepNeed", number]
+    local BaseStepReal = T["baseStepReal", number] #if(changed(BaseStepReal)) {print(BaseStepReal)}
+    
+    switch(BaseStepReal) {
+        case 0,
+            T["baseStepReal", number] = BaseStepNeed >= 1
+        break
+        case 1,
+            local Real = T["baseStep1_real", number]
+            local Need = BaseStepNeed >= 1
+            
+            if(Real != Need) {
+                Real = T["baseStep1_real", number] = clamp(Real + sign(Need-Real)*Interval/0.25,0,1)
+                
+                local Smooth = smooth(Real)
+                anim_dverki(Smooth)
+            }
+            else {
+                if(BaseStepNeed != BaseStepReal) {
+                    T["baseStepReal", number] = T["baseStepReal", number] + sign(BaseStepNeed - BaseStepReal)
+                }
+            }
+        break
+        case 2,
+            local Real = T["baseStep2_real", number]
+            local Need = BaseStepNeed >= 2
+            
+            if(Real | Need) {
+                Real = T["baseStep2_real", number] = clamp(Real + sign(Need-Real)*Interval/0.75,0,1)
+                
+                local Smooth = smooth(Real)
+                local Base_e = AddHolo["base/entity", entity]
+                
+                local Complite = 0
+                for(Lapka_i = 1,3) {
+                    
+                    local RT0_e = AddHolo["RT0" + Lapka_i + "/entity", entity]
+                    local StartPos = RT0_e:toWorld(vec(Length1,0,AxisOffSet))
+                    
+                    local R1 = rangerOffset(Offset*Smooth,StartPos,RT0_e:forward())
+                    anim_lapka(Lapka_i, R1:distance())
+                    
+                    if((!R1:hit() & Real == 1)) {
+                        Complite++
+                        holoColor(AddHolo["lamp"+Lapka_i+"/index", number], vec(50,255,50))
+                    }
+                    else {
+                        holoColor(AddHolo["lamp"+Lapka_i+"/index", number], vec(255,50,50))
+                    }
+                }
+                
+                if((BaseStepNeed != BaseStepReal) & Complite == 3 & Need) {
+                    T["baseStepReal", number] = 3
+                }
+            }
+            else {
+                T["baseStepReal", number] = 1
+            }
+        break
+        case 3,
+            local Real = T["baseStep3_real", number]
+            local Need = BaseStepNeed >= 3
+            
+            Real = T["baseStep3_real", number] = clamp(Real + sign(Need-Real)*Interval/1.5,0,1)
+            
+            ######################
+            ######################
+            local Min = Length1123 * cos(min(acos((Length1*1.1+Fingertip_height*1)/Length1123),75))
+            local Max = Length1123 * cos(30)
+            local Range = Max-Min
+            local N = 0
+            
+            local Ready = 0
+            for(Lapka_i = 1,3) {
+                local RT1_e = AddHolo["RT1" + Lapka_i + "/entity", entity]
+                local RAX_e = AddHolo["RAX" + Lapka_i + "/entity", entity]
+                
+                
+                
+                
+                local TargetPos = vec()
+                if(Need) {
+                    local N = N
+                    local Range = Range
+                    local R0 = rangerOffsetHull(Range, RAX_e:toWorld(vec(Min,0,AxisOffSet)),RAX_e:forward(),vec(Fingertip_height*0.75))
+                    if(R0:hit()) {
+                        Range = R0:distance()
+                        N = round(Range / Fingertip_height / 4)
+                    }
+                    else {
+                        N = ceil(Range / Fingertip_height / 4)
+                    }
+                    
+                    local Done = 0
+                    for(C = 0, N) {
+                        if(C == 0) {C = 1} elseif(C == 1) {C = 0}
+                        
+                        local X = Min + clamp(Range / N * C,0,Range)
+                        local H = Length1123 * sin(acos(X/Length1123))
+                        
+                        local Pos = RAX_e:toWorld(vec(X,0,AxisOffSet))
+                        local R1 = rangerOffsetHull(H,Pos,-RAX_e:up(),vec(Fingertip_height*0.75))
+                        local R1_p = R1:pos()
+                        local R1_norm = R1:hitNormal()
+                        
+                        local R1_to_RAX_norm = RAX_e:toLocal(RAX_e:pos()+R1_norm):normalized()
+                        local R1_hit = R1:hit() & acos(R1_to_RAX_norm[3]) < 60
+                        
+                        ###
+                        if(0) {
+                            local H = R1:distance()
+                            local Pos = Pos-RAX_e:up()*H/2
+                            local Size = vec(Fingertip_height/3,Fingertip_height,max(H/2,0.2))/6
+                            local Ang = RAX_e:toWorld(ang())
+                            local I = C + 1015 + Lapka_i * 100
+                            if(!holoEntity(I)) {
+                                holoCreate(I, Pos, Size, Ang) holoParent(I, RAX_e)
+                            }
+                            else {
+                                holoScale(I, Size)
+                                holoPos(I, Pos)
+                            }
+                            
+                            if(R1_hit & rangerOffsetHull(RAX_e:toWorld(vec(0,0,AxisOffSet)),R1_p,vec(Height4*0.2),vec(Height4)):pos():distance(R1_p) <= Fingertip_height) {
+                                if(Done) {
+                                    holoColor(I,vec(0,0,255))
+                                }
+                                else {
+                                    holoColor(I,vec(0,255,0))
+                                    Done = 1
+                                    TargetPos = R1_p +R1_norm*Fingertip_height*0.75 *0.5
+                                    if(holoEntity(2332+Lapka_i)) {
+                                        holoPos(2332+Lapka_i, TargetPos)
+                                    }
+                                    else {
+                                        holoCreate(2332+Lapka_i,vec(),vec(0.3)*0,ang(),vec(255),"models/editor/axis_helper.mdl") holoParent(2332+Lapka_i,RAX_e)
+                                    }
+                                }
+                            }
+                            else {
+                                holoColor(I,vec(255,0,0))
+                            }
+                        }
+                        else {
+                            if(R1_hit & rangerOffsetHull(RAX_e:toWorld(vec(0,0,AxisOffSet)),R1_p,vec(Height4*0.2),vec(Height4)):pos():distance(R1_p) <= Fingertip_height) {
+                                Done = 1
+                                TargetPos = R1_p +R1_norm*Fingertip_height*0.75 *0.5
+                                break
+                            }
+                        }
+                        ####
+                    }
+                }
+                
+                local Length = 0
+                local Pitch = 0
+                if(TargetPos) {
+                    local LocalPos = RAX_e:toLocal(TargetPos):setY(0)
+                    T["baseStep3/lapkaLocalPos" + Lapka_i, vector] = LocalPos
+                    
+                    Length = RT1_e:toLocal(TargetPos):length()-Length1
+                    Pitch  = acos((TargetPos-RT1_e:pos()):normalized():dot(RAX_e:forward()))
+                    
+                    
+                }
+                
+                local Lapka_iReal = T["real" + Lapka_i, vector2]
+                local Lapka_iNeed = vec2(Length,Pitch)
+                local DIF = Lapka_iNeed-Lapka_iReal
+                if(!inrange(DIF,-vec2(0.1),vec2(0.1))) {
+                    local R4 = rangerOffsetHull(Lapka_iReal[1]-Height4/2,RT1_e:pos(),RT1_e:forward(),vec(Height4*0.2),vec(Height4))
+                    if(R4:hit()) {
+                        Lapka_iReal = vec2(Lapka_iReal[1] + (R4:distance()-Lapka_iReal[1]-Length1)*Interval*10,Lapka_iReal[2])
+                    }
+                    local Lapka_iReal = Lapka_iReal + clamp(DIF / 1.5,-Interval*Length123*vec2(1.5,5),Interval*Length123*vec2(1.5,5))*(Need ? Real : 1-Real)
+                    T["real" + Lapka_i, vector2] = Lapka_iReal
+                    anim_lapka(Lapka_i, Lapka_iReal[1], Lapka_iReal[2])
+                }
+                else {
+                    if(!inrange(Lapka_iReal,-vec2(0.2),vec2(0.2))) {
+                        if(Need) {
+                            Ready++
+                        }
+                    }
+                    elseif(!Need) {
+                        Ready++
+                    }
+                }
+            }
+            if(Ready==3) {
+                local Sign = sign(BaseStepNeed - BaseStepReal)
+                T["baseStepReal", number] = T["baseStepReal", number] + Sign
+                if(Sign == 1) {
+                    
+                    
+                    local AddHeight = Length1123
+                    for(Lapka_i = 1,3) {
+                        local RAX_e = AddHolo["RAX" + Lapka_i + "/entity", entity]
+                        
+                        local LocalPos = T["baseStep3/lapkaLocalPos" + Lapka_i, vector]
+                        
+                        local MaxH = Length1123*sin(acos(LocalPos[1]/Length1123))
+                        
+                        local AddH = MaxH - abs(LocalPos[3])
+                        
+                        if(AddHeight > AddH) {AddHeight = AddH}
+                    }
+                    T["baseStep4/addHeight", number] = round(AddHeight)
+                }
+                else {
+                    T["baseStep3_real", number] = 0
+                }
+            }
+        break
+        case 4,
+            local Real = T["baseStep4_real", number]
+            local Need = BaseStepNeed >= 4
+            
+            if(Real != Need) {
+                Real = T["baseStep4_real", number] = clamp(Real + sign(Need-Real)*Interval/1.5,0,1)
+                
+                
+                local Smooth = smooth(Real)
+                local AddHeight = T["baseStep4/addHeight", number] * Smooth
+                
+                local RT_e   = AddHolo["rt/entity" , entity]
+                local Base_i = AddHolo["base/index", number]
+                holoPos(Base_i, RT_e:toWorld(vec(0,0,AddHeight)))
+                
+                
+                for(Lapka_i = 1,3) {
+                    
+                    local RT1_e = AddHolo["RT1" + Lapka_i + "/entity", entity]
+                    local RAX_e = AddHolo["RAX" + Lapka_i + "/entity", entity]
+                    
+                    local RAX_localPos = T["baseStep3/lapkaLocalPos" + Lapka_i, vector] - vec(0,0,AddHeight)
+                    local TargetPos = RAX_e:toWorld(RAX_localPos)
+                    
+                    local Length = RT1_e:toLocal(TargetPos):length()-Length1
+                    local Pitch  = acos((TargetPos-RT1_e:pos()):normalized():dot(RAX_e:forward()))
+                    
+                    anim_lapka(Lapka_i, Length, Pitch)
+                }
+            }
+            else {
+                if(BaseStepNeed != BaseStepReal) {
+                    T["baseStepReal", number] = T["baseStepReal", number] + sign(BaseStepNeed - BaseStepReal)
+                }
+            }
+        break
+    }
+    
+    
+    
+    local RadarStepNeed = T["radarStepNeed", number]
+    local RadarStepReal = T["radarStepReal", number]
+    switch(RadarStepReal) {
+        case 0,
+            T["radarStepReal", number] = RadarStepNeed >= 1
+        break
+        case 1,
+            local Real = T["radarStep1_real", number]
+            local Need = RadarStepNeed >= 1
+            if(Need != Real) {
+                
+                Real = T["radarStep1_real", number] = clamp(Real + (Need ? 1 : -1)*Interval/1.0 ,0,1)
+                local Smooth = smooth(Real)
+                
+                local Rotor_i = AddHolo["radarRotor/index" , number]
+                local Radar_e = AddHolo["radar/entity", entity]
+                
+                holoPos(Rotor_i, Radar_e:toWorld(vec(0,0,-Radar_offset*(1-Smooth))))
+                
+                local RadarLightColor = vec(255,30,30)*Smooth^2
+                holoColor(Radar_innerCylinder, RadarLightColor)
+                
+                if(!Need & Real == Need) {
+                    T["radarStepReal", number] = 0
+                }
+            }
+            
+            anim_radar(Interval*360/30)
+        break
+    }
+    
+    local BashnyaStepNeed = T["bashnyaStepNeed", number]
+    local BashnyaStepReal = T["bashnyaStepReal", number]
+    switch(BashnyaStepReal) {
+        case 0,
+            T["bashnyaStepReal", number] = BashnyaStepNeed >= 1
+        break
+        case 1,
+            local Real = T["bashnyaStep1_real", number]
+            local Need = BashnyaStepNeed >= 1
+            
+            if(Need != Real) {
+                Real = T["bashnyaStep1_real", number] = clamp(Real + (Need ? 1 : -1)*Interval/1.0 ,0,1)
+            }
+            
+            
+            local Neck_real = T["bashnyaStep1_neckReal", number]
+            
+            
+            local BR_lA_real = T["bashnyaRoot_localAng", angle] #BashnyaRoot_localAng >>> BR_lA
+            local BR_lA_need = Need ? T["bashnyaRoot_needLocalAng", angle] : ang()
+            if(Need) {
+                
+                local O = owner()
+                local Target_P = select(1+O:keyPressed("pad_7"),T["Target_P", vector],O:attachmentPos("anim_attachment_head"))
+                if(Target_P) {
+                    
+                    local Neck2_e = AddHolo["neck2/entity"      , entity]
+                    #local Root_e  = AddHolo["bashnyaRoot/entity", entity]
+                    local GunRT_e = AddHolo["gun0/entity"       , entity]
+                    BR_lA_need = angnorm(Neck2_e:toLocal(Target_P   -GunRT_e:toWorld(vec(-Radius*2,0,0))+Neck2_e:pos()):toAngle())
+                }
+            }
+            
+            
+            if(!inrange(BR_lA_need-BR_lA_real,ang(-0.01),ang(0.01)) & Neck_real==1) {
+                
+                anim_bashnya(BR_lA_need, Interval*225)
+            }
+            
+            
+            local Neck_need = Need ? 1 : !inrange(BR_lA_real,ang(-0.01),ang(0.01)) #max(abs(sin(BR_lA_real[1]))*Radius,abs(BR_lA_real[2])>0.02 ? Height/2 : 0)/Neck012_offset
+            if(Neck_real != Neck_need) {
+                Neck_real = T["bashnyaStep1_neckReal", number] = clamp(Neck_real + sign(Neck_need - Neck_real)*Interval/1,0,1)
+                local Smooth = smooth(Neck_real)
+                
+                anim_neck(Smooth)
+            }
+            elseif(BashnyaStepNeed != BashnyaStepReal & !Neck_real) {
+                T["bashnyaStepReal", number] = T["bashnyaStepReal", number] + sign(BashnyaStepNeed - BashnyaStepReal)
+            }
+        break
+    }
+    
+    
+    local GunStepNeed = T["gunStepNeed", number]
+    local GunStepReal = T["gunStepReal", number]
+    switch(GunStepReal) {
+        case 0,
+            T["gunStepReal", number] = GunStepNeed >= 1
+        break
+        case 1,
+            local Real = T["gunStep1_real", number]
+            local Need = GunStepNeed >= 1
+            
+            if(Need != Real) {
+                Real = T["gunStep1_real", number] = clamp(Real + (Need ? 1 : -1)*Interval/1.25 ,0,1)
+                local Smooth = smooth(Real)
+                
+                local Gun0_e = AddHolo["gun0/entity", entity]
+                local Gun1_i = AddHolo["gun1/index" , number]
+                
+                holoPos(Gun1_i, Gun0_e:toWorld(vec(Gun_lenght*Smooth,0,0)))
+                
+            }
+            elseif(GunStepNeed != GunStepReal) {
+                T["gunStepReal", number] = T["gunStepReal", number] + sign(GunStepNeed - GunStepReal)
+            }
+        break
+    }
+    
+    
+    local CameraStepNeed = T["cameraStepNeed", number]
+    local CameraStepReal = T["cameraStepReal", number]
+    switch(CameraStepReal) {
+        case 0,
+            T["cameraStepReal", number] = CameraStepNeed >= 1
+        break
+        case 1,
+            local Real = T["cameraStep1_real", number]
+            local Need = CameraStepNeed >= 1
+            
+            if(Need != Real) {
+                Real = T["cameraStep1_real", number] = clamp(Real + (Need ? 1 : -1)*Interval/0.75 ,0,1)
+                local Smooth = smooth(Real)
+                local Color = vec(255 * Smooth ^ 2,0,0)
+                
+                holoColor(CameraLight, Color)
+            }
+            elseif(CameraStepNeed != CameraStepReal) {
+                T["cameraStepReal", number] = T["cameraStepReal", number] + sign(CameraStepNeed - CameraStepReal)
+            }
+        break
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName("Turret_model\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1e6))
+#[
+Работа над данной версий на этом этапе остановлена.
+P.S. Проект будет возобновлен в новом духе.
+P.P.S.   #05.02.2018 22:47 - ⎛⎝Trek⎠⎞: Пускай турель будет круче чем круто)
+P.P.P.S. #05.02.2018 22:48 - AncRad: Турель Будет круче чем круто! }:D

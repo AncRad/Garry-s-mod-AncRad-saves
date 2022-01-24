@@ -1,0 +1,129 @@
+@name Beams
+@inputs 
+@outputs 
+@persist Materials:array Beam_e:entity
+@persist [StartPos EndPos]:vector
+@trigger 
+
+
+if(changed(0)) {
+    
+    
+    
+    
+    E = entity()
+    O = owner()
+    
+    HoloBeams = holoCreate(0,vec(),vec())
+    
+    StartPos = E:pos()
+    EndPos = E:toWorld(vec(150,0,0))
+    
+    Width = 7
+    
+    Textstart = 1
+    Textend = 1
+    
+    Beam_e = HoloBeams:drawBeam("egon_ringbeam",StartPos,EndPos,vec(255),254,Width,Textstart,Textend)
+    
+    Materials = array(
+        "cable/blue_elec"
+        ,"cable/xbeam"
+        ,"cable/redlaser"
+        ,"cable/physbeam"
+        ,"cable/hydra"
+        ,"cable/crystal_beam1"
+        
+        ,"effects/combineshield/comshieldwall"
+        ,"effects/combineshield/comshieldwall2"
+        ,"effects/combineshield/comshieldwall2faded"
+        ,"effects/combineshield/comshieldwall3"
+        
+        ,"effects/extended_render/color_ring"
+        ,"effects/extended_render/shimmer"
+        
+        ,"effects/tp_eyefx/tp_eyefx"
+        ,"effects/tp_eyefx/tpeye2"
+        ,"effects/tp_eyefx/tpeye3"
+        
+        ,"effects/bloodstream" #!!!
+        
+        ,"effects/blueblacklargebeam"
+        
+        ,"effects/bluelaser1"
+        ,"effects/bluelaser2"
+        
+        ,"effects/energysplash"
+        ,"effects/gunshiptracer"
+        
+        ,"effects/splash1" #!!!
+        ,"effects/splash2"
+        ,"effects/splash3"
+        ,"effects/splash4"
+        
+        ,"effects/strider_bulge_dudv" #!!!
+        ,"effects/strider_pinch_dudv" #!!!
+        
+        ,"effects/tool_tracer" #molnia
+        ,"sprites/orangelight1" #red
+        
+        ,"effects/water_warp01"
+        
+        ,"engine/depthwrite" #???
+        
+        ,"sprites/physbeam"
+        ,"sprites/physbeama"
+        ,"sprites/plasmabeam" #!!!
+        ,"sprites/tp_beam001" #!!!
+        ,"sprites/smoke"
+        ,"sprites/strider_bluebeam"
+        ,"sprites/xbeam1"
+        ,"sprites/xbeam2"
+        
+        ,"egon_ringbeam"
+        
+        
+        ,""
+        ,""
+        ,""
+        ,""
+        ,""
+    )
+    
+}
+
+interval(50)
+
+Beam_e:setPos(StartPos)
+Beam_e:setBeamEndPos(EndPos)
+Beam_e:setBeamText(1,cos(curtime()*60)^2*20)
+#Beam_e:setMaterial(Materials[randint(1,Materials:count()), string])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

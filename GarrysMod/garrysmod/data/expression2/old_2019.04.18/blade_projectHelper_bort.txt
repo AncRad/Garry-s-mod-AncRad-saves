@@ -1,0 +1,153 @@
+@name blade_projectHelper_bort
+@model models/sprops/rectangles/size_1/rect_3x24x3.mdl
+
+@inputs [P1 P2]:entity
+@persist [P3]:entity [Color]:vector
+
+@persist [Cube_30xNx60]:array
+
+
+if(changed(0)) {
+    #
+    function array range([In To Step]) {
+        local Range = array()
+        for(Number = In,To,Step) {Range:pushNumber(Number)}
+        return Range
+    }
+    
+    
+    Cube_30xNx60 = range(30,48,6):add(range(60,144,12))
+    
+    function number array:min(Number:number) {
+        foreach(C, This_n:number = This) {
+            if(This_n >= Number) {
+                return This_n
+            }
+        }
+        return This:max()
+    }
+    #
+    function holo(ID:number, [Start End Offset]:vector, Roll:number) {
+        local Dif = End-Start
+        local Len = Dif:length()
+        
+        local Prop_L = Cube_30xNx60:min(Len)
+        
+        local Ang = Dif:toAngle():setRoll(Roll)
+        local Pos = Start+Ang:forward()*Prop_L/2+toWorld(Offset,ang(),vec(),Ang)
+        holoAng(ID, Ang)
+        holoPos(ID, Pos)
+        if(changed(Prop_L) | 1) {
+            local Prop_m = "models/sprops/cuboids/height06/size_5/cube_30x"+Prop_L+"x6.mdl"
+            Prop_m = "models/sprops/rectangles/size_3_5/rect_30x"+Prop_L+"x3.mdl"
+            holoModel(ID, Prop_m)
+            
+            #propSpawn(Prop_m,Pos,Ang,1)
+        }
+    }
+    #
+    
+    
+    
+    Color = vec(175,255,0)
+    
+    P3 = entity()
+    P1:setColor(Color) holoCreate(1,vec(),vec(1,1,1.0),ang(),Color)
+    P1:setColor(Color) holoCreate(2,vec(),vec(1,1,1.0),ang(),Color)
+    P3:setColor(Color) holoCreate(3,vec(),vec(1,1,1.0),ang(),Color)
+    P3:unConstrain()
+}
+
+interval(100)
+
+Pos1 = P1:massCenter()
+Pos2 = P2:massCenter()
+Pos3 = P3:massCenter()
+
+if(changed(Pos1+Pos2+Pos3)) {
+    
+    
+    local Height = 60/2
+    
+    local Pos12 = (Pos1+Pos2)/2
+    
+    local Z = abs(Pos1[3]-Pos12[3])-Height
+    local X = abs(Pos3[1]-Pos1[1])
+    local L = Cube_30xNx60:min((Z^2+X^2)^0.5)
+    local X = (L^2-Z^2)^0.5
+    
+    local Pos3 = Pos12+vec(X-0.1,0,0)
+    
+    
+    
+    local Height_v = vec(0,0,Height)
+    holo(1,Pos1,Pos3+Height_v,vec(0,0,-1.5),0)
+    holo(2,Pos2,Pos3-Height_v,vec(0,0, 1.5),0)
+    
+    holo(3,Pos3,Pos12,vec(0,0,15-1.5),89.99)
+    
+    
+    
+    
+    #holo(1,Pos1,Pos3+Height_v,vec(0,0,0),0)
+    #holo(2,Pos2,Pos3-Height_v,vec(0,0,0),0)
+    
+    
+    
+}
+
+setName("blade_projectHelper_bort\nOPS: " + ops())
+#[
+models/sprops/cuboids/height06/size_5/cube_30x30x6.mdl
++=6
+models/sprops/cuboids/height06/size_5/cube_30x60x6.mdl
++=12
+models/sprops/cuboids/height06/size_5/cube_30x144x6.mdl
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

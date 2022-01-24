@@ -1,0 +1,386 @@
+@name Fire particles
+
+@inputs 
+@outputs OPS Wait Fly Drop Other Vec:vector
+@persist [E O]:entity [Q]:table T
+
+@trigger none
+
+
+
+if(changed(0)) {
+    
+    E = entity()
+    O = owner()
+    
+    timer("create", 1)
+    Q["part/need", number] = 60
+    Q["prats/dropTime", number] = 3
+    
+    Q["wait", array]
+    Q["fly", array]
+    Q["drop", array]
+    Q["other", array]
+    
+    
+    function number partSize(Part:number, SizeN:number) {
+        SizeN = clamp(SizeN,1,15)
+        local Size = "3 6 9 12 18 24 30 36 42 48 60 72 84 96 108 120 132 144":explode(" ")[SizeN, string]:toNumber()
+        
+        local Model = "models/sprops/geometry/sphere_" + Size + ".mdl"
+        holoModel(Part, Model)
+        Q[Part + "/size", number] = Size
+        Q[Part + "/sizeN", number] = SizeN
+        
+        return Size
+    }
+    
+    
+    function number toFly(Pos:vector, Vel:vector, SizeN:number) {
+        local Part = 0
+        local FirePart = 0
+        
+        if(Q["wait", array]:count()) {
+            
+            while(Q["wait", array]:count()) {
+                Part = Q["wait", array][1, number]
+                local Holo = holoEntity(Part)
+                
+                if(!Holo) {Holo = holoCreate(Part, vec(), vec(), ang(), vec(), "cube")}
+                
+                if(Holo) {
+                    
+                    Q[Part + "/pos", vector] = Pos
+                    Q[Part + "/vel", vector] = Vel * 52.5
+                    Q[Part + "/startFlyTime", number] = curtime()
+                    Q[Part + "/dropTime", number] = Q["prats/dropTime", number]
+                    
+                    FirePart = Part
+                    holoPos(Part, Pos)
+                    Holo:ignite(50000)
+                    #partSize(Part, SizeN)
+                    Q["wait", array]:remove(1)
+                    Q["fly", array] = Q["fly", array]:add(array(Part))
+                    break
+                }
+                else {
+                    Q["deleted", array] = Q["deleted", array]:add(array(Part))
+                    Q["wait", array]:remove(1)
+                }
+            }
+        }
+        
+        #if(!FirePart) {print("fireError: waitParts = 0")}
+        return FirePart
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+}
+
+if(clk("create")) {
+        timer("create", 100)
+    
+    local Need = Q["part/need", number]
+    local Real = Q["part/real", number]
+    if(Need > Real) {
+        while(holoCanCreate() & (Need > Real)) {
+            
+            Real++
+            local Holo = holoCreate(Real, vec(), vec(), ang(), vec(), "cube")
+            if(Holo) {
+                
+                Q[Real + "/pos"     , vector] = vec()
+                Q[Real + "/vel"     , vector] = vec()
+                Q[Real + "/dropTime", number] = Q["prats/dropTime", number]
+                Q["wait", array] = Q["wait", array]:add(array(Real))
+            }
+        }
+        Q["part/real", number] = Real
+    }
+    else {
+        stoptimer("create")
+        timer("user", 1)
+        timer("fly", 1)
+        timer("drop", 1)
+        print("created " + Real + "/" + Need + " fireParts")
+    }
+}
+
+
+
+
+
+if(clk("user")) {
+        timer("user", 20)
+    
+    local KeyFire = O:keyPressed("mouse_4")
+    local Fire = KeyFire
+    
+    local Mode = 1
+    if(Mode == 1) {
+        if(KeyFire) {
+            local Pos = O:shootPos() + O:eye() * 30
+            local Vel = O:eye():rotate(ang(randvec(-1,1))) * 60
+            
+            toFly(Pos, Vel, 1)
+        }
+    }
+    elseif(Mode == 2) {
+        if(KeyFire) {
+            local Pos = E:toWorld(vec(5,0,0))
+            local Vel = E:forward():rotate(ang(randvec(-10,10))) * 30
+            
+            toFly(Pos, Vel, 1)
+        }
+    }
+    
+    elseif(Mode == 3) {
+        if(changed(KeyFire) & KeyFire) {
+            for(C = 1, 30) {
+                local RandVec = randvec(-10,10)
+                local Pos = E:toWorld(RandVec)
+                local Vel = vec() + RandVec:normalized() * 10
+                
+                toFly(Pos, Vel, 1)
+            }
+        E:effectSpawn("explosion",E:pos(),1)
+        }
+    }
+}
+
+
+
+
+
+if(clk("fly")) {
+        timer("fly", 75)
+    
+    if(changed(0)) {
+        Q["fly/lastCurtime", number] = curtime()
+        
+        function number cos([V1 V2]:vector) {
+            V1 = V1:normalized()
+            V2 = V2:normalized()
+            return V1[1] * V2[1] + V1[2] * V2[2] + V1[3] * V2[3]
+        }
+    }
+    
+    local LastCurtime = Q["fly/lastCurtime", number]
+    local Curtime = curtime()
+    Q["fly/lastCurtime", number] = Curtime
+    local Interval = Curtime - LastCurtime
+    
+    
+    
+
+#
+
+    local Clear = array()
+    foreach(C, Part:number = Q["fly", array]) {
+        local Holo = holoEntity(Part)
+        local Pos = Q[Part + "/pos", vector]
+        local Vel = Q[Part + "/vel", vector]
+        local Length = Vel:length()
+        
+        
+        Vel = Vel - (Vel * clamp(Length / 1000,0,0.9) ^ 2 + vec(0,0,600)) * Interval
+        local Length = Vel:length()
+        rangerFilter(O)
+        rangerHitWater(1)
+        local R = rangerOffset(Length * Interval, Pos, Vel)
+        Pos = R:pos()
+        if(R:hit()) {
+            local Norm = R:hitNormal()
+            local Cos = cos(Norm,Vel)
+            local RE = R:entity()
+            
+            Vel = -Vel:rotateAroundAxis(Norm,180) * 0.5 * Cos
+            
+            local Drop = 0
+            if(RE) {
+                if(RE:isPlayer() | RE:isNPC()) {
+                    if(RE:attachmentPos("chest") != vec()) {
+                        holoParentAttachment(Part, RE, "chest")
+                        Pos = rangerOffsetHull(RE:attachmentPos("chest"), Pos,vec(),vec(5)):pos()
+                    }
+                    elseif(RE:boxCenterW()) {
+                        holoParent(Part, RE)
+                        Pos = rangerOffsetHull(RE:boxCenterW(), Pos,vec(),vec(5)):pos()
+                    }
+                }
+                else {
+                    holoParent(Part, RE)
+                }
+                Drop = 1
+            }
+            else {
+                if((acos(Norm[3]) <= 70) | (randint(10) == 1)) {
+                    Drop = 1
+                }
+            }
+            if(Drop) {
+                Q["drop", array] = Q["drop", array]:add(array(Part))
+                Q[Part + "/time", number] = Curtime + Q[Part + "/dropTime", number]
+                Clear = array(C):add(Clear)
+            }
+        }
+        
+        
+        Q[Part + "/pos", vector] = Pos
+        Q[Part + "/vel", vector] = Vel
+        
+        holoPos(Part, Pos)
+    }
+    foreach(C, I:number = Clear) {
+        Q["fly", array]:remove(I)
+    }
+
+}
+
+
+
+if(clk("drop")) {
+        timer("drop", (Q["drop", array]:count() ? 200 : 500))
+    
+    local Curtime = curtime()
+    
+    local Clear = array()
+    foreach(C, Part:number = Q["drop", array]) {
+        local Time = Q[Part + "/time", number]
+        local Holo = holoEntity(Part)
+        
+        if(Time <= Curtime | !Holo) {
+            Clear = array(C):add(Clear)
+            if(Holo) {
+                Holo:extinguish()
+                holoUnparent(Part)
+                Q["wait", array] = Q["wait", array]:add(array(Part))
+            }
+            else {
+                Q["noneEnt", array] = Q["noneEnt", array]:add(array(Part))
+            }
+        }
+    }
+    foreach(C, I:number = Clear) {
+        Q["drop", array]:remove(I)
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Wait = Q["wait", array]:count()
+Fly = Q["fly", array]:count()
+Drop = Q["drop", array]:count()
+Other = Q["other", array]:count()
+OPS = ops()
+
+
+
+
+#[[
+
+    local Clear = array()
+    foreach(C, Part:number = Q["fly", array]) {
+        local Holo = holoEntity(Part)
+        local Pos = Q[Part + "/pos", vector]
+        local Vel = Q[Part + "/vel", vector]
+        local Length = Vel:length()
+        
+        local DD = ((Q[Part + "/fireTime", number] - Curtime) >= 0 ? 0.05 : 1)
+        
+        Vel = Vel - (Vel * clamp(Length / 1000,0,0.9) ^ 2 + vec(0,0,600)) * Interval * DD
+        local Length = Vel:length()
+        rangerHitWater(1)
+        local R = rangerOffset(Length * Interval * DD, Pos, Vel)
+        Pos = R:pos()
+        if(R:hit()) {
+            local Norm = R:hitNormal()
+            local Cos = cos(Norm,Vel)
+            local RE = R:entity()
+            
+            Vel = -Vel:rotateAroundAxis(Norm,180) * 0.5 * Cos
+            
+            local Drop = 0
+            if(RE) {
+                if(RE:isPlayer() | RE:isNPC()) {
+                    if(RE:attachmentPos("chest") != vec()) {
+                        holoParentAttachment(Part, RE, "chest")
+                        Pos = rangerOffsetHull(RE:attachmentPos("chest"), Pos,vec(),vec(5)):pos()
+                    }
+                    elseif(RE:boxCenterW()) {
+                        holoParent(Part, RE)
+                        Pos = rangerOffsetHull(RE:boxCenterW(), Pos,vec(),vec(5)):pos()
+                    }
+                }
+                else {
+                    holoParent(Part, RE)
+                }
+                Drop = 1
+            }
+            else {
+                if((acos(Norm[3]) <= 70) | (randint(10) == 1)) {
+                    Drop = 1
+                }
+            }
+            if(Drop) {
+                Q["drop", array] = Q["drop", array]:add(array(Part))
+                Q[Part + "/time", number] = Curtime + Q[Part + "/dropTime", number]
+                Clear = array(C):add(Clear)
+            }
+        }
+        
+        
+        Q[Part + "/pos", vector] = Pos
+        Q[Part + "/vel", vector] = Vel
+        
+        holoPos(Part, Pos)
+    }
+    foreach(C, I:number = Clear) {
+        Q["fly", array]:remove(I)
+    }
+
+
+
+
+

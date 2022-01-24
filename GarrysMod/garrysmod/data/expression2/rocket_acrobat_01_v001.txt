@@ -1,0 +1,135 @@
+@name rocket_acrobat_01_v001
+
+@inputs 
+@outputs 
+@persist [E O]:entity
+
+
+@inputs 
+@outputs 
+@persist [ROCKET_e]:entity
+@persist [ROCKET_orient]:angle
+@persist [ROCKET_boxSize]:vector
+
+@persist [ROCKET_MODEL_length ROCKET_MODEL_radius]:number
+
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+
+
+
+switch(clkName()) {
+    
+    default,
+        if(changed(0)) {
+            #include "AddHolo_v01"
+            #include "effect_turbineFlames_v01"
+            
+            function expressionDestruct() {
+                selfDestruct()
+                exit()
+            }
+            
+            
+            E = entity() E:setSkin(1)
+            O = owner()
+            
+            
+            
+            
+            
+            
+            local IWT = E:isWeldedTo()
+            if(IWT) {
+                
+                ROCKET_e = IWT
+                if(ROCKET_e:model():left(24) == "models/sprops/cylinders/") {
+                    ROCKET_orient = ang(0,0,0)
+                    ROCKET_boxSize = ROCKET_e:boxSize()
+                    
+                    
+                    ROCKET_MODEL_length = ROCKET_boxSize[3]
+                    ROCKET_MODEL_radius = ROCKET_boxSize[1]/2
+                    
+                    
+                    #- model
+                    local Mater1 = "phoenix_storms/OfficeWindow_1-1"
+                    
+                    addHolo("rt",ROCKET_e:massCenterL(),vec(),ROCKET_orient,vec(),"cube","","") addHolo_INTO(ROCKET_e)
+                    
+                    addHolo("base",vec(),vec(),ang(),vec(),"cube","","rt")
+                    
+                    addHolo("thrRT",vec(0,0,-ROCKET_MODEL_length/2-ROCKET_MODEL_radius*1.2),vec(),ang(),vec(),"cube","","base")
+                    addHolo("thr",vec(),vec(),ang(),vec(),"cube","","thrRT")
+                    function rocket_model_addEffectFlames() {
+                        AddHolo["thr/entity",entity]:effect_turbineFlames("effetFlames", vec(), ang(180,0,0), ROCKET_MODEL_radius, ROCKET_MODEL_length, vec(255,75,0), 15)
+                        effect_turbineFlames("effetFlames", 1)
+                    }
+                    addHolo_callFunc("rocket_model_addEffectFlames")
+                    addHolo_timer("rocket", 1)
+                    
+                    
+                    addHolo("",vec(),vec(ROCKET_MODEL_radius),ang(),vec(255),"hq_hdome_thin",Mater1,"thr")
+                    
+                    #addHolo("base",vec(),vec(),ang(),vec(),"hq_tube_thin","","base")
+                    
+                    
+                    addHolo_start()
+                }
+                else {
+                    expressionDestruct()
+                }
+            }
+            else {
+                expressionDestruct()
+            }
+        }
+    break
+    
+    case "rocket",
+            timer("rocket", 50)
+        
+        
+        
+        
+    break
+    
+    case "AddHolo", addHolo() break
+    
+    case "effect_turbineFlames", effect_turbineFlames() break
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

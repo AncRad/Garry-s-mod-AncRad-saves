@@ -1,0 +1,821 @@
+@name Alpha
+
+@inputs 
+@outputs 
+
+#- CODE
+@persist Alpha_code_FirstRun:number
+@persist Alpha_code_Debugging:number
+
+#- ALPHA
+@persist Alpha_model_Preload:number
+@persist Alpha_model_Load:number
+@persist Alpha_Ready:number
+@persist Alpha_timer_Countdown:number
+@persist Alpha_timer_StartValue:number
+@persist Alpha_timer_StartTime:number
+@persist Alpha_
+
+#- LOCAL TERMINAL
+@persist LocalTerminal_model_Preload:number
+@persist LocalTerminal_model_Load:number
+#@persist LocalTerminal_model_material_Panel:string
+#@persist LocalTerminal_model_color_Panel:vector
+@persist LocalTerminal_model_Pos:vector
+@persist LocalTerminal_model_Size:vector
+@persist LocalTerminal_trigger_StateReal:number
+@persist LocalTerminal_trigger_StateNeed:number
+@persist LocalTerminal_trigger_AngleTrig:number
+@persist LocalTerminal_trigger_Axis_E:entity
+@persist LocalTerminal_trigger_Root_E:entity
+@persist LocalTerminal_trigger_Root_I:number
+@persist LocalTerminal_egp_E:entity
+@persist LocalTerminal_egp_W:wirelink
+@persist LocalTerminal_egp_PixelsPerUnint:number
+@persist LocalTerminal_
+
+#- REMOTE TERMINAL
+@persist RemoteTerminall_model_Preload:number
+@persist RemoteTerminall_model_Load:number
+@persist RemoteTerminall_egp_E:entity
+@persist RemoteTerminall_egp_W:wirelink
+@persist RemoteTerminall_egp_PixelsPerUnint:number
+@persist RemoteTerminall_
+
+#- CHAT INTERFACE
+@persist ChatInterface_ProjectName:string
+@persist ChatInterface_color_Word:vector
+@persist ChatInterface_color_String:vector
+@persist ChatInterface_color_Operator:vector
+@persist ChatInterface_color_ProjectName:vector
+#@persist ChatInterface_color_Keyword:vector
+#@persist ChatInterface_color_Function:vector
+#@persist ChatInterface_color_Notfound:vector
+#@persist ChatInterface_color_TypeName:vector
+#@persist ChatInterface_color_UserFunction:vector
+@persist ChatInterface_messagePart_ProjectName:array
+@persist ChatInterface_deferred_List:array
+@persist ChatInterface_deferred_MinInterval:number
+@persist ChatInterface_deferred_MaxInterval:number
+@persist ChatInterface_deferred_TimerRunnung:number
+@persist ChatInterface_deferred_LastPrintCurtime:number
+@persist ChatInterface_CommandList:table
+@persist ChatInterface_CommandChar:table
+@persist ChatInterface_
+
+
+
+switch(clkName()) {
+    default,
+        if(changed(0)) {
+            
+            #- CODE
+            if(Alpha_code_FirstRun) {reset()}
+            Alpha_code_FirstRun = 1
+            Alpha_code_Debugging = 0
+            noDuplications()
+            
+            #- INCLUDE
+            AddHolo_NoDuplications = 1
+            #include "AddHolo_v01"
+            
+            #- CHAT INTERFACE
+            runOnChat(1)
+            ChatInterface_ProjectName = "Alpha"
+            ChatInterface_color_Word = vec(255)
+            ChatInterface_color_String = vec(155)
+            ChatInterface_color_Operator = vec(224)
+            ChatInterface_color_ProjectName = vec(255,75,0)
+            #ChatInterface_color_Keyword = vec(160,240,240)
+            #ChatInterface_color_Function = vec(160,160,240)
+            #ChatInterface_color_Notfound = vec(240,96,96)
+            #ChatInterface_color_TypeName = vec(240,160,96)
+            #ChatInterface_color_UserFunction = vec(102,150,102)
+            ChatInterface_messagePart_ProjectName = array(ChatInterface_color_Word,"[",ChatInterface_color_ProjectName,ChatInterface_ProjectName ,ChatInterface_color_Word,"]")
+            AddHolo_logging_messagePart_CodeName = ChatInterface_messagePart_ProjectName:add(AddHolo_logging_messagePart_CodeName)
+            ChatInterface_deferred_MinInterval = 0.05
+            ChatInterface_deferred_MaxInterval = 0.25
+            ChatInterface_CommandChar = table("!" = "","/" = "")
+            
+            function chatInterface_deferred(MessagePart:array) {
+                ChatInterface_deferred_List = ChatInterface_deferred_List:add(array(ChatInterface_deferred_List:count() ? "\n" : "")):add(ChatInterface_messagePart_ProjectName):add(MessagePart)
+                if(!ChatInterface_deferred_TimerRunnung) {
+                    timer("ChatInterface_deferred",clamp(0.25 - (curtime() - ChatInterface_deferred_LastPrintCurtime),ChatInterface_deferred_MinInterval,ChatInterface_deferred_MaxInterval))
+                }
+            }
+            
+            #- CODE DEBUGGING
+            function code_Debugging(MessagePart:array) {}
+            if(Alpha_code_Debugging) {
+                function code_Debugging(MessagePart:array) {
+                    chatInterface_deferred(array(
+                         ChatInterface_color_Word,"["
+                        ,vec(240,160,240),"Debugger"
+                        ,ChatInterface_color_Word,"] "
+                    ):add(MessagePart))
+                }
+            }
+            
+            #- 
+            timer("RemoteTerminall_model_Preload",1)
+            timer("LocalTerminal_model_Preload",1)
+            
+            break
+        }
+        
+        if(chatClk() & chatClk(owner())) {
+            
+            local LastSaid = owner():lastSaid()
+            if(ChatInterface_CommandChar:exists(LastSaid[1])) {
+                #- YES IS COMMAND! BUT IT NOT VERIFIED!
+                hideChat(1)
+                local Command = LastSaid:sub(2)
+                chatInterface_deferred(array(
+                     " Команда "
+                    ,ChatInterface_color_String,"\""
+                    ,ChatInterface_color_String,Command
+                    ,ChatInterface_color_String,"\""
+                    ,ChatInterface_color_Word," не опознана"
+                ))
+            }
+            
+            break
+        }
+    break
+    
+    case "ChatInterface_deferred",
+        if(playerCanPrint() & (curtime() - ChatInterface_deferred_LastPrintCurtime) > ChatInterface_deferred_MinInterval) {
+                
+            printColor(ChatInterface_deferred_List)
+            ChatInterface_deferred_List:clear()
+            ChatInterface_deferred_TimerRunnung = 0
+            break
+        }
+        timer("ChatInterface_deferred",clamp(0.25 - (curtime() - ChatInterface_deferred_LastPrintCurtime),ChatInterface_deferred_MinInterval,ChatInterface_deferred_MaxInterval))
+        ChatInterface_deferred_TimerRunnung = 1
+    break
+    
+    
+    
+    case "RemoteTerminall_model_Preload",
+        
+        RemoteTerminall_model_Preload = 1
+        #timer("RemoteTerminall_model_Load",1)
+        code_Debugging(array("RemoteTerminall_model_Preload"))
+    break
+    case "RemoteTerminall_model_Load",
+        
+        RemoteTerminall_model_Load = 1
+        code_Debugging(array("RemoteTerminall_model_Load"))
+    break
+    
+    case "LocalTerminal_model_Preload",
+        
+        if(changed(0)) {
+            
+            ####- LocalTerminal_model_ = LocalTerminal_model_
+            
+            #local LocalTerminal_model_material_Panel = "sprops/trans/misc/beam_side"
+            local LocalTerminal_model_material_Panel = "metal2"
+            local LocalTerminal_model_material_Lamp = "phoenix_storms/OfficeWindow_1-1"
+            local LocalTerminal_model_material_Glass = "phoenix_storms/pack2/glass"
+            local LocalTerminal_model_material_Steel = "models/gibs/metalgibs/metal_gibs"
+            local LocalTerminal_model_color_Panel = vec(220)
+            local LocalTerminal_model_color_Lamp = vec(255)*0.5
+            
+            local LocalTerminal_model_model_separation = 3.5
+            local LocalTerminal_model_model_Size = vec(16,30,0)/2
+            local LocalTerminal_model_model_cutout_Angle = 25
+            local LocalTerminal_model_model_cutout_Size = LocalTerminal_model_model_Size + vec(1.5*cos(LocalTerminal_model_model_cutout_Angle))
+            local LocalTerminal_model_model_cutout_Pos = vec(LocalTerminal_model_model_cutout_Size[1]-3,0,0)
+            local LocalTerminal_model_lamp_Separation = 1.5
+            local LocalTerminal_model_lamp_Radius = 1.5
+            local LocalTerminal_model_b_Height = 1
+            local LocalTerminal_model_b_Indent = 1
+            local LocalTerminal_model_b_BaseHeight = 0.2
+            local LocalTerminal_model_trigger_BaseHeight = LocalTerminal_model_b_BaseHeight
+            LocalTerminal_trigger_StateReal = LocalTerminal_trigger_StateNeed = 0
+            LocalTerminal_trigger_AngleTrig = 95
+            
+            LocalTerminal_model_Pos = LocalTerminal_model_model_cutout_Pos + vec(0,0,-LocalTerminal_model_model_cutout_Size[3]/2)
+            LocalTerminal_model_Size = LocalTerminal_model_model_Size
+            
+            addHolo_nameGroup_Open("LocalTerminal_")
+            
+            addHolo("RT",vec(),vec(),ang(),vec(),"cube","","") addHolo_INTO(entity())
+            addHolo("Base",vec(),vec(),ang(0,0,0),vec(),"cube","","RT")
+            addHolo("Panel",vec(),vec(),ang(-40,0,0),vec(),"cube","","Base")
+            addHolo("rgp_rt",vec(),vec(),ang(),vec(),"cube","","Panel")
+            
+            addHolo("",vec(0,0,0.6-3),vec(1),ang(0,0,0),vec(255),"models/props_phx/construct/metal_wire1x2b.mdl","","Panel")
+            addHolo_offset(-vec( -0.026642 ,23.722664 ,2.965932 ))
+            local LocalTerminal_model_model_cutout_Pos_ = LocalTerminal_model_model_cutout_Pos:rotate(0,-90,0)
+            addHolo("",vec(0,0,-1.5),vec(1),ang(0,90,0),vec(255),"models/sprops/rectangles/size_4/rect_36x84x3.mdl",LocalTerminal_model_material_Panel,"Panel")
+            addHolo_clip(LocalTerminal_model_model_cutout_Pos_,ang(0,90,0),LocalTerminal_model_model_cutout_Size[1])
+            addHolo("",vec(0,0,-1.5),vec(1),ang(0,90,0),vec(255),"models/sprops/rectangles/size_4/rect_36x84x3.mdl",LocalTerminal_model_material_Panel,"Panel")
+            addHolo_clip(LocalTerminal_model_model_cutout_Pos_,ang(0,-90,0),LocalTerminal_model_model_cutout_Size[1])
+            addHolo("",vec(0,0,-1.5),vec(1),ang(0,90,0),vec(255),"models/sprops/rectangles/size_4/rect_36x84x3.mdl",LocalTerminal_model_material_Panel,"Panel")
+            addHolo_clip(LocalTerminal_model_model_cutout_Pos_,ang(0, 0,0),LocalTerminal_model_model_cutout_Size[2])
+            addHolo_clip(LocalTerminal_model_model_cutout_Pos_,ang(0,90,0),-LocalTerminal_model_model_cutout_Size[1])
+            addHolo_clip(LocalTerminal_model_model_cutout_Pos_,ang(0,-90,0),-LocalTerminal_model_model_cutout_Size[1])
+            addHolo("",vec(0,0,-1.5),vec(1),ang(0,90,0),vec(255),"models/sprops/rectangles/size_4/rect_36x84x3.mdl",LocalTerminal_model_material_Panel,"Panel")
+            addHolo_clip(LocalTerminal_model_model_cutout_Pos_,ang(0,180,0),LocalTerminal_model_model_cutout_Size[2])
+            addHolo_clip(LocalTerminal_model_model_cutout_Pos_,ang(0,90,0),-LocalTerminal_model_model_cutout_Size[1])
+            addHolo_clip(LocalTerminal_model_model_cutout_Pos_,ang(0,-90,0),-LocalTerminal_model_model_cutout_Size[1])
+            addHolo(
+                ""
+                ,LocalTerminal_model_model_cutout_Pos + vec(0,LocalTerminal_model_model_cutout_Size[2],0)
+                ,vec(1)
+                ,ang(0,0,0)
+                ,LocalTerminal_model_color_Panel
+                ,"models/sprops/rectangles_thin/size_0/rect_1_5x24x1_5.mdl"
+                ,LocalTerminal_model_material_Panel
+                ,"Panel"
+            )
+            addHolo_offset(ang(0,0,LocalTerminal_model_model_cutout_Angle),vec(0,-0.75,-0.75))
+            addHolo_clip(vec(),ang(0, 0,0),-LocalTerminal_model_model_cutout_Size[1])
+            addHolo_clip(vec(),ang(0,180,0),-LocalTerminal_model_model_cutout_Size[1])
+            addHolo(
+                ""
+                ,LocalTerminal_model_model_cutout_Pos + vec(0,-LocalTerminal_model_model_cutout_Size[2],0)
+                ,vec(1)
+                ,ang(0,180,0)
+                ,LocalTerminal_model_color_Panel
+                ,"models/sprops/rectangles_thin/size_0/rect_1_5x24x1_5.mdl"
+                ,LocalTerminal_model_material_Panel
+                ,"Panel"
+            )
+            addHolo_offset(ang(0,0,LocalTerminal_model_model_cutout_Angle),vec(0,-0.75,-0.75))
+            addHolo_clip(vec(),ang(0, 0,0),-LocalTerminal_model_model_cutout_Size[1])
+            addHolo_clip(vec(),ang(0,180,0),-LocalTerminal_model_model_cutout_Size[1])
+            addHolo(
+                ""
+                ,LocalTerminal_model_model_cutout_Pos + vec( LocalTerminal_model_model_cutout_Size[1],0,0)
+                ,vec(1)
+                ,ang(0,-90,0)
+                ,LocalTerminal_model_color_Panel
+                ,"models/sprops/rectangles_thin/size_0/rect_1_5x36x1_5.mdl"
+                ,LocalTerminal_model_material_Panel
+                ,"Panel"
+            )
+            addHolo_offset(ang(0,0,LocalTerminal_model_model_cutout_Angle),vec(0,-0.75,-0.75))
+            addHolo_clip(vec(),ang(0, 0,0),-LocalTerminal_model_model_cutout_Size[2])
+            addHolo_clip(vec(),ang(0,180,0),-LocalTerminal_model_model_cutout_Size[2])
+            addHolo(
+                ""
+                ,LocalTerminal_model_model_cutout_Pos + vec(-LocalTerminal_model_model_cutout_Size[1],0,0)
+                ,vec(1)
+                ,ang(0,90,0)
+                ,LocalTerminal_model_color_Panel
+                ,"models/sprops/rectangles_thin/size_0/rect_1_5x36x1_5.mdl"
+                ,LocalTerminal_model_material_Panel
+                ,"Panel"
+            )
+            addHolo_offset(ang(0,0,LocalTerminal_model_model_cutout_Angle),vec(0,-0.75,-0.75))
+            addHolo_clip(vec(),ang(0, 0,0),-LocalTerminal_model_model_cutout_Size[2])
+            addHolo_clip(vec(),ang(0,180,0),-LocalTerminal_model_model_cutout_Size[2])
+            for(C = 1,3) {
+                    if(C == 1) {Lamp_pos = LocalTerminal_model_model_cutout_Pos + vec(0,-LocalTerminal_model_model_cutout_Size[2] - LocalTerminal_model_lamp_Radius - LocalTerminal_model_model_separation,0.2)}
+                elseif(C == 2) {Lamp_pos = vec( LocalTerminal_model_lamp_Radius*2+LocalTerminal_model_lamp_Separation,0,0)}
+                elseif(C == 3) {Lamp_pos = vec(-LocalTerminal_model_lamp_Radius*2-LocalTerminal_model_lamp_Separation,0,0)}
+                
+                addHolo(
+                    C == 1 ? "firstLamp" : ""
+                    ,Lamp_pos
+                    ,vec(LocalTerminal_model_lamp_Radius,LocalTerminal_model_lamp_Radius,0.2)
+                    ,ang(0,0,0)
+                    ,LocalTerminal_model_color_Lamp
+                    ,"hq_rcylinder_thick"
+                    ,LocalTerminal_model_material_Lamp
+                    ,C == 1 ? "Panel" : "firstLamp"
+                )
+                local Dome_radius = LocalTerminal_model_lamp_Radius*0.87
+                local Dome_clip = Dome_radius*0.45
+                local Dome_cos = sin(acos(Dome_clip/Dome_radius*0.97))
+                local Tube_height = Dome_radius/2*0.965
+                addHolo("",vec(0,0,0.0),vec(Dome_radius),ang(0,0,0),LocalTerminal_model_color_Lamp,"hq_hdome_thin",LocalTerminal_model_material_Lamp,"#"+AddHolo_lastName)
+                addHolo_clip(vec(),ang(90,0,0),-Dome_clip)
+                addHolo("",vec(0,0,0.0),vec(Dome_radius),ang(0,0,0),vec(255)*1.0,"hq_hdome",LocalTerminal_model_material_Glass,"#"+AddHolo_lastName)
+                addHolo_clip(vec(),ang(-90,0,0),Dome_clip)
+                addHolo_alpha(254)
+                addHolo("",vec(0,0,0),vec(Dome_radius,Dome_radius,Tube_height)*Dome_cos,ang(0,0,0),LocalTerminal_model_color_Lamp,"hq_tube",LocalTerminal_model_material_Lamp,"#"+AddHolo_lastName)
+                addHolo("",vec(0,0,Tube_height-0.1),vec(Dome_radius,Dome_radius,Dome_radius*0.32)*0.98*Dome_cos,ang(180,0,0),1 ? vec(50,125,255) : vec(10),"hq_hdome","lights/white","#"+AddHolo_lastName)
+                #- ADD EFFECT THERE! & BUILD LIBRARY line523
+            }
+            local LocalTerminal_model_b_BaseName = "b_Base"
+            local LocalTerminal_model_b_BaseSize = vec(min(7,LocalTerminal_model_model_cutout_Size[1]),4,5)
+            local LocalTerminal_model_b_BasePos = vec(LocalTerminal_model_model_cutout_Pos[1],LocalTerminal_model_model_cutout_Pos[2]+LocalTerminal_model_model_cutout_Size[2]+LocalTerminal_model_model_separation+LocalTerminal_model_b_BaseSize[2],LocalTerminal_model_b_BaseHeight-LocalTerminal_model_b_BaseSize[3])
+            local LocalTerminal_model_b_Size = vec(LocalTerminal_model_b_BaseSize[2],LocalTerminal_model_b_BaseSize[2],LocalTerminal_model_b_Height)
+                                                    -vec(LocalTerminal_model_b_Indent,LocalTerminal_model_b_Indent,0)
+            local LocalTerminal_model_b_Pos = vec(LocalTerminal_model_b_BaseSize[1]-LocalTerminal_model_b_Size[1]-LocalTerminal_model_b_Indent,0,LocalTerminal_model_b_BaseSize[3])
+            addHolo(LocalTerminal_model_b_BaseName,LocalTerminal_model_b_BasePos,LocalTerminal_model_b_BaseSize,ang(0,0,0),LocalTerminal_model_color_Lamp*0.8,"hq_rcube_thin",LocalTerminal_model_material_Panel,"Panel")
+            #addHolo("",vec(0,0,LocalTerminal_model_b_BaseSize[3]),vec(0.5),ang(0,0,0),LocalTerminal_model_color_Panel,"hexagon","bull/various/capacitor",LocalTerminal_model_b_BaseName)
+            addHolo("",LocalTerminal_model_b_Pos,LocalTerminal_model_b_Size,ang(0,0,0),vec(255,30,30),"hq_rcylinder","jaanus/wiretool/rangerha",LocalTerminal_model_b_BaseName)
+            addHolo_disableShading()
+            #addHolo("",vec(),LocalTerminal_model_b_Size,ang(),vec(255,0,0),"hq_rcylinder","lights/white","#"+AddHolo_lastName) #addHolo_alpha(5)
+            #LocalTerminal_model_material_Panel = "" #############################################################
+            local LocalTerminal_model_trigger_BaseName = "t_Base"
+            local LocalTerminal_model_trigger_BaseSize = vec(LocalTerminal_model_b_BaseSize[1] - 1.5,4.5,5)
+            local LocalTerminal_model_trigger_BasePos = LocalTerminal_model_b_BasePos:setZ(0)
+                                                            +vec(
+                                                                 0
+                                                                ,LocalTerminal_model_trigger_BaseSize[2]+LocalTerminal_model_b_BaseSize[2]+LocalTerminal_model_model_separation
+                                                                ,LocalTerminal_model_trigger_BaseHeight-LocalTerminal_model_trigger_BaseSize[3]
+                                                            )
+            local LocalTerminal_model_trigger_AxisName = "t_Axis"
+            local LocalTerminal_model_trigger_AxisLength1_6 = (LocalTerminal_model_trigger_BaseSize[2]  - 0.75)/6
+            local LocalTerminal_model_trigger_AxisRadius = 1.6
+            local LocalTerminal_model_trigger_AxisSize = vec(LocalTerminal_model_trigger_AxisRadius,LocalTerminal_model_trigger_AxisRadius,LocalTerminal_model_trigger_AxisLength1_6*2)
+            local LocalTerminal_model_trigger_AxisPos = vec(0,0,LocalTerminal_model_trigger_BaseSize[3]+LocalTerminal_model_trigger_AxisRadius+0.1)
+            local LocalTerminal_model_trigger_RootName = "t_Root"
+            local LocalTerminal_model_trigger_RootRadius = LocalTerminal_model_trigger_AxisRadius*0.85
+            local LocalTerminal_model_trigger_RootSize = vec(LocalTerminal_model_trigger_RootRadius,LocalTerminal_model_trigger_RootRadius,LocalTerminal_model_trigger_AxisLength1_6*4.5)
+            #local LocalTerminal_model_trigger_
+            addHolo(LocalTerminal_model_trigger_BaseName
+                ,LocalTerminal_model_trigger_BasePos
+                ,LocalTerminal_model_trigger_BaseSize
+                ,ang(0,0,0)
+                ,LocalTerminal_model_color_Lamp*0.8
+                ,"hq_rcube_thin"
+                ,LocalTerminal_model_material_Panel
+                ,"Panel"
+            )
+            addHolo(
+                LocalTerminal_model_trigger_AxisName
+                ,LocalTerminal_model_trigger_AxisPos,LocalTerminal_model_trigger_AxisSize
+                ,ang(0,0,90)
+                ,LocalTerminal_model_color_Lamp*0.8
+                ,"hq_rcylinder_thin"
+                ,LocalTerminal_model_material_Panel
+                ,LocalTerminal_model_trigger_BaseName
+            )
+            addHolo(
+                LocalTerminal_model_trigger_AxisName
+                ,LocalTerminal_model_trigger_AxisPos,LocalTerminal_model_trigger_AxisSize
+                ,ang(0,0,90)
+                ,LocalTerminal_model_color_Lamp*0.8
+                ,"hq_rcylinder_thin"
+                ,LocalTerminal_model_material_Panel
+                ,LocalTerminal_model_trigger_BaseName
+            )
+            addHolo(
+                ""
+                ,vec(0,0,LocalTerminal_model_trigger_AxisLength1_6*5)
+                ,vec(LocalTerminal_model_trigger_AxisRadius,LocalTerminal_model_trigger_AxisRadius,LocalTerminal_model_trigger_AxisLength1_6)
+                ,ang()
+                ,LocalTerminal_model_color_Lamp*0.8
+                ,"hq_rcylinder_thin"
+                ,LocalTerminal_model_material_Panel
+                ,LocalTerminal_model_trigger_AxisName
+            )
+            addHolo(
+                ""
+                ,vec(0,0,-LocalTerminal_model_trigger_AxisLength1_6*5)
+                ,vec(LocalTerminal_model_trigger_AxisRadius,LocalTerminal_model_trigger_AxisRadius,LocalTerminal_model_trigger_AxisLength1_6)
+                ,ang()
+                ,LocalTerminal_model_color_Lamp*0.8
+                ,"hq_rcylinder_thin"
+                ,LocalTerminal_model_material_Panel
+                ,LocalTerminal_model_trigger_AxisName
+            )
+            addHolo(
+                LocalTerminal_model_trigger_RootName
+                ,vec()
+                ,LocalTerminal_model_trigger_RootSize
+                ,ang(0,LocalTerminal_trigger_AngleTrig,0)
+                ,vec(255)
+                ,"hq_rcylinder_thin"
+                ,LocalTerminal_model_material_Steel
+                ,LocalTerminal_model_trigger_AxisName
+            )
+            local L = 3
+            local R = LocalTerminal_model_trigger_AxisLength1_6*0.95
+            addHolo(
+                ""
+                ,vec(0,L,LocalTerminal_model_trigger_AxisLength1_6*3)
+                ,vec(R,R,L)
+                ,ang(0,0,-90)
+                ,vec(255)
+                ,"hq_cylinder"
+                ,LocalTerminal_model_material_Steel
+                ,LocalTerminal_model_trigger_RootName
+            )
+            addHolo(
+                ""
+                ,vec(0,L,-LocalTerminal_model_trigger_AxisLength1_6*3)
+                ,vec(R,R,L)
+                ,ang(0,0,-90)
+                ,vec(255)
+                ,"hq_cylinder"
+                ,LocalTerminal_model_material_Steel
+                ,LocalTerminal_model_trigger_RootName
+            )
+            addHolo(
+                ""
+                ,vec(0,L*2,0)
+                ,vec(R,R,LocalTerminal_model_trigger_AxisLength1_6*6)*1.01
+                ,ang(0,0,0)
+                ,vec(255)
+                ,"hq_rcylinder_thin"
+                ,LocalTerminal_model_material_Steel
+                ,LocalTerminal_model_trigger_RootName
+            )
+            local S = vec(1.5,LocalTerminal_model_trigger_BaseSize[2]-1,0.5)
+            local LocalTerminal_model_FontScale = 0.8
+            local LocalTerminal_model_FontHoloSize = vec(0.2,0.05,0.2)*LocalTerminal_model_FontScale
+            addHolo(
+                "t_lightON"
+                ,vec( LocalTerminal_model_trigger_BaseSize[1]+S[1],0,LocalTerminal_model_trigger_BaseSize[3]-S[3]+LocalTerminal_model_trigger_BaseHeight)
+                ,S
+                ,ang(0,0,0)
+                ,vec(60,255,60)*0.25
+                ,"hq_rcube"
+                ,""
+                ,LocalTerminal_model_trigger_BaseName
+            )
+            addHolo_alpha(LocalTerminal_trigger_StateNeed ? 130 : 255)
+            addHolo(
+                ""
+                ,vec()
+                ,S*0.92
+                ,ang(0,0,0)
+                ,vec(60,255,60)
+                ,"hq_rcube"
+                ,"lights/white"
+                ,"#"+AddHolo_lastName
+            )
+            addHolo(
+                ""
+                ,vec(0,LocalTerminal_model_FontScale,S[3])
+                ,LocalTerminal_model_FontHoloSize
+                ,ang(0,90,90)
+                ,vec(10)
+                ,"models/sprops/misc/alphanum/alphanum_0.mdl"
+                ,""
+                ,"t_lightON"
+            )
+            addHolo("",vec(0,-LocalTerminal_model_FontScale    ,S[3]),LocalTerminal_model_FontHoloSize,ang(0,90,90),vec(10),"models/sprops/misc/alphanum/alphanum_N.mdl","","t_lightON")
+            addHolo("t_lightOFF"
+                ,vec(-LocalTerminal_model_trigger_BaseSize[1]-S[1],0,LocalTerminal_model_trigger_BaseSize[3]-S[3]+LocalTerminal_model_trigger_BaseHeight)
+                ,S
+                ,ang(0,0,0)
+                ,vec(255,60,60)*0.25
+                ,"hq_rcube"
+                ,""
+                ,LocalTerminal_model_trigger_BaseName
+            )
+            addHolo_alpha(LocalTerminal_trigger_StateNeed ? 255 : 130)
+            addHolo(
+                ""
+                ,vec()
+                ,S*0.92
+                ,ang(0,0,0)
+                ,vec(255,60,60)
+                ,"hq_rcube"
+                ,"lights/white"
+                ,"#"+AddHolo_lastName
+            )
+            addHolo(
+                ""
+                ,vec(0,LocalTerminal_model_FontScale*1.8,S[3])
+                ,LocalTerminal_model_FontHoloSize
+                ,ang(0,90,90)
+                ,vec(10)
+                ,"models/sprops/misc/alphanum/alphanum_0.mdl"
+                ,""
+                ,"t_lightOFF"
+            )
+            addHolo(
+                ""
+                ,vec(0,LocalTerminal_model_FontScale*0,S[3])
+                ,LocalTerminal_model_FontHoloSize
+                ,ang(0,90,90)
+                ,vec(10)
+                ,"models/sprops/misc/alphanum/alphanum_F.mdl"
+                ,""
+                ,"t_lightOFF"
+            )
+            addHolo(
+                ""
+                ,vec(0,-LocalTerminal_model_FontScale*1.8,S[3])
+                ,LocalTerminal_model_FontHoloSize
+                ,ang(0,90,90)
+                ,vec(10)
+                ,"models/sprops/misc/alphanum/alphanum_F.mdl"
+                ,""
+                ,"t_lightOFF"
+            )
+            
+            addHolo(
+                "Keyboard"
+                ,vec(-14,0,-1.25)
+                ,vec(1)
+                ,ang(-4,180,0)
+                ,vec(255)
+                ,"models/beer/wiremod/keyboard.mdl"
+                ,""
+                ,"Panel"
+            )
+            #addHolo("",vec(0,0,-0.05),vec(1),ang(),vec(35,100,255),"models/beer/wiremod/keyboard.mdl","lights/white","#"+AddHolo_lastName)
+            
+            addHolo_nameGroup_Close("LocalTerminal_")
+            addHolo_timer("LocalTerminal_model_Load")
+            addHolo_start() #print(AddHolo_queye:count())
+            
+            function egp_show(Display:string) {
+                local Center = vec2(LocalTerminal_model_Size[2],LocalTerminal_model_Size[1]) * LocalTerminal_egp_PixelsPerUnint
+                if(LocalTerminal_egp_E) {
+                    if(Display == "disabled") {
+                        LocalTerminal_egp_W:egpText(1,"DISABLED",Center)
+                        LocalTerminal_egp_W:egpAlign(1,1,1)
+                        LocalTerminal_egp_W:egpSize(1,90 * LocalTerminal_egp_PixelsPerUnint / 16)
+                        LocalTerminal_egp_W:egpColor(1,vec(255,10,10))
+                    }
+                    elseif(Display == "ready") {
+                        LocalTerminal_egp_W:egpText(1,"READY",Center)
+                        LocalTerminal_egp_W:egpAlign(1,1,1)
+                        LocalTerminal_egp_W:egpSize(1,90 * LocalTerminal_egp_PixelsPerUnint / 16)
+                        LocalTerminal_egp_W:egpColor(1,vec(10,255,10))
+                    }
+                }
+            }
+            function alpha_ready(Ready:number) {
+                Alpha_Ready = Ready
+                if(Ready) {
+                    egp_show("ready")
+                }
+                else {
+                    egp_show("disabled")
+                }
+                Alpha_timer_Countdown = 0
+            }
+            function number localTerminal_trigger_state() {
+                if(LocalTerminal_trigger_StateNeed == LocalTerminal_trigger_StateReal) {
+                    LocalTerminal_trigger_StateNeed = !LocalTerminal_trigger_StateReal
+                    timer("LocalTerminal_model_trigger",1)
+                    return 1
+                }
+                return 0
+            }
+            function number localTerminal_egp_setup(EGP_e:entity) {
+                local EGP_w = EGP_e:wirelink()
+                local P1 = EGP_w:egpToWorld(vec2())
+                local P2 = EGP_w:egpToWorld(vec2(256,0))
+                local P3 = EGP_w:egpToWorld(vec2(0,256))
+                local V1 = (P2-P1):normalized()
+                local V2 = (P3-P1):normalized()
+                if(abs(P1:distance(P2)/P1:distance(P3)-1) > 0.01) {return 0} #EGP должен быть квадратным
+                local Panel = AddHolo["LocalTerminal_Panel/entity",entity]
+                local P1_local = EGP_e:toLocal(P1)
+                
+                local VF = Panel:up()
+                local N = V2:cross(V1)
+                local ACOS = acos(N:dot(VF))
+                local CROSS = N:cross(VF)
+                local Angles = EGP_e:angles():rotateAroundAxis(CROSS,ACOS)
+                local N = N:rotateAroundAxis(CROSS,ACOS)
+                local V1 = V1:rotateAroundAxis(CROSS,ACOS)
+                
+                local VF = Panel:right()
+                local ACOS = acos(V1:dot(VF))
+                local CROSS = V1:cross(VF)
+                local Angles = Angles:rotateAroundAxis(CROSS,ACOS)
+                local V1 = V1:rotateAroundAxis(CROSS,ACOS)
+                
+                EGP_e:setAng(Angles)
+                EGP_e:setPos(Panel:toWorld(LocalTerminal_model_Pos+LocalTerminal_model_Size) - P1_local:rotate(Angles))
+                
+                EGP_e:removeOnDelete(Panel)
+                EGP_e:propFreeze(1)
+                EGP_e:propMakePersistent(1)
+                LocalTerminal_egp_E = EGP_e
+                LocalTerminal_egp_W = EGP_w
+                LocalTerminal_egp_PixelsPerUnint = 256 / P1:distance(P3)
+                return 1
+            }
+            
+            #[ #DETELETE THIS
+            local LocalTerminal_model_ConvexLedge = 0.5
+            #local LocalTerminal_model_material_Panel = "sprops/trans/misc/beam_side"
+            local LocalTerminal_model_material_Panel = "metal2"
+            local LocalTerminal_model_material_Lamp = "phoenix_storms/OfficeWindow_1-1"
+            local LocalTerminal_model_material_Glass = "phoenix_storms/pack2/glass"
+            local LocalTerminal_model_color_Panel = vec(255)
+            local LocalTerminal_model_color_Lamp = vec(255)
+            addHolo("RT",vec(),vec(),ang(),vec(),"cube","","") addHolo_INTO(entity())
+            addHolo("Base" ,vec(),vec(),ang(-30,0,0),vec(   ),"cube","","RT")
+            addHolo("Panel",vec(),vec(0),ang(  0,90,0),vec(255),"models/sprops/rectangles/size_4/rect_36x84x3.mdl","models/wireframe","Base")
+            addHolo("",vec(    -9,    0,0),vec(1),ang(0,90,0),LocalTerminal_model_color_Panel,"models/sprops/rectangles/size_2_5/rect_18x84x3.mdl",LocalTerminal_model_material_Panel,"Base")
+            addHolo("",vec(     9,-15-12,0),vec(1),ang(0,90,0),LocalTerminal_model_color_Panel,"models/sprops/rectangles/size_2_5/rect_18x30x3.mdl",LocalTerminal_model_material_Panel,"Base")
+            addHolo("",vec(     9,15+12,0),vec(1),ang(0,90,0),LocalTerminal_model_color_Panel,"models/sprops/rectangles/size_2_5/rect_18x30x3.mdl",LocalTerminal_model_material_Panel,"Base")
+            addHolo("",vec(18-1.5,    0,0),vec(1),ang(0,90,0),LocalTerminal_model_color_Panel,"models/sprops/rectangles/size_1/rect_3x24x3.mdl",LocalTerminal_model_material_Panel,"Base")
+            addHolo("",vec(0,0,LocalTerminal_model_ConvexLedge-3+1.5),vec(1),ang(0,90,0),vec(255),"models/props_phx/construct/metal_wire1x2b.mdl","","Panel")
+            addHolo_offset(-vec( -0.026642 ,23.722664 ,2.965932 ))
+            local LocalTerminal_model_model_posX = 7.5
+            addHolo("monitor",vec(LocalTerminal_model_model_posX,0,1.5-0.1),vec(7.5,12,0.1),ang(0,0,0),vec(255),"cube","models/wireframe","Base")
+            addHolo("Keyboard",vec(-14,0,0.3),vec(1),ang(-4,180,0),vec(255),"models/beer/wiremod/keyboard.mdl","","Base")
+            
+            local LocalTerminal_model_model_separation = 1.5
+            
+            local Lamp_radius = 1.5
+            local Lamp_separation = 1.5
+            for(C = 1,3) {
+                    if(C == 1) {Lamp_pos = vec( LocalTerminal_model_model_posX,-12 - Lamp_radius - LocalTerminal_model_model_separation,1.5)}
+                elseif(C == 2) {Lamp_pos = vec( Lamp_radius*2+Lamp_separation,0,0)}
+                elseif(C == 3) {Lamp_pos = vec(-Lamp_radius*2-Lamp_separation,0,0)}
+                
+                addHolo(C == 1 ? "firstLamp" : "",Lamp_pos,vec(Lamp_radius,Lamp_radius,0.3),ang(0,0,0),vec(255),"hq_rcylinder_thick",LocalTerminal_model_material_Lamp,C == 1 ? "Base" : "firstLamp")
+                local Dome_radius = Lamp_radius*0.75
+                local Dome_clip = Dome_radius*0.45
+                local Dome_cos = sin(acos(Dome_clip/Dome_radius*0.97))
+                local Tube_safeHeight = Dome_radius*0.03
+                addHolo("",vec(0,0,0.0),vec(Dome_radius),ang(0,0,0),vec(255),"hq_hdome",LocalTerminal_model_material_Lamp,"#"+AddHolo_lastName )
+                addHolo_clip(vec(),ang(90,0,0),-Dome_clip)
+                addHolo("",vec(0,0,0.0),vec(Dome_radius),ang(0,0,0),vec(255),"hq_hdome",LocalTerminal_model_material_Glass,"#"+AddHolo_lastName )
+                addHolo_clip(vec(),ang(-90,0,0),Dome_clip)
+                addHolo_alpha(254)
+                addHolo("",vec(0,0,Dome_clip-Tube_safeHeight*0.55),vec(Dome_radius,Dome_radius,Tube_safeHeight)*Dome_cos,ang(0,0,0),vec(255),"hq_tube",LocalTerminal_model_material_Lamp,"#"+AddHolo_lastName )
+                addHolo("",vec(0,0,Tube_safeHeight-0.05),vec(Dome_radius,Dome_radius,Dome_radius*0.05)*0.9,ang(180,0,0),vec(10),"hq_hdome","lights\white","#"+AddHolo_lastName )
+                #- ADD EFFECT THERE! & BUILD LIBRARY line523
+            }
+            addHolo_nameGroup_Close("LocalTerminal_")
+            addHolo_timer("LocalTerminal_model_Load")
+            addHolo_start()
+            ]#
+        }
+        
+        
+        LocalTerminal_model_Preload = 1
+        #timer("LocalTerminal_model_Load",1)
+        code_Debugging(array("LocalTerminal_model_Preload"))
+    break
+    case "LocalTerminal_model_Load",
+        
+        
+        if(changed(0)) {
+            local Panel = AddHolo["LocalTerminal_Panel/entity",entity]
+            
+            LocalTerminal_trigger_Axis_E = AddHolo["LocalTerminal_trigger_Axis/entity",entity]
+            LocalTerminal_trigger_Root_E = AddHolo["LocalTerminal_trigger_Root/entity",entity]
+            LocalTerminal_trigger_Root_I = AddHolo["LocalTerminal_trigger_Root/index",number]
+            
+            
+            localTerminal_egp_setup(spawnEGP("models/sprops/rectangles/size_4/rect_36x36x3.mdl",vec(),ang(),1))
+            egp_show("disabled")
+        }
+        
+        local Key = owner():keyPressed("mouse_4")
+        if(changed(Key) & Key) {
+            localTerminal_trigger_state()
+        }
+        timer("LocalTerminal_model_Load",50)
+        
+        LocalTerminal_model_Load = 1
+        #code_Debugging(array("LocalTerminal_model_Load"))
+    break
+    case "LocalTerminal_model_trigger",
+        if(LocalTerminal_trigger_StateNeed != LocalTerminal_trigger_StateReal) {
+            local LocalTerminal_trigger_AngleReal = LocalTerminal_trigger_Axis_E:toLocal(LocalTerminal_trigger_Root_E:angles())[2]
+            local LocalTerminal_trigger_AngleNeed = LocalTerminal_trigger_StateNeed ? -LocalTerminal_trigger_AngleTrig : LocalTerminal_trigger_AngleTrig
+            
+            LocalTerminal_trigger_AngleReal = clamp( LocalTerminal_trigger_AngleReal + clamp(LocalTerminal_trigger_AngleNeed-LocalTerminal_trigger_AngleReal,-12,12) ,-LocalTerminal_trigger_AngleTrig,LocalTerminal_trigger_AngleTrig)
+            
+            holoAng(LocalTerminal_trigger_Root_I,LocalTerminal_trigger_Axis_E:toWorld(ang(0,LocalTerminal_trigger_AngleReal,0)))
+            
+            if(LocalTerminal_trigger_AngleReal == LocalTerminal_trigger_AngleNeed) {
+                local LocalTerminal_model_trigger_lightON_i = AddHolo["LocalTerminal_trigger_lightON/index",number]
+                local LocalTerminal_model_trigger_lightOFF_i = AddHolo["LocalTerminal_trigger_lightOFF/index",number]
+                
+                alpha_ready(LocalTerminal_trigger_StateNeed)
+                holoAlpha(LocalTerminal_model_trigger_lightON_i,LocalTerminal_trigger_StateNeed ? 130 : 255)
+                holoAlpha(LocalTerminal_model_trigger_lightOFF_i,LocalTerminal_trigger_StateNeed ? 255 : 130)
+                LocalTerminal_trigger_StateReal = LocalTerminal_trigger_StateNeed
+                LocalTerminal_trigger_Axis_E:soundPlay("LocalTerminal_model_trigger_startMoveStop",1.2,"buttons/lever7.wav")
+                soundVolume("LocalTerminal_model_trigger_startMoveStop",0.2)
+                break
+            }
+            if(changed(LocalTerminal_trigger_StateNeed)) {
+                LocalTerminal_trigger_Axis_E:soundPlay("LocalTerminal_model_trigger_startMoveStart",1.2,"buttons/lever8.wav")
+                soundVolume("LocalTerminal_model_trigger_startMoveStart",0.4)
+            }
+            timer("LocalTerminal_model_trigger",50)
+        }
+    break
+    
+    
+    
+    case "AddHolo",
+        addHolo()
+    break
+}
+
+#setName("Alpha" + "\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1e6))
+#[
+@persist W:wirelink A Curtime
+interval(50)
+
+if(changed(0)) {
+    
+    Curtime = curtime()
+    
+    W = entity():isWeldedTo():wirelink()
+    W:egpClear()
+    
+    #W:egpResolution(vec2(0),vec2(512,256))
+    #W:egpScale(vec2(0,512),vec2(0,512))
+    
+    #W:egpBoxOutline(1,vec2(256,128),vec2(256,256))
+    W:egpText(2,"00:00:00",vec2(256,142))
+    #W:egpParent(2,1)
+    W:egpAlign(2,1,1)
+    W:egpSize(2,120)
+    W:egpFont(2,"Courier New")
+    W:egpColor(2,vec(255,75,10))
+    
+    
+    W:egpText(3,"",vec2(256,180))
+    
+    function string numberAsText([Number CharCount]:number) {
+        Number = abs(floor(Number))
+        CharCount = abs(floor(CharCount))
+        local String = Number + ""
+        String = "0":repeat(CharCount-String:length()) + String
+        
+        return String
+    }
+}
+
+Interval = curtime()-Curtime
+Curtime = curtime()
+A += Interval * 1
+
+AA = floor(A/60)
+BB = floor(A-floor(A/60)*60)
+CC = floor((A*100)%100)
+S = (AA > 9 ? "" : "0")+AA + (BB > 9 ? ":" : ":0")+BB + (CC > 9 ? ":" : ":0")+CC
+W:egpSetText(2,S)
+W:egpSetText(3,""+floor(A,2))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

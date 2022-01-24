@@ -1,0 +1,579 @@
+@name Q002
+
+@inputs 
+@outputs DD OPS CursorTarget:string
+@persist [E O]:entity [Q Project]:table
+
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+
+if(changed(0)) {
+    
+    #include "old 28.10.2017/25.07.2017/EGPS"
+    #include "old 28.10.2017/25.07.2017/Q002LIB"
+    ##include "QResource"
+    
+    
+    E = entity() E:setSkin(1)
+    O = owner()
+    
+    
+    
+    timer("create", 1)
+}
+
+if(clk("create")) {
+        timer("create", 10)
+    
+    local CreateStep = Q["createStep", number] = Q["createStep", number] + 1
+    if(CreateStep == 1) {
+        
+        egpSelect(E:isWeldedTo():wirelink())
+        egpClear()
+        
+        create_SSD()
+        create_objectList()
+        listing_objectList()
+        
+        create_SSD()
+        findInSphere(vec(),10000)
+        local Find = findToArray()
+        local Text = Find:concat():explode("Entity") Text:remove(1) #Text[1, string] = Text:count():toString()
+        Q["ssd/list", array] = Text
+        listing_SSD()
+        
+    }
+    ###########################################################################
+    ###########################################################################
+    ###########################################################################
+    elseif(CreateStep == 2) {
+        local N = 0
+        for(C = 1, 5) {
+            local C = C + N * 100
+            local Group_n = "groupTest" + C
+            addGroup_objectList(Group_n)
+            for(F = 1, randint(5)) {
+                addObject_objectList("propTest" + F, "prop", Group_n)
+            }
+        }
+        listing_objectList()
+        
+    }
+    
+    
+    ###########################################################################
+    ###########################################################################
+    ###########################################################################
+    elseif(CreateStep == 3) {
+        local N = 1
+        for(C = 1, 5) {
+            local C = C + N * 5
+            local Group_n = "groupTest" + C
+            addGroup_objectList(Group_n)
+            for(F = 1, randint(5)) {
+                addObject_objectList("propTest" + F, "prop", Group_n)
+            }
+        }
+        listing_objectList()
+        
+    }
+    
+    
+    ###########################################################################
+    ###########################################################################
+    ###########################################################################
+    elseif(CreateStep == 4) {
+        
+    }
+    
+    
+    ###########################################################################
+    ###########################################################################
+    ###########################################################################
+    elseif(CreateStep == 5) {
+        
+    }
+    
+    
+    ###########################################################################
+    ###########################################################################
+    ###########################################################################
+    else {
+        stoptimer("create")
+        timer("", 1)
+    }
+}
+
+
+
+if(clk("")) {
+        timer("", 75)
+    
+    local KeyC = O:keyPressed("C") | 1
+    if(KeyC) {
+        cursorPos(O)
+    }
+    
+    local Cursor = Q["cursor", vector2]
+    
+    if(changed(Cursor)) {cursorTarget()}
+     CursorTarget = Q["cursorTarget", string]
+    
+    local MOUSE_LEFT = O:keyPressed("E") | O:keyPressed("MOUSE_LEFT")
+    local MOUSE_RIGHT = O:keyPressed("MOUSE_RIGHT") #| O:keyPressed("MOUSE_LEFT") & O:keyPressed("ALT")
+    #local MOUSE_WHEEL_DOWN = O:keyPressed("MOUSE_WHEEL_DOWN")
+    #local MOUSE_WHEEL_UP = O:keyPressed("MOUSE_WHEEL_UP")
+    
+    local Click = (MOUSE_LEFT | MOUSE_RIGHT) & KeyC
+    if(changed(Click) & Click) {
+        
+        local Act = CursorTarget
+        addAct(Act)
+    }
+    
+    
+    
+    
+    
+    local Clear = array()
+    foreach(C, Act_i:number = Q["acts", array]) {
+        local Act_name = Q[Act_i + "/act/name", string]
+        
+        local NoRemove = 0
+        switch(Act_name) {
+            case "objectList/scrollBase",
+                if(MOUSE_LEFT) {
+                    if(!Q["objectList/scrollBase/lock", number]) {
+                        
+                        Q["objectList/scrollBase/cursorStartPos", number] = Cursor[2]
+                        Q["objectList/scrollBase/startPos", number] = egpGetPos("objectList/scroll")[2]
+                        Q["objectList/scrollBase/lock", number] = 1
+                        egpSetColor("objectList/scroll", 0,150,255)
+                    }
+                    
+                    local StartPos = Q["objectList/scrollBase/startPos", number]
+                    local CursorStartPos = Q["objectList/scrollBase/cursorStartPos", number]
+                    local DIF = StartPos + Cursor[2] - CursorStartPos
+                    
+                    if(changed(DIF)) {
+                        egpScroll("objectList/scroll", DIF)
+                        listing_objectList()
+                    }
+                }
+                else {
+                    Q["objectList/scrollBase/lock", number] = 0
+                    egpSetColor("objectList/scroll", 60)
+                }
+                NoRemove = MOUSE_LEFT
+            break
+            
+            case "objectList/base",
+                if(MOUSE_LEFT) {
+                    local Ending = Q["objectList/ending" , number] #end string of ze list
+                    local FontSize = Q["fontSize", number]
+                    
+                    local Base_n = "objectList/base"
+                    local Base_s = egpGetSize(Base_n)
+                    local Base_P = egpGetGlobalPos(Base_n)
+                    local LocalCursor = Cursor - Base_P
+                    
+                    
+                    local String_i = 1 + floor((Base_s[2]/2 + LocalCursor[2]) / FontSize)
+                    
+                    if(String_i & String_i <= Ending) {
+                        local Selected_i = Q["objectList/string/index/" + String_i, number] #Selected_index
+                        local Selected_t = Q["objectList/string/type/"  + String_i, string] #Selected_type
+                        
+                        if(Selected_t == "obj") {
+                            local LastSelected_i = Project["objectList/selectedObj", number]
+                            
+                            Project[LastSelected_i + "/obj/selected", number] = 0
+                            Project[Selected_i     + "/obj/selected", number] = 1
+                            Project["objectList/selectedObj", number] = Selected_i
+                        }
+                        elseif(Selected_t == "group") {
+                            Project[Selected_i + "/group/folded", number] = !Project[Selected_i + "/group/folded", number]
+                        }
+                        
+                        listing_objectList()
+                    }
+                }
+                elseif(MOUSE_RIGHT) {
+                    print("rignt")
+                }
+            break
+            
+            case "ssd/scrollBase",
+                if(MOUSE_LEFT) {
+                    if(!Q["ssd/scrollBase/lock", number]) {
+                        
+                        Q["ssd/scrollBase/cursorStartPos", vector2] = Cursor
+                        Q["ssd/scroll/lastCursorDif", vector2] = v()
+                        #Q["ssd/scrollBase/startPos", number] = egpGetPos("ssd/scroll")[2]
+                        Q["ssd/scrollBase/lock", number] = 1
+                        Q["ssd/scroll/add", number] = egpGetPos("ssd/scroll")[2]
+                        egpSetColor("ssd/scroll", 0,150,255)
+                    }
+                    
+                    #local StartPos = Q["ssd/scrollBase/startPos", number]
+                    local CursorStartPos = Q["ssd/scrollBase/cursorStartPos", vector2]
+                    
+                    local LastCursorDif = Q["ssd/scroll/lastCursorDif", vector2]
+                    local CursorDif = Q["ssd/scroll/lastCursorDif", vector2] = Cursor - CursorStartPos
+                    
+                    local CursorVel = CursorDif - LastCursorDif
+                    local Pos = Q["ssd/scroll/pos", number]
+                    Pos = Q["ssd/scroll/pos", number] = Pos + CursorVel[2] * clamp(abs(CursorDif[1]/400),0.001,2)
+                    
+                    if(changed(Pos)) {
+                        egpScroll("ssd/scroll", Pos)
+                        listing_SSD()
+                    }
+                }
+                else {
+                    Q["ssd/scrollBase/lock", number] = 0
+                    egpSetColor("ssd/scroll", 60)
+                }
+                NoRemove = MOUSE_LEFT
+            break
+            case "ssd/base",
+                if(MOUSE_LEFT) {
+                    local Ending = Q["ssd/ending" , number] #end string of ze list
+                    local FontSize = Q["fontSize", number]
+                    
+                    local Base_n = "ssd/base"
+                    local Base_s = egpGetSize(Base_n)
+                    local Base_P = egpGetGlobalPos(Base_n)
+                    local LocalCursor = Cursor - Base_P
+                    
+                    
+                    local String_i = 1 + floor((Base_s[2]/2 + LocalCursor[2]) / FontSize)
+                    
+                    if(String_i & String_i <= Ending) {
+                        local Text = Q["ssd/string/" + String_i, string]
+                        local LastSelected_i = Q["ssd/selectedObj", string]
+                        
+                        Q[LastSelected_i + "/ssd/selected", number] = 0
+                        Q[Text     + "/ssd/selected", number] = 1
+                        Q["ssd/selected", string] = Text
+                        
+                        listing_SSD()
+                    }
+                }
+                elseif(MOUSE_RIGHT) {
+                    print("rignt")
+                }
+            break
+        }
+        if(!NoRemove) {Clear = array(C):add(Clear)}
+    }
+    foreach(C, I:number = Clear) {
+        Q["acts", array]:remove(I)
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+OPS = ops()

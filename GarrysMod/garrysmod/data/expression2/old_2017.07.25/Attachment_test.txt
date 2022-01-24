@@ -1,0 +1,38 @@
+@name Attachment test
+
+@inputs 
+@outputs 
+@persist [O E]:entity
+
+
+
+if(changed(0)) {
+    
+    E = entity()
+    O = owner()
+    
+    for(C = 0,100) {
+        local At = O:bBone(C)
+        
+        local Pos = At:pos()
+        local Ang = ang()
+        
+        local Holo = holoCreate(C, Pos, vec(0.2), Ang, vec(255,150,0), "hq_sphere")
+        Holo:parentBBone(At)
+    }
+    
+    
+    
+    #print(O:bBone(9):getChildren())
+    
+    timer("", 50)
+}
+
+timer("", 50)
+
+for(C = 0,100) {
+    At = O:bBone(C)
+    
+    holoPos(C, At:pos())
+    
+}

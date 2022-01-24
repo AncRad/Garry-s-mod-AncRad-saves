@@ -1,0 +1,148 @@
+@name railway_builder
+
+@inputs 
+@outputs 
+
+#- base
+@persist [E]:entity [Gate_name]:string
+
+#- 
+@persist [O]:entity
+
+#- 
+@persist Scale [Traks]:table
+
+
+@persist 
+
+
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+
+if(changed(0)) {
+    #if(!isSinglePlayer()) {noDuplications()}
+    
+    #- base
+    E = entity()
+    E:setSkin(1)
+    Gate_name = E:getName():explode("\n"):string(1)
+    
+    #- 
+    O = owner()
+    
+    
+    #
+    #- 
+    Scale = 0.1
+    
+    Traks:pushTable(table(
+         "type"   = "track"
+        ,"A"      = "line"
+        ,"length" = 149.989
+        ,"model"  = "models/props_phx/trains/tracks/track_1x.mdl"
+    ))
+    Traks:pushTable(table(
+         "type"   = "track"
+        ,"A"      = "turn"
+        #,"length" = _PI*radius/2
+        ,"angle"  = 45
+        ,"radius" = 1154.4245
+        ,"radiusLocal" = -vec(889.075 ,-732.932,-7.381)
+        ,"model"  = "models/props_phx/trains/tracks/track_turn90.mdl"
+    ))
+    
+    
+    
+    #[
+    models/props_phx/trains/tracks/track_single.mdl
+    models/props_phx/trains/tracks/track_1x.mdl
+    models/props_phx/trains/tracks/track_4x.mdl
+    models/props_phx/trains/tracks/track_8x.mdl
+    models/props_phx/trains/tracks/track_16x.mdl
+     
+    models/props_phx/trains/tracks/track_turn45.mdl
+    models/props_phx/trains/tracks/track_turn90.mdl
+    ]#
+    
+    holoCreate(1) holoModel(1, "models/props_phx/trains/tracks/track_16x.mdl") holoScale(1, vec(Scale))
+    
+    
+    
+    
+    
+    timer("", 1)
+}
+
+
+if(clk("")) {
+        timer("", 50)
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName(Gate_name + "\nOP--S: " + ops() + "\nCPU: " + int(cpuUsage()*1e6))
+if(dupefinished()) {reset()}

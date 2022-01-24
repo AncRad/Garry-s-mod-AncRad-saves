@@ -1,0 +1,45 @@
+@name test_geometry_intersection_sphereAndLine
+
+@inputs 
+@outputs 
+
+#- sphere
+@persist [Sphere_e]:entity
+@persist [Sphere_R]:number
+
+#- line
+@persist [Line_e]:entity
+
+@trigger none
+
+
+
+if(changed(0)) {
+    
+    
+    local E = entity()
+    
+    #- sphere
+    Sphere_R = 52.5 * 1
+    Sphere_e = holoCreate(1, E:pos(), vec( Sphere_R/6), ang(), vec(255), "hq_sphere") holoParent(1, E) holoMaterial(1, "models/wireframe") holoAlpha(1, 30)
+               holoCreate(0, E:pos(), vec(-Sphere_R/6), ang(), vec(255), "hq_sphere") holoParent(0, 1) holoMaterial(0, "models/wireframe") holoAlpha(0, 30)
+}
+
+
+if(clk("")) {
+        timer("", 50)
+    
+    #- in
+          Sphere_R
+    local Sphere_P = Sphere_e:pos()
+    local Line_P = Line_e:pos()
+    
+    #- calc
+    local Line_F = Line_e:forward()
+    local DIF = Line_P-Sphere_P
+    local DIF_L = DIF:length()
+    
+    local 
+    
+    #- out
+}

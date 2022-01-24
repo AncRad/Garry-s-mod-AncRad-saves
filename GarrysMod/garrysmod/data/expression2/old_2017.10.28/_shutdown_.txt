@@ -1,0 +1,669 @@
+@name EAPB
+
+@inputs 
+@outputs 
+@persist [E O]:entity [Q]:table [Project]:gtable
+
+@model models/bull/gates/processor.mdl
+
+
+
+if(changed(0)) {
+    
+    
+    
+    E = entity() E:setSkin(1)
+    O = owner()
+    
+    Project = gTable(O:steamID() + "EAPB")
+    
+    #include "EGPS"
+    
+    #[
+    function number egpAddDashedLine(Fon_n:string, [FontSize OffsetVel A]:number) {
+        local Fon_s = egpGetSize(Fon_n)/2
+        local Fon_s_x = Fon_s[1]
+        local Fon_s_y = Fon_s[2]
+        local X = Fon_s_x / FontSize / 2
+        local Y = X*Fon_s_y/Fon_s_x
+        local Add = vec2(curtime() / Fon_s[2] * FontSize * OffsetVel)
+        local A = -A
+        local V1 = vec2(-X,-Y):rotate(A)+Add
+        local V2 = vec2( X,-Y):rotate(A)+Add
+        local V3 = vec2( X, Y):rotate(A)+Add
+        local V4 = vec2(-X, Y):rotate(A)+Add
+        local Ar = array(
+            vec4(vec2(-Fon_s_x,-Fon_s_y),V1),
+            vec4(vec2( Fon_s_x,-Fon_s_y),V2),
+            vec4(vec2( Fon_s_x, Fon_s_y),V3),
+            vec4(vec2(-Fon_s_x, Fon_s_y),V4)
+        )
+        local DashedLine_n = Fon_n+"/dashedLine"
+        local DashedLine_i = egpAddPoly(DashedLine_n, Ar, "")
+        egpSetMaterial("vgui/dashed_line")
+        egpSetParent(Fon_n)
+        #egpSetOrder(Fon_n+"/dashedLine", Fon_n, 1)
+        #egpSetColor(0)
+        return DashedLine_i
+    }
+    ]#
+    function number egpAddDashedLine(Fon_n:string, FontSize:number) {
+        local Fon_s = egpGetSize(Fon_n)/2
+        X = Fon_s[2]/FontSize*2
+        local V1 = v(-1,1)
+        local V2 = v( -1,-1)
+        local V3 = v( X/2-1.0, 1)
+        local V4 = v( X/2-1.0, -1)
+        local Ar = array(
+            v(-Fon_s[1],-Fon_s[2],V1),
+            v( Fon_s[1],-Fon_s[2],V2),
+            v( Fon_s[1], Fon_s[2],V3),
+            v(-Fon_s[1], Fon_s[2],V4)
+        )
+        local DashedLine_i = egpAddPoly(Fon_n+"/dashedLine", Ar, "")
+        egpSetMaterial("vgui/dashed_line")
+        egpSetParent(Fon_n)
+        return DashedLine_i
+    }
+    
+    
+    function egpTargetMode(Element_n:string, Mode:number) {
+        local EGP_w = EGPS["egp/wirelink", wirelink]
+        
+        local Element_i = EGPS[Element_n + "/index", number]
+        local Parent_i = EGP_w:egpParent(Element_i)
+        
+        if(Parent_i > 0) {
+            EGPS[Parent_i + "/targetParent", array] = EGPS[Parent_i + "/targetParent", array]:add(array(Element_i))
+        }
+        else {
+            EGPS["target/baseFirstTargets", array] = EGPS["target/baseFirstTargets", array]:add(array(Element_i))
+        }
+    }
+    function egpTargetMode(Mode:number) {
+        egpTargetMode(EGPS["lastName", string], Mode)
+    }
+    
+    function string egpGetTarget(CursorPos:vector2) {
+        
+        #local Target_i = 0
+        local Target_n = ""
+        
+        local C = 0
+        local Targets_a = EGPS["target/customFirstTargets", array]
+        if(!Targets_a:count()) {
+            Targets_a = EGPS["target/baseFirstTargets", array]
+        }
+        local Targets_c = Targets_a:count()
+        while(perf(70) & (C < Targets_c)) {
+            C++
+            
+            local Element_i = Targets_a[C, number]
+            local Element_n = EGPS[Element_i + "/name", string]
+            if(egpGlobalInrange(Element_n, CursorPos)) {
+                local Element_Targets_a = EGPS[Element_i + "/targetParent", array]
+                local Element_Targets_c = Element_Targets_a:count()
+                
+                Target_n = Element_n
+                #Target_i = Element_i
+                Targets_a = Element_Targets_a
+                Targets_c = Element_Targets_c
+                C = 0
+            }
+        }
+        return Target_n
+    }
+    
+    function egpAddAct(Element_n:string, Act_n:string, Act_d:table) {
+        local Element_i = EGPS[Element_n + "/index", number]
+        
+        EGPS[Element_n + "#" + Act_n + "/act/data", table] = Act_d
+        EGPS[Element_i + "/actList" , array] = EGPS[Element_i + "/actList", array]:add(array(Act_n))
+        
+        local Cells_a = array("/actList", Element_n + "#" + Act_n + "/act/data")
+        EGPS[Element_i + "/dataCellsList", array] = EGPS[Element_i + "/dataCellsList", array]:add(Cells_a)
+    }
+    
+    function egpStartAct(Element_n:string) {
+        local Element_i = EGPS[Element_n + "/index", number]
+        
+        
+        foreach(C, Act_n:string = EGPS[Element_i + "/actList", array]) {
+            local Act_i = EGPS["actCounter", number] = EGPS["actCounter", number] + 1
+            
+            EGPS[Act_i + "/act/name", string] = Act_n
+            EGPS[Act_i + "/act/data", table ] = EGPS[Element_n + "#" + Act_n + "/act/data", table]
+            EGPS["actList", array] = EGPS["actList", array]:add(array(Act_i))
+        }
+    }
+    
+    
+    function boneList_build() {
+        local Mode_s = Project["boneListMode" + "/selected", string]
+        print(egpGetGroupElements("bonePanel"))
+        
+        egpRemoveGroup("bonePanel")
+        if(Mode_s) {
+            
+            switch(Mode_s) {
+                case "for",
+                    egpOpenGroup("bonePanel")
+                    
+                    local FontSize = EGPS["fontSize", number]
+                    local Offset   = EGPS["offset", number]
+                    
+                    
+                    local PlayerPanel_n = "playerPanel"
+                    local PlayerPanel_BoneList_n = PlayerPanel_n + "_boneList"
+                    local PlayerPanel_BoneList_s = egpGetSize(PlayerPanel_BoneList_n)
+                    
+                    local ForSettings_n = PlayerPanel_BoneList_n + "_forSettings"
+                    local ForSettings_s = v(PlayerPanel_BoneList_s[1], FontSize * 1)
+                    local ForSettings_p = v(0,(ForSettings_s[2]-PlayerPanel_BoneList_s[2])/2)
+                    egpAddBox(ForSettings_n, ForSettings_s, ForSettings_p)
+                    egpSetColor(20)
+                    egpSetParent(PlayerPanel_BoneList_n)
+                    egpTargetMode(1)
+                    
+                    local ScrollBase_n = PlayerPanel_BoneList_n + "_scrollBase"
+                    local ScrollBase_s = v(FontSize*0.75*0, (PlayerPanel_BoneList_s[2]-ForSettings_s[2]-2.1))
+                    local ScrollBase_p = (PlayerPanel_BoneList_s-ScrollBase_s)/2
+                    egpAddBox(ScrollBase_n, ScrollBase_s, ScrollBase_p)
+                    egpSetColor(20)
+                    egpSetParent(PlayerPanel_BoneList_n)
+                    egpTargetMode(1)
+                    local Scroll_n = ScrollBase_n + "_scroll"
+                    local Scroll_s = ScrollBase_s*v(1,0.2)
+                    local Scroll_p = v(0,(Scroll_s[2]-ScrollBase_s[2])/2)
+                    egpAddBox(Scroll_n, Scroll_s, Scroll_p)
+                    egpSetColor(40)
+                    egpSetParent(ScrollBase_n)
+                    egpTargetMode(1)
+                    
+                    local TextBase_n = PlayerPanel_BoneList_n + "_textBase"
+                    local TextBase_s = v(PlayerPanel_BoneList_s[1]-ScrollBase_s[1]-2.1, ScrollBase_s[2])
+                    local TextBase_p = (PlayerPanel_BoneList_s-TextBase_s)*v(-0.5,0.5)
+                    local TextBase_c = 20
+                    egpAddBox(TextBase_n, TextBase_s, TextBase_p)
+                    egpSetColor(TextBase_c)
+                    egpSetParent(PlayerPanel_BoneList_n)
+                    egpTargetMode(1)
+                    egpAddDashedLine(TextBase_n,FontSize)
+                    egpSetColor(TextBase_c * 0.7)
+                    local Select_n = TextBase_n + "_select"
+                    local Select_s = v(TextBase_s[1],FontSize)
+                    local Select_p = v(9e9)#v(0,(Select_s[2]-TextBase_s[2])/2)
+                    egpAddBox(Select_n, Select_s, Select_p)
+                    egpSetColor(40)
+                    egpSetParent(TextBase_n)
+                    
+                    local Text1_n = TextBase_n + "_text1"
+                    local Text1_t = "bone1"
+                    local Text1_s = TextBase_s
+                    local Text1_p = -Text1_s/2
+                    egpAddTextLayout(Text1_n, Text1_t, Text1_s, Text1_p)
+                    egpSetColor(200)
+                    egpSetSize(FontSize)
+                    egpSetParent(TextBase_n)
+                    local Text2_n = TextBase_n + "_text2"
+                    local Text2_t = "\nbone2"
+                    egpAddTextLayout(Text2_n, Text2_t, Text1_s, v())
+                    egpSetColor(100)
+                    egpSetSize(FontSize)
+                    egpSetParent(Text1_n)
+                    
+                    
+                    #[
+                    dPanel("Music", vec2(50, 240), vec2(300, 400))
+                    dShowCloseButton("Music", 0)
+                    dTextBox("song", "Music", vec2(5, 6), 189)
+                    ]#
+                    
+                    egpCloseGroup("bonePanel")
+                break
+            }
+        }
+    }
+    
+    
+    
+    timer("", 0)
+}
+
+if(clk("")) {
+        timer("", 30)
+    
+    if(changed(0)) {
+        
+        Q["step", number] = 1
+    }
+    local Step = Q["step", number]
+    switch(Step) {
+        ###
+        ###
+        ###
+        case 1,
+            local WT_e = E:isWeldedTo()
+            local WT_w = WT_e:wirelink()
+            if(WT_e:type() == "gmod_wire_egp_hud") {
+                egpSelect(WT_w)
+                egpClear()
+                
+                local FontSize = EGPS["fontSize", number] = 15
+                local Offset   = EGPS["offset", number] = 1
+                
+                local ToolsPanel_n = "toolsPanel"
+                local ToolsPanel_s = s(0.5, 0.25)
+                local ToolsPanel_p = s(0.5,1) - v(0,ToolsPanel_s[2]/2)
+                egpAddBox(ToolsPanel_n, ToolsPanel_s, ToolsPanel_p)
+                egpSetColor(0)
+                egpTargetMode(1)
+                
+                
+                
+                Q["step", number] = Step + 1
+            }
+        break
+        ###
+        ###
+        ###
+        case 2,
+            local FontSize = EGPS["fontSize", number]
+            local Offset   = EGPS["offset", number]
+            
+            local ToolsPanel_n = "toolsPanel"
+            local ToolsPanel_s = egpGetSize(ToolsPanel_n)
+            local ToolsPanel_p = egpGetPos(ToolsPanel_n)
+            
+            local PlayerPanel_n = "playerPanel"
+            local PlayerPanel_s = s(0.15,0.3)
+            local PlayerPanel_p = s(0,1) - v(0,PlayerPanel_s[2]/2) + v((ToolsPanel_p-PlayerPanel_s)[1]/2-1,0)
+            egpAddBox(PlayerPanel_n, PlayerPanel_s, PlayerPanel_p)
+            egpSetColor(0)
+            egpTargetMode(1)
+            
+            local List_a = array("Player", "boneListMode")
+            foreach(C, List_n:string = List_a) {
+                local PlayerPanel_Select_n = PlayerPanel_n + "_select" + List_n
+                local PlayerPanel_Select_s = v(PlayerPanel_s[1],FontSize)
+                local PlayerPanel_Select_p = v(0,FontSize*(C - 0.5)+(C > 1)*2   -PlayerPanel_s[2]/2)
+                egpAddBox(PlayerPanel_Select_n, PlayerPanel_Select_s, PlayerPanel_Select_p, "")
+                egpSetColor(20)
+                egpSetParent(PlayerPanel_n)
+                egpTargetMode(1)
+                
+                local Act_n = "selectFromList"
+                local Act_d = table("element_n" = PlayerPanel_Select_n, "cellName" = List_n + "/selected", "listName" = List_n)
+                egpAddAct(PlayerPanel_Select_n, Act_n, Act_d)
+                
+                
+                local PlayerPanel_Select_Text_n = PlayerPanel_Select_n + "_text"
+                local PlayerPanel_Select_Text_t = select(C, Project[List_n + "/selected", entity]:toString(), Project[List_n + "/selected", string])
+                if(!PlayerPanel_Select_Text_t | PlayerPanel_Select_Text_t == "(null)") {
+                    PlayerPanel_Select_Text_t = select(C, "Выберите игрока", "Выберите лист костей")
+                }
+                local PlayerPanel_Select_Text_p = v(2-PlayerPanel_Select_s[1]/2,0)
+                egpAddText(PlayerPanel_Select_Text_n, PlayerPanel_Select_Text_t, PlayerPanel_Select_Text_p)
+                egpSetAlign(0,1)
+                egpSetSize(FontSize)
+                egpSetColor(200)
+                egpSetParent(PlayerPanel_Select_n)
+                
+                Q["playerPanel_selectorsCounter", number] = Q["playerPanel_selectorsCounter", number] + 1
+                
+                #EGPS["lists", array] = EGPS["lists", array]:add(array(List_n))
+                EGPS[List_n + "/type"   , string] = List_n == "Player" ? "entity" : "string"
+                EGPS[List_n + "/filling", number] = List_n == "Player"
+                #EGPS[List_n + "/array"  , array ] = array()
+            }
+            EGPS["boneListMode" + "/array", array ] = array("for", "animated", "three")
+            
+            
+            local PlayerPanel_BoneList_n = PlayerPanel_n + "_boneList"
+            local PlayerPanel_BoneList_s = v(PlayerPanel_s[1], PlayerPanel_s[2] - (FontSize+2)*Q["playerPanel_selectorsCounter", number]-1)
+            local PlayerPanel_BoneList_p = v(0,(PlayerPanel_s[2]-PlayerPanel_BoneList_s[2])/2)
+            egpAddBox(PlayerPanel_BoneList_n, PlayerPanel_BoneList_s, PlayerPanel_BoneList_p)
+            egpSetColor(0)
+            egpSetParent(PlayerPanel_n)
+            egpTargetMode(1)
+                                                                                                #[################################################]#
+                                                                                                #[#############]# boneList_build() #[#############]#
+                                                                                                #[################################################]#
+            
+            Q["step", number] = Step + 1
+        break
+        ###
+        ###
+        ###
+        case 0,
+            local ToolsPanel_n = "toolsPanel"
+            local ToolsPanel_s = egpGetSize(ToolsPanel_n)
+            local ToolsPanel_p = egpGetPos(ToolsPanel_n)
+            
+            local FramePanel_n = "framePanel"
+            local FramePanel_s = s(0.5, 0.05)
+            local FramePanel_p = ToolsPanel_p - v(0,1 + (FramePanel_s+ToolsPanel_s)[2]/2)
+            egpAddBox(FramePanel_n, FramePanel_s, FramePanel_p, "")
+            egpSetColor(0)
+            egpTargetMode(1)
+            
+            
+            Q["step", number] = Step + 1
+        break
+        ###
+        ###
+        ###
+        case 0,
+            local CamPanel_n = "camPanel"
+            local CamPanel_s = s(0.35)
+            local CamPanel_s = v(CamPanel_s[2])
+            local CamPanel_p = s(0,0.5) + v(CamPanel_s[1]/2,0)
+            egpAddBox(CamPanel_n, CamPanel_s, CamPanel_p, "")
+            egpSetColor(0)
+            egpTargetMode(1)
+            
+            local CamScreen_n = CamPanel_n + "_camScreen"
+            local CamScreen_s = CamPanel_s - v(4)
+            local CamScreen_p = v()
+            egpAddBox(CamScreen_n, CamScreen_s, CamScreen_p, "")
+            egpSetParent(CamPanel_n)
+            if(0) {egpSetMaterial("debug/debugcamerarendertarget")} else {egpSetColor(0)}
+            #egpTargetMode(1)
+            
+            foreach(C, But_n:string = array("camSettingsBut", "camToogle")) {
+                local CamSettingsBut_n = CamPanel_n + "_" + But_n
+                local CamSettingsBut_s = v(25)
+                local CamSettingsBut_p = (CamPanel_s - CamSettingsBut_s) * v(0.5,-0.5) + v(0,CamSettingsBut_s[2]*(C-1))
+                egpAddBox(CamSettingsBut_n, CamSettingsBut_s, CamSettingsBut_p, "")
+                egpSetParent(CamPanel_n)
+                #egpSetMaterial("vgui/gmod_tool")
+                egpTargetMode(1)
+            }
+            
+            Q["step", number] = Step + 1
+        break
+        ###
+        ###
+        ###
+        default,
+            #
+            #- 
+            #
+            local LClick = O:keyPressed("mouse_left") | O:keyUse()
+            local RClick = O:keyPressed("mouse_right") | LClick & O:keyWalk()
+            local Click = RClick | LClick
+            local Click_changed = changed(Click)
+            #
+            #- cursorPos
+            #
+            if(O:keyPressed("C") | Click) {
+                local EyeAngles  = O:eyeAngles()
+                local Eye        = O:eye()
+                if(Q["cam/toggle", number]) {
+                    Eye = Eye:rotate(angnorm(EyeAngles-Q["cam/ang", angle]))
+                }
+                if(changed(Eye) | changed(EyeAngles)) {
+                    local EyeA       = EyeAngles:forward()
+                    local EgpScrSize = vec2(1920,1080) #egpScrSize(O)
+                    
+                    local Holo = holoEntity(454560)
+                    if(!Holo) {holoCreate(454560,vec(),vec())}
+                    holoAng(454560, EyeAngles)
+                    
+                    local Cos = Eye[1] * EyeA[1] + Eye[2] * EyeA[2] + Eye[3] * EyeA[3]
+                    local CursorV = (Holo:toLocal(Eye / Cos) / vec(1, -1.332, -0.75) + vec(0, 1, 1)) / 2
+                    
+                    local CursorPos = vec2(CursorV[2], CursorV[3]) * EgpScrSize
+                    if(round(CursorPos) != EgpScrSize/2) {
+                        Q["cursorPos", vector2] = CursorPos
+                        
+                        local Target_n = Q["target_n", string] = egpGetTarget(CursorPos)
+                        
+                        
+                        
+                        egpAddCircle("cursor", v(2), CursorPos, "")
+                        if(changed(Target_n)) {
+                            egpAddText("cursorTarget", Target_n, vec2(30,0))
+                            if(changed(0)) {
+                                egpSetParent("cursor")
+                                egpSetAlign(0,0)
+                            }
+                        }
+                    }
+                }
+            }
+            #- click
+            if(Click_changed & Click & !EGPS["startActLock", number] & Q["target_n", string]) {
+                egpStartAct(Q["target_n", string])
+            }
+            #
+            #- act
+            #
+            local Clear = array()
+            foreach(C, Act_i:number = EGPS["actList", array]) {
+                local Act_n = EGPS[Act_i + "/act/name", string]
+                
+                local Remove = 1
+                switch(Act_n) {
+                    case "selectFromList",
+                        
+                        if(!EGPS[Act_i + "/startTime", number]) {
+                            EGPS[Act_i + "/startTime", number] = curtime()
+                            
+                            local Act_d = EGPS[Act_i + "/act/data", table]
+                            local Element_n = Act_d["element_n", string]
+                            local Element_i = EGPS[Element_n + "/index", number]
+                            
+                            
+                            local List_n = Act_d["listName", string]
+                            
+                            if(EGPS[List_n + "/filling", number]) {
+                                switch(List_n) {
+                                    case "Player",
+                                        
+                                        EGPS[List_n + "/array", array] = players()
+                                    break
+                                }
+                            }
+                            
+                            local List_a = EGPS[List_n + "/array", array ]
+                            local List_t = EGPS[List_n + "/type" , string]
+                            local List_c = List_a:count()
+                            local List_size = List_c #min(List_c,10)
+                            local List_text = List_a:concat("\n", 1, List_size)
+                            
+                            #local Cell_n = Act_d["cellName", string]
+                            #local Cell_v = Act_d["cellName", string]
+                            
+                            
+                            ###
+                            egpOpenGroup("selectFromList" + Act_i)
+                            
+                            local FontSize = EGPS["fontSize", number]
+                            
+                            local Element_s = egpGetSize(Element_n)
+                            local Element_c = egpGetColor(Element_n)
+                            
+                            local ListBase_n = "selectListBase"
+                            local ListBase_s = v(Element_s[1],FontSize*List_size)
+                            local ListBase_p = v(0, (-ListBase_s[2]-Element_s[2])/2)#-FontSize)
+                            local ListBase_c = min(Element_c * 1.4,vec(255))
+                            local ListBase_i = 
+                            egpAddBox(ListBase_n,ListBase_s,ListBase_p)
+                            egpSetColor(ListBase_c)
+                            egpSetParent(Element_n)
+                            
+                            egpAddDashedLine(ListBase_n,FontSize)
+                            egpSetColor(Element_c)
+                            
+                            egpAddBox(ListBase_n + "_outline",ListBase_s,v(), "o")
+                            egpSetColor(150)
+                            egpSetSize(1)
+                            egpSetParent(ListBase_n)
+                            
+                            local ListSelect_n = ListBase_n + "_selectLine"
+                            local ListSelect_s = v(ListBase_s[1],FontSize)-v(1)
+                            local ListSelect_p = v(0,(ListSelect_s[2]-ListBase_s[2])/2) + v(9e9)
+                            egpAddBox(ListSelect_n,ListSelect_s,ListSelect_p)
+                            egpSetColor(40)
+                            egpSetParent(ListBase_n)
+                            
+                            local Text_n = ListBase_n + "_text"
+                            local Text_t = List_text
+                            local Text_s = ListBase_s-v(2,0)
+                            local Text_p = v(2,0)-ListBase_s/2
+                            egpAddTextLayout(Text_n,Text_t,Text_s,Text_p)
+                            egpSetColor(255)
+                            egpSetAlign(0,0)
+                            egpSetSize(FontSize)
+                            egpSetParent(ListBase_n)
+                            
+                            egpCloseGroup("selectFromList" + Act_i)
+                            ###
+                            
+                            
+                            EGPS["startActLock", number] = 1
+                            EGPS["target/customFirstTargets", array] = array(ListBase_i)
+                            #print("открыл выделялку " + Element_n)
+                        }
+                        
+                        
+                        local Target_n = Q["target_n", string]
+                        local Target_n_changed = changed(Target_n)
+                        
+                        Remove = Click_changed & Click & !Target_n
+                        
+                        
+                        local Scrolling = 0
+                        local Scrolling_changed = changed(Scrolling)
+                        
+                        
+                        local Outline = Target_n & !Scrolling
+                        local Outline_update = changed(Outline) & !changed(Act_i)
+                        if(Outline_update) {
+                            egpSetColor("selectListBase_outline", Outline ? 255 : 150)
+                        }
+                        if(Target_n | Target_n_changed) {
+                            local Act_d = EGPS[Act_i + "/act/data", table]
+                            local Element_n = Act_d["element_n", string]
+                            
+                            local ListBase_n = "selectListBase"
+                            if(Target_n == ListBase_n & !Scrolling) {
+                                local CursorPos = Q["cursorPos", vector2]
+                                
+                                if(changed(CursorPos) | Target_n_changed) {
+                                    
+                                    local FontSize = EGPS["fontSize", number]
+                                    
+                                    local Cursor_lpY = (CursorPos-egpGetGlobalPos(ListBase_n))[2]
+                                    local ListBase_sY = egpGetSize(ListBase_n)[2]
+                                    local Select_li = 1 + floor((Cursor_lpY+ListBase_sY/2)/FontSize)
+                                    
+                                    if(changed(Select_li) | Target_n_changed) {
+                                        local ListSelect_n = ListBase_n + "_selectLine"
+                                        local ListSelect_p = v(0, (-ListBase_sY-FontSize)/2+FontSize*Select_li)
+                                        egpSetPos(ListSelect_n, ListSelect_p)
+                                        
+                                        EGPS["selectList/localSelected", number] = Select_li
+                                    }
+                                }
+                                
+                                if(Click_changed & Click) {
+                                    Remove = 1
+                                    
+                                    local List_n = Act_d["listName", string]
+                                    local List_a = EGPS[List_n + "/array", array ]
+                                    local List_t = EGPS[List_n + "/type" , string]
+                                    local Cell_n = Act_d["cellName", string]
+                                    
+                                    local Value_i = EGPS["selectList/localSelected", number] + EGPS["selectList/scroll", number]
+                                    local Text = ""
+                                    
+                                    local InCase = 0
+                                    switch(List_t) {
+                                        case "string",
+                                            
+                                            Text = Project[Cell_n, string] = List_a[Value_i, string]
+                                            if(Text) {boneList_build()}
+                                            
+                                            InCase = 1
+                                        break
+                                        case "entity",
+                                            
+                                            local Value = Project[Cell_n, entity] = List_a[Value_i, entity]
+                                            Text = Value:toString()
+                                            
+                                            InCase = 1
+                                        break
+                                    }
+                                    if(InCase) {
+                                        egpSetText(Element_n + "_text", Text)
+                                    }
+                                    else {
+                                        print("ERROR: value type")
+                                    }
+                                }
+                            }
+                            elseif(Target_n_changed | Scrolling_changed) {
+                                local ListSelect_n = ListBase_n + "_selectLine"
+                                egpSetPos(ListSelect_n, v(9e9))
+                            }
+                        }
+                        
+                        
+                        
+                        
+                        if(Remove) {
+                            #print("закрыл выделялку")
+                            
+                            egpRemoveGroup("selectFromList" + Act_i)
+                            
+                            
+                            EGPS["startActLock", number] = 0
+                            EGPS[Act_i + "/startTime", number] = 0
+                            EGPS["target/customFirstTargets", array] = array()
+                        }
+                    break
+                }
+                if(Remove) {Clear = array(C):add(Clear)}
+            }
+            foreach(C, I:number = Clear) {
+                EGPS["actList", array]:remove(I)
+            }
+        break
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName("EAPB\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage() * 1e6))
+
+
+#editor animation the bones of the player

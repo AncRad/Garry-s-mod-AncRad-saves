@@ -1,0 +1,370 @@
+@name RC_001
+
+@inputs Target:entity
+@outputs Vec:vector Angle:angle SAD
+@persist [E O User]:entity [Q]:table EN:string
+
+@persist [Ragdoll]:entity [Ragdoll_chest Ragdoll_pelvic Ragdoll_head  Ragdoll_Lhand Ragdoll_Rhand  Ragdoll_Lfoot Ragdoll_Rfoot]:bone Ragdoll_mass
+@persist 
+@persist 
+
+@trigger 
+
+
+
+
+if(changed(0)) {
+    
+    
+    E = entity()
+    O = owner()
+    
+    
+    if(E:isWeldedTo():type() == "prop_ragdoll") {
+        Ragdoll = E:isWeldedTo()
+        
+        EN = "RC_001\nprop_ragdoll"
+    }
+    else {
+        User = select(1, O,findPlayerByName(""))
+        runOnLast(1)
+        Ragdoll = noentity()
+        
+        EN = "RC_001\nplayer: " + User:name()
+    }
+    function entity entity:playerragdoll() {
+        #ifdef entity:playerRagdoll()
+            if(This:playerIsRagdoll()) {
+                local EyeAngles = This:eyeAngles()
+                This:playerRagdoll()
+                This:setEyeAngles(EyeAngles)
+                return noentity()
+            }
+            else {
+                return This:playerRagdoll()
+            }
+        #else
+            return noentity()
+        #endif
+    }
+    #ifdef runOnLast(number,entity)
+        
+    #else
+        function runOnLast(Num:number,Ent:entity) {
+        }
+    #endif
+    #ifdef lastEnt()
+        
+    #else
+        function entity lastEnt() {return noentity()}
+    #endif
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    timer("", 1)
+}
+
+if(clk("")) {
+        timer("", 50)
+    
+    if(changed(0)) {
+        Q["curtime", number] = curtime()
+    }
+    local LastCurtime = Q["curtime", number]
+    local Curtime = curtime()
+    Q["curtime", number] = Curtime
+    local Interval = Curtime - LastCurtime
+    local Loop = Interval / 0.015625
+    
+    
+    local Key_R = User:keyPressed("R")
+    if(changed(Key_R) & Key_R) {
+        Ragdoll = User:playerragdoll()
+        runOnLast(1,Ragdoll)
+    }
+    
+    
+    if(Ragdoll) {
+        if(changed(Ragdoll)) {
+            Ragdoll_chest = Ragdoll:bone(1)
+            Ragdoll_pelvic = Ragdoll:bone(0)
+            Ragdoll_head = Ragdoll:bone(10) #holoCreate(1, Ragdoll_head:pos())
+            
+            Ragdoll_Lhand = Ragdoll:bone(5)
+            Ragdoll_Rhand = Ragdoll:bone(7)
+            
+            Ragdoll_Lfoot = Ragdoll:bone(13)
+            Ragdoll_Rfoot = Ragdoll:bone(14)
+            
+            Ragdoll_mass = 0
+            foreach(C, Bone:bone = Ragdoll:bones()) {
+                Ragdoll_mass += Bone:mass()}
+            
+            #holoCreate(1, Ragdoll_chest:pos(), vec(0.1,0.1,0.1), Ragdoll_chest:angles())
+        }
+        
+        # foot foot foot foot foot foot foot foot foot foot foot foot foot foot foot foot foot foot foot
+        local Fulcrums_a = select(1,array(Ragdoll_Lfoot,Ragdoll_Rfoot,Ragdoll_Lhand,Ragdoll_Rhand),Ragdoll:bones())
+        
+        local Ranger_L = 7
+        local Fulcrum_R = 8 #52.5/100*10
+        
+        local Center = vec()
+        local Counte = 0
+        foreach(C, Foot:bone = Fulcrums_a) {
+            local Foot_p = Foot:pos()
+            
+            rangerFilter(Ragdoll)
+            local FootR = rangerOffsetHull(Ranger_L+4.7,Foot_p,vec(0,0,-1),vec(2))
+            local FootR_h = FootR:hit()
+            local FootR_d = FootR:distance()-4.7
+            local FootR_p = FootR:pos()
+            
+            if(Foot:isFrozen()) { FootR_h = 1 FootR_d = 0 FootR_p = Foot:pos()-vec(0,0,4.7)}
+            
+            if(FootR_h) {
+                FootR_h = FootR_d < 4
+                Foot:applyForce(vec(0,0,-Foot:mass()*Interval*600))
+            }
+            
+            holoPos(C,FootR_p)
+            
+            if(FootR_h) {
+                Counte++
+                Center+=FootR_p
+                
+                Foot:applyForce(-Foot:vel()*20*Foot:mass()*Interval)
+                
+                Q[C + "footContactPos", vector] = FootR_p
+            }
+            Q[C + "footContact", number] = FootR_h
+            Q[C + "footContactE", entity] = FootR:entity()
+            
+            
+            if(changed(FootR_h) | 1) {
+                if(!holoEntity(C)) {
+                    holoCreate(C,vec(), vec(Fulcrum_R/6), ang(), vec(), "cplane") holoMaterial(C, "models/wireframe")
+                }
+                if(FootR_h) {
+                    holoColor(C, vec(0,50,255))
+                }
+                else {
+                    holoColor(C, vec(200))
+                }
+            }
+        }
+        if(Counte) {
+            Center = Center/Counte
+            local CM = Ragdoll_chest:pos()
+            
+            
+            rangerFilter(Ragdoll)
+            local RangerZ_l = 55
+            local RangerZ_t = 48
+            local RangerZ = rangerOffset(RangerZ_l, Ragdoll_chest:pos(), vec(0,0,-1))
+            local RangerZ_d = RangerZ:distance() 
+            
+            local Contact = !O:keyPressed("E") & RangerZ:hit()
+            
+            #local RangerZ_n1 = (RangerZ_d<RangerZ_t ? 1 : clamp((RangerZ_t-RangerZ_d)/(RangerZ_t*0.2)+1,0,1)) * Contact
+            local RangerZ_n1 = clamp((RangerZ_t*1.5-RangerZ_d)/RangerZ_t,0,1)^0.8
+            
+            
+            
+            
+            
+            local VEL = (Ragdoll_chest:vel()+(CM-Center)*4):setZ(0)
+            local Vel = VEL:length()
+            
+            local Angle = angnorm(VEL:toAngle()[2])
+            local Dist = Fulcrum_R * min(Vel/10,1)
+            
+            foreach(C, Foot:bone = Fulcrums_a) {
+                if(Q[C + "footContact", number]) {
+                    local ContactP = Q[C + "footContactPos", vector]
+                    
+                    #[
+                    local V = vec(0,0,600*1.0 - clamp(Ragdoll_chest:vel()[3],-100,100))
+                    Ragdoll_chest:applyForce(V*Ragdoll_mass/Counte*Interval)
+                    ]#
+                    
+                    
+                    local FC = CM:setZ(Center[3]) + vec(Dist,0,0):rotate(0,Angle,0)
+                    local FC = FC - Center
+                    local FC = Center + vec(min(FC:length(),Fulcrum_R),0,0):rotate(0,FC:toAngle()[2],0)
+                    
+                    local DIF = CM-FC
+                    
+                    local Mul = 1
+                    if((CM-Center):setZ(0):length() > Fulcrum_R) {
+                        local OK = 0
+                        
+                        if(!OK) {
+                            Mul = clamp(1-(FC-CM):setZ(0):length()/Fulcrum_R,0,1)
+                        }
+                    }
+                    
+                    local V = DIF:normalized()/max(abs(DIF:normalized()[3]),0.5)*((500+200*RangerZ_n1)*0.87 - clamp(Ragdoll_chest:vel()[3]*5,-50,50))
+                    local Force = V*Ragdoll_mass/Counte*Interval*Mul
+                    Ragdoll_chest:applyForce(Force)
+                    #Q[C + "footContactE", entity]:applyOffsetForce(-Force,FC)
+                }
+            }
+        }
+        
+        
+        
+        
+        # foot foot foot foot foot foot foot foot foot foot foot foot foot foot foot foot foot foot foot
+        
+        
+        rangerFilter(Ragdoll)
+        local RangerZ_l = 55
+        local RangerZ_t = 48
+        local RangerZ = rangerOffset(RangerZ_l, Ragdoll_chest:pos(), vec(0,0,-1))
+        local RangerZ_d = RangerZ:distance() 
+        
+        local Contact = !O:keyPressed("E") & RangerZ:hit()
+        
+        local RangerZ_n1 = (RangerZ_d<RangerZ_t ? 1 : clamp((RangerZ_t-RangerZ_d)/(RangerZ_t*0.2)+1,0,1)) * Contact
+        local RangerZ_n2 = clamp((RangerZ_t*1.5-RangerZ_d)/RangerZ_t,0,1)^0.8
+        
+        SAD = RangerZ_d
+        
+        local V = (vec(0,0,Ragdoll_mass*(500+RangerZ_n2*150)*1.2) - Ragdoll_chest:vel() * 30)*RangerZ_n1
+        local AB = 1#0.8
+        #Ragdoll_chest:applyForce(V*AB * Interval)
+        
+        
+        local EyeAngles = clamp(User:eyeAngles(),-ang(80,9e9,80),ang(80,9e9,80))
+        
+        
+        local CFV = 75
+        local CFR = 100
+        local MFV = 1/5
+        local MFR = 10
+        
+        # CHEST CHEST CHEST CHEST CHEST CHEST CHEST CHEST CHEST CHEST CHEST CHEST CHEST CHEST
+        local RC_forward = -Ragdoll_chest:right()
+        local RC_rotateAngle = angnorm(RC_forward:toAngle():setRoll(asin(Ragdoll_chest:up()[3])) - EyeAngles:setPitch(0))*ang(1,1,Contact)
+        #interpertation: ang(roll pitch yaw)
+        local RC_rotateForce = clamp((-ang(RC_rotateAngle[3],RC_rotateAngle[1],RC_rotateAngle[2]))*MFR,-CFR,CFR) - clamp(Ragdoll_chest:angVel()*MFV,-CFV,CFV)
+        Ragdoll_chest:applyAngForce(Ragdoll_chest:mass()*RC_rotateForce*Loop)
+        # CHEST CHEST CHEST CHEST CHEST CHEST CHEST CHEST CHEST CHEST CHEST CHEST CHEST CHEST
+        #
+        #
+        #
+        # PELVIC PELVIC PELVIC PELVIC PELVIC PELVIC PELVIC PELVIC PELVIC PELVIC PELVIC PELVIC
+        local RP_forward = Ragdoll_pelvic:up()
+        local RP_rotateAngle = angnorm(RP_forward:toAngle():setRoll(asin(-Ragdoll_pelvic:forward()[3])) - EyeAngles:setPitch(0))*ang(1,1,Contact)
+        Angle = RP_rotateAngle
+        #interpertation: ang(yaw roll pitch)
+        local RP_rotateForce = clamp((-ang(RP_rotateAngle[2],RP_rotateAngle[3],RP_rotateAngle[1]))*MFR,-CFR,CFR) - clamp(Ragdoll_pelvic:angVel()*MFV,-CFV,CFV)
+        Ragdoll_pelvic:applyAngForce(Ragdoll_pelvic:mass()*RP_rotateForce*Loop)
+        # PELVIC PELVIC PELVIC PELVIC PELVIC PELVIC PELVIC PELVIC PELVIC PELVIC PELVIC PELVIC
+        #
+        #
+        #
+        # HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD
+        local RH_forward = Ragdoll_head:right()
+        local RH_rotateAngle = angnorm(RH_forward:toAngle():setRoll(asin(Ragdoll_head:up()[3])) - EyeAngles)
+        #interpertation: ang(roll -pitch yaw)
+        local RH_rotateForce = clamp((-ang(RH_rotateAngle[3],-RH_rotateAngle[1],RH_rotateAngle[2]))*MFR,-CFR,CFR) - clamp(Ragdoll_head:angVel()*MFV,-CFV,CFV)
+        Ragdoll_head:applyAngForce(Ragdoll_head:mass()*RH_rotateForce*Loop)
+        # HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#ifdef entity:playerIsRagdoll()
+    if(last() | lastEnt() == Ragdoll) {
+        if(User:playerIsRagdoll()) {
+            User:playerragdoll()
+        }
+    }
+#endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName(EN + "\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1e6))

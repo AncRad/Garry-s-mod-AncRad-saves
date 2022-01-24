@@ -1,0 +1,201 @@
+@name Waaat? It's a bomb!
+@inputs Disable
+@outputs Bomb:entity Ranger RF RB LF LB L R A:angle StepsX Target:entity Dist Path Vel
+@persist Holo [LUP RUP LMID RMID LDOWN RDOWN]:entity TimeRes LoseTime
+#@model models/props_junk/sawblade001a.mdl
+
+interval(50)
+
+#include "old_2018.06.19/Fire_particles"
+if (first()) {
+    #entity():setAlpha(0)
+    
+    ###########################################################################################
+    ###########################################################################################
+    ###########################################################################################
+    FireParticles["part/need", number] = 60      # начальный запас огненых частиц(гологpамм)
+    FireParticles["prats/dropTime", number] = 5  # базовое вpемя в секyндах, чеpез котоpое частица потyхнет и yйдёт в запас      
+    
+    
+    
+    
+    ###########################################################################################
+    ###########################################################################################
+    ###########################################################################################
+    
+    
+    Dist = 666
+    runOnLast(1)
+    
+    function holo(Model:string, Material:string, Pos:vector, Scale:vector, Ang:angle, Color:vector, Alpha:number, Parent:entity) {
+        Holo++
+        holoCreate(Holo, Parent:toWorld(Pos), Scale, Parent:toWorld(Ang), Color)
+        holoAlpha(Holo, Alpha)
+        holoEntity(Holo):setModel(Model)
+        holoModel(Holo, Model)
+        holoParent(Holo, Parent)      
+        holoMaterial(Holo, Material)  
+    }
+    
+    function spawnBomb() {
+        Bomb = propSpawn(select(2,"models/props_c17/oildrum001_explosive.mdl","models/props_phx/oildrum001_explosive.mdl"), entity():toWorld(vec(0,0,43)), ang(vec(0)), 0)
+        
+        if(Bomb) {
+            #LEFT UP
+            holo("", "", vec(0,-14,4), vec(0.5), ang(vec(30,0,0)), vec(255), 0, Bomb)
+            holo("models/Mechanics/robotics/e1.mdl", "", vec(0,0,-9), vec(0.5,0.1,0.5), ang(vec(90,0,0)), vec(255), 255, holoEntity(1))
+            #RIGHT UP
+            holo("", "", vec(0,14,4), vec(0.5), ang(vec(30,0,0)), vec(255), 0, Bomb)
+            holo("models/Mechanics/robotics/e1.mdl", "", vec(0,0,-9), vec(0.5,0.1,0.5), ang(vec(90,180,0)), vec(255), 255, holoEntity(3))
+            
+            #LEFT MIDLE
+            holo("", "", vec(0,0,-18), vec(0.5), ang(vec(-60,0,0)), vec(255), 0, holoEntity(1))
+            holo("models/Mechanics/robotics/h2.mdl", "", vec(0,0,-12), vec(0.4,0.1,0.5), ang(vec(90,0,0)), vec(255), 255, holoEntity(5))
+            #RIGHT MIDLE
+            holo("", "", vec(0,0,-18), vec(0.5), ang(vec(-60,0,0)), vec(255), 0, holoEntity(3))
+            holo("models/Mechanics/robotics/h2.mdl", "", vec(0,0,-12), vec(0.4,0.1,0.5), ang(vec(90,180,0)), vec(255), 255, holoEntity(7))
+            
+            #LEFT DOWN
+            holo("", "", vec(0,0,-24), vec(0.5), ang(vec(30,0,0)), vec(255), 0, holoEntity(5))
+            holo("models/Mechanics/robotics/foot.mdl", "", vec(-2,0.5,-1), vec(0.2,0.1,0.2), ang(vec(0,180,0)), vec(255), 255, holoEntity(9))
+            #RIGHT DOWN
+            holo("", "", vec(0,0,-24), vec(0.5), ang(vec(30,0,0)), vec(255), 0, holoEntity(7))
+            holo("models/Mechanics/robotics/foot.mdl", "", vec(-2,-0.5,-1), vec(0.2,0.1,0.2), ang(vec(0,180,0)), vec(255), 255, holoEntity(11))
+            
+            
+            #RIGHT
+            #holo("", "", vec(6,0,-3.6+1), vec(0.01), ang(vec(0)), vec(255), 255, holoEntity(12))
+            #holo("", "", vec(-6,0,-3.6+1), vec(0.01), ang(vec(0)), vec(255), 255, holoEntity(12))
+            #holo("", "", vec(-15,0,20), vec(0.2), ang(vec(0)), vec(255), 255, Bomb)
+            
+            LUP = holoEntity(1)
+            RUP = holoEntity(3)
+            LMID = holoEntity(5)
+            RMID = holoEntity(7)
+            LDOWN = holoEntity(9)
+            RDOWN = holoEntity(11)
+            StepsX = 0
+            Holo = 0
+            Bomb:propFreeze(0)
+            
+            rangerFilter(Bomb)
+            Target = noentity()
+        }
+    }
+    
+    rangerPersist(1)
+    rangerHitWater(0)
+    
+}
+if(!Bomb:isValid() & !Disable) {
+    
+    TimeRes = TimeRes+1
+    if(TimeRes >= 50) {
+        TimeRes = 0
+        spawnBomb()
+    }
+}
+else {
+    
+    if(Target) {
+        
+        local Pos = Bomb:boxCenterW()
+        local RE = rangerOffset(Pos, Target:boxCenterW()):entity()
+        if(RE != Target) {
+            
+            
+            if(curtime() - LoseTime >= 3) {
+                
+                Target = noentity()
+            }
+        }
+        else {
+            LoseTime = curtime()
+        }
+    }
+    else {
+        
+        local Pos = Bomb:boxCenterW()
+        findClearBlackList()
+        findClearWhiteList()
+        findIncludeClass("player")
+        findIncludeClass("npc")
+        findInSphere(Bomb:pos(),3000)
+        findSortByDistance(Bomb:pos())
+        
+        foreach(C, Ent:entity = findToArray()) {
+            local R = rangerOffset(Pos, Ent:boxCenterW())
+            if(R:entity() == Ent) {
+                Target = Ent
+                break
+            }
+        }
+    }
+    
+    
+    if((Target:pos() + Target:vel()/2 - Bomb:boxCenterW() - Bomb:vel()):length()<150) {
+        Bomb:ignite(1000000)
+        if(changed(Bomb)) {
+            for(C = 1, randint(8,10)) {
+                Bomb:toDrop(Bomb:toWorld(randvec(-10,10)), 5)
+            }
+        }
+    }
+    Dist = ((Target:pos()+Target:vel()/2 - Bomb:pos())*vec(1,1,0)):length()
+    
+    
+    Ranger = rangerOffset(46, Bomb:toWorld(vec(0,0,-0.1)), -Bomb:up()):distance()
+    Path = rangerOffset(50, Bomb:toWorld(vec(-15,0,10)), -Bomb:forward()):distance()
+    RF = rangerOffset(40, RDOWN:toWorld(vec(6,0,-3.6)), -RDOWN:up()):distance()
+    RB = rangerOffset(40, RDOWN:toWorld(vec(-6,0,-3.6)), -RDOWN:up()):distance()
+    R = rangerOffset(40, RDOWN:toWorld(vec(0,0,-3.6)), -RDOWN:up()):distance()
+    LF = rangerOffset(40, LDOWN:toWorld(vec(6,0,-3.6)), -LDOWN:up()):distance()
+    LB = rangerOffset(40, LDOWN:toWorld(vec(-6,0,-3.6)), -LDOWN:up()):distance()
+    L = rangerOffset(40, LDOWN:toWorld(vec(0,0,-3.6)), -LDOWN:up()):distance()
+    Vel = clamp(-Bomb:toLocal(Bomb:vel()+Bomb:pos()):x(), -100, 100)/100*sign(Bomb:toLocal(Bomb:vel()+Bomb:pos()):x())
+    
+    if (Ranger<44) {
+        StepsX = StepsX + (Bomb:toLocal(Bomb:vel()+Bomb:pos())):x()/-6
+        
+        if (Target:isAlive()) {
+            Bomb:applyAngForce(((-Bomb:angles() - Bomb:angVel()/6)*5*ang(vec(1,0,1)) + ang(vec(0, (Bomb:toLocal((Bomb:pos() - Target:pos() - Target:vel()/2):toAngle()) - Bomb:angVel()/5):yaw(), 0)))*Bomb:mass())
+            Bomb:applyForce((vec(0,0,(46-(((LB+LF)<(RB+RF)) ? LF : RF)*0.5)-Ranger) - (30 - (50-Path))*Bomb:forward()*clamp((Dist-50)*1.5, -100, 500)/500*(Ranger/45) - Bomb:vel()/20)*Bomb:mass()*10)
+        }
+        else {
+        Bomb:applyAngForce((-Bomb:angles() - Bomb:angVel()/6)*5*ang(vec(1,0,1))*Bomb:mass() + ang(vec(0,sin(StepsX/50)*5,0)))
+        Bomb:applyForce((vec(0,0,(46-((L<R) ? L : R)*0.5)-Ranger) - Bomb:vel()/20 - Bomb:forward()*7*(Ranger/45)*(Path/50))*Bomb:mass()*10)
+        }
+    } 
+    else {StepsX = StepsX + 10}
+    #Bomb:applyForce((Bomb:toWorld(vec(-15*(Ranger<45),0,45 - Ranger)) - Bomb:vel()/20*(Ranger<45) - Bomb:pos())*Bomb:mass()*10)
+    
+    #LEGS
+    RDOWN:setAng(RDOWN:toWorld(clamp(ang(vec(RF-RB - RDOWN:angles():pitch()*(RF==RB)*0.1,0,0))*5, -35, 35)))
+    LDOWN:setAng(LDOWN:toWorld(clamp(ang(vec(LF-LB - LDOWN:angles():pitch()*(LF==LB)*0.1,0,0))*5, -35, 35)))
+    
+    LUP:setAng(Bomb:toWorld(ang(vec(sin(StepsX)*(Ranger)*(Vel)+30 + (clamp(45-Ranger,0,45))*1.666 - (1 + Vel)*20, 0, 0))))
+    RUP:setAng(Bomb:toWorld(ang(vec(sin(StepsX+180)*(Ranger)*(Vel)+30 + (clamp(45-Ranger,0,45))*1.666 - (1 + Vel)*20, 0, 0))))
+    
+    LMID:setAng(Bomb:toWorld(ang(vec(sin(StepsX+270)*(Ranger)*(Vel)-30 - (clamp(45-Ranger,0,45))*1.333 + (1 + Vel)*20, 0, 0))))
+    RMID:setAng(Bomb:toWorld(ang(vec(sin(StepsX+450)*(Ranger)*(Vel)-30 - (clamp(45-Ranger,0,45))*1.333 + (1 + Vel)*20, 0, 0))))
+    
+    #RUP:setAng(Bomb:toWorld(ang(vec(sin(StepsX+180)*45+60 + sin((21-Ranger)*4.3)*30,0,0))))
+    #RMID:setAng(Bomb:toWorld(ang(vec(sin(StepsX+450)*30-60 - sin((21-Ranger)*4.3)*30,0,0))))
+    
+}
+
+
+
+if(last()) {
+    
+    Bomb:remove()
+}
+
+
+
+if(dupefinished()) {reset()}
+
+
+
+
+

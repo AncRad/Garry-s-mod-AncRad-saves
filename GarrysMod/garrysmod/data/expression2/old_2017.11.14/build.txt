@@ -1,0 +1,45 @@
+@name build
+@inputs P:entity S:entity
+@outputs F:array Count
+@persist E:entity A
+@trigger none
+
+if(changed(0)) {
+    
+    
+    E = entity()
+    
+    EP = E:pos()
+    
+    PP = P:pos()
+    
+    D = PP - EP
+    holoCreate(1, EP+D/2, -abs(D/12),ang(),vec(0,100,255)) holoMaterial(1, "models/wireframe")
+    
+    
+    findIncludeModel("models/sprops/trans/wheel_a/wheel45.mdl")
+    findIncludeModel("models/sprops/mechanics/sgears/spur_36t_l.mdl")
+    findIncludeModel("models/hunter/blocks/cube025x05x025.mdl")
+    findInBox(PP,EP)
+    F = findToArray() print(F:count())
+    
+    A=1
+}
+
+
+
+local E = F[1, entity]
+
+Count = F:count()
+if(Count > A) {
+    A++
+    #ballsocket(E,vec(),F[A, entity],-vec(0.01),vec(0.01),vec(),1)
+    E:noCollide(F[A, entity])
+    interval(250)
+}
+else {
+    A=1
+    F:remove(1)
+}
+
+if(F:count() > 1) {interval(250)} else {print("Complite")}

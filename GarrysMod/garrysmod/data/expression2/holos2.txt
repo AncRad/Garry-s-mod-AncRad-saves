@@ -1,0 +1,298 @@
+@name Holos2
+
+@inputs 
+@outputs 
+@persist [Holos2]:table [NOENTITY]:entity
+
+#@trigger none
+
+
+
+if(changed(0)) {
+        runOnTick(1)
+    
+    Holos2["holos2 version", string] = "version 07.01.2016"
+    local NOENTITY = noentity()
+    
+    #- constants
+    Holos2["interval"    , number] = 50
+    Holos2["log enable"  , number] = 1
+    Holos2["maxPerSecond", number] = holoRemainingSpawns() #5 ops
+    Holos2["maxClip"     , number] = holoClipsAvailable() #5 ops
+    Holos2["modelAny"    , number] = holoModelAny() #5 ops
+    
+    #- functions
+    function logAdd(String:string) {
+        Holos2["log", array] = Holos2["log", array]:add(array("log holos2# " + entity():getName() + " # " + String))
+    }
+    function holos2Interval(Interval) {
+        if(Interval) {
+            if(!Holos2["interval", number]) {timer("holos2", 1)}
+            Holos2["interval", number] = Interval
+        } else {stoptimer("holos2")}
+    }
+    function setHolos2Interval(Interval) {
+        local ID = Holos2["ID", number]
+        
+        Holos2[ID + " changeInterval", number] = 1
+        Holos2[ID + " setInterval", number] = Interval
+    }
+    #
+    function holo(Name:string, [LocalPos Scale]:vector, LocalAng:angle, Color:vector, Alpha:number, Model:string, Material:string, [IN]:string) {
+        local ID = Holos2["ID", number] + 1 Holos2["ID", number] = ID
+        
+        if(Name == "") {
+            local NoName = Holos2["noName", number] + 1 Holos2["noName", number] = NoName
+            Name = "noName" + NoName
+        }
+        Holos2[ID   + " name"     , string] = Name
+        Holos2[Name + " id"       , number] = ID
+        Holos2[ID   + " localPos" , vector] = LocalPos
+        Holos2[ID   + " scale"    , vector] = Scale
+        Holos2[ID   + " localAng" , angle ] = LocalAng
+        Holos2[ID   + " color"    , vector] = Color
+        Holos2[ID   + " alpha"    , number] = Alpha
+        Holos2[ID   + " model"    , string] = Model
+        Holos2[ID   + " material" , string] = Material
+        #Holos2[ID   + " offSetPos", vector] = OffSetPos
+        #Holos2[ID   + " ent"      , entity] = Ent
+        Holos2[ID   + " in"       , string] = IN
+        Holos2[ID   + " to"       , string] = IN
+        
+        Holos2["name", string] = Name
+        
+        timer("holos2", 10)
+    }
+    #
+    #
+    function setHoloOffSetPos(OffSetPos:vector) {
+        local ID = Holos2["ID", number]
+        Holos2[ID + " offSetPos", vector] = OffSetPos
+    }
+    #
+    #
+    function setHoloTO(TO:string) {
+        local ID = Holos2["ID", number]
+        
+        Holos2[ID + " to", string] = TO
+    }
+    function setHoloTO(TO:entity) {
+        local ID = Holos2["ID", number]
+        
+        Holos2[ID + " to" , string] = ""
+        Holos2[ID + " ent", entity] = TO
+    }
+    function setHoloIN(IN:entity) {
+        local ID = Holos2["ID", number]
+        
+        Holos2[ID + " in" , string] = ""
+        Holos2[ID + " ent", entity] = IN
+    }
+    function setHolo(Ent:entity) {
+        local ID = Holos2["ID", number]
+        
+        Holos2[ID + " to" , string] = ""
+        Holos2[ID + " in" , string] = ""
+        Holos2[ID + " ent", entity] = Ent
+    }
+    #
+    #
+    function setClip(ClipLength:number, ClipLocalAng:angle) {
+        local ID = Holos2["ID", number]
+        local IDClip = ID + "clips"
+        local ClipMax = holoClipsAvailable()
+        local ClipNumber = Holos2[IDClip, number] + 1
+        
+        if(ClipMax > ClipNumber) {
+            Holos2[IDClip, number] = ClipNumber
+            local IDClipNunber = IDClip + ClipNumber
+            Holos2[IDClipNunber + " length"  , number] = ClipLength
+            Holos2[IDClipNunber + " localAng", angle ] = ClipLocalAng
+        } elseif(Holos2["log enable", number]) {
+            logAdd("error: setClip; clips limit(" + ClipMax + ") is reached for the hologram '" + Holos2[ID + " name", string] + "', '" + ID + "'")
+        }
+    }
+    #
+    #
+    function setTimer(TimerName:string, TimerTime:number) {
+        local ID = Holos2["ID", number]
+        local IDTimers = ID + "timers"
+        local TimerNumber = Holos2[IDTimers, number] + 1
+        Holos2[IDTimers, number] = TimerNumber
+        local IDTimerNumber = IDTimers + TimerNumber
+        
+        Holos2[IDTimerNumber + " name", string] = TimerName
+        Holos2[IDTimerNumber + " time", number] = TimerTime
+    }
+    #
+    #
+    function setRenderNumber(RenderNumber) {
+        local ID = Holos2["ID", number]
+        
+        Holos2[ID + " numberRender", number] = RenderNumber
+    }
+    #
+    #
+    function setHoloAttach(Player:entity, Attachment:string) {
+        local ID = Holos2["ID", number]
+        
+        Holos2[ID + " attach attachment", string] = Attachment
+        Holos2[ID + " attach player"    , entity] = Player
+    }
+    ###
+    function clip(ID:number, N:number, Length:number, ANG:angle) {
+        holoClipEnabled( ID, N , 1 )
+        holoClip( ID , N , vec( Length , 0 , 0 ):rotate( ANG ) , vec( 1 , 0 , 0 ):rotate( ANG ) , 0)
+    }
+    #
+    #
+    function attach(ID:number, Name:string,  Player:entity, Attachment:string) {
+        local NotFirstAttach = Holos2[ID + " attach", number]
+        
+        if(NotFirstAttach) {
+            
+            if(holoCanCreate()) {
+                Holos2[ID + " e", entity] = Holos2[Name + " e", entity] = holoCreate(ID, Player:attachmentPos(Attachment), vec(), Player:attachmentAng(Attachment))
+                holoParentAttachment(ID, Player, Attachment)
+            } elseif(Holos2["log enable", number]) {logAdd("error: attach; holo id:" + ID + "name:" + Name + " holoCanCreate != 1")}
+        } else {
+            Holos2[ID + " attach", number] = 1
+            
+            holoParentAttachment(ID, Player, Attachment)
+            holoPos(ID, Player:attachmentPos(Attachment))
+            holoAng(ID, Player:attachmentAng(Attachment))
+        }
+    }
+    function attach(Name:string, Player:entity, Attachment:string) {
+        local ID = Holos2[Name + " id", number]
+        
+        attach(ID, Name, Player, Attachment)
+    }
+    function attach(ID:number, Player:entity, Attachment:string) {
+        local Name = Holos2[ID + " name", string]
+        
+        attach(ID, Name, Player, Attachment)
+    }
+    
+    #[- orazec
+    holo("", vec( 0.0 , 0.0 , 0.0 ), vec( 1.0 , 1.0 , 1.0 ), ang( 0 , 0 , 0 ), vec( 255 ), 255, "cube", "", "")
+    setClip(0, ang( 0 , 0 , 0 ))
+    ]#
+}
+
+if(clk("holos2")) {
+        timer("holos2", Holos2["interval", number])
+    
+    InTable = Holos2["ID", number]
+    local ID = Holos2["create", number] + 1
+    if(ID <= InTable) {
+        if(holoCanCreate()) {
+            Holos2["create", number] = ID
+            
+            local Name         = Holos2[ID + " name"             , string]
+            local LocalPos     = Holos2[ID + " localPos"         , vector]
+            local Scale        = Holos2[ID + " scale"            , vector]
+            local LocalAng     = Holos2[ID + " localAng"         , angle ]
+            local Color        = Holos2[ID + " color"            , vector]
+            local Alpha        = Holos2[ID + " alpha"            , number]
+            local Model        = Holos2[ID + " model"            , string]
+            local Material     = Holos2[ID + " material"         , string]
+            local OffSetPos    = Holos2[ID + " offSetPos"        , vector]
+            local Ent          = Holos2[ID + " ent"              , entity]
+            local IN           = Holos2[ID + " in"               , string]
+            local TO           = Holos2[ID + " to"               , string]
+            local RenderNumber = Holos2[ID + " numberRender"     , number]
+            local Attachment   = Holos2[ID + " attach attachment", string]
+            
+            
+            if(IN) {
+                INe = holoEntity(Holos2[IN + " id", number])
+                
+                LocalPos = INe:toWorld( LocalPos )
+                LocalAng = INe:toWorld( LocalAng )
+            } elseif(Ent) {
+                
+                INe = Ent
+                LocalPos = INe:toWorld( LocalPos )
+                LocalAng = INe:toWorld( LocalAng )
+            }
+            if(TO) {
+                
+                TOe = holoEntity(Holos2[TO + " id", number])
+            } elseif(Ent) {
+                
+                TOe = Ent
+            }
+            
+            local Modeling = Model:left(7) == "models/"
+            if(!Modeling) {Scale = Scale / 6}
+            
+            
+            local Holo = holoCreate(ID, LocalPos, Scale, LocalAng, Color, Model)
+            holoParent(ID, TOe)
+            
+            if(Modeling) {
+                if(!holoModelAny()) {
+                    local Check2 = 0
+                    #ifdef entity:setModel(string)
+                        Holo:setModel(Model)
+                    #else
+                        print("Holos2: " + entity():getName() + ", id " + ID, "No holoModelAny, no setModel on server")
+                    #endif
+                }
+            }
+            holoMaterial(ID, Material)
+            holoAlpha(ID, Alpha)
+            if(OffSetPos != vec()) {holoPos(ID, Holo:toWorld( OffSetPos ))}
+            Holos2[ID   + " e", entity] = Holo
+            Holos2[Name + " e", entity] = Holo
+            
+            
+            local IDClip = ID + "clips"
+            local Clips = Holos2[IDClip, number]
+            if(Clips) {
+                for(NumberClip = 1, Clips) {
+                    local IDClipNumber = IDClip + NumberClip
+                    local ClipLength   = Holos2[IDClipNumber + " length"  , number]
+                    local ClipLocalAng = Holos2[IDClipNumber + " localAng", angle ]
+                    
+                    clip(ID, NumberClip, ClipLength, ClipLocalAng)
+                }
+            }
+            
+            local IDTimer = ID + "timers"
+            local Timers = Holos2[IDTimer, number]
+            if(Timers) {
+                for(NumberTimer = 1, Timers) {
+                    local IDTimerNumber = IDTimer + NumberTimer
+                    local TimerName = Holos2[IDTimerNumber + " name", string]
+                    local TimerTime = Holos2[IDTimerNumber + " time", number]
+                    timer(TimerName, TimerTime)
+                }
+            }
+            
+            if(RenderNumber) {Holo:setRenderMode(RenderNumber)}
+            
+            if(Attachment) {
+                attach(ID, Name, Holos2[ID + " attach player", entity], Attachment)
+            }
+            if(Holos2[ID + " changeInterval", number]) {
+                holos2Interval(Holos2[ID + " setInterval", number])
+            }
+        }
+    }
+}
+
+#[
+Sets the render mode of the entity (0 = Normal, 1 = TransColor, 2 = TransTexture, 3 = Glow, 4 = TransAlpha, 5 = TransAdd, 6 = Enviromental, 7 = TransAddFrameBlend, 8 = TransAlphaAdd, 9 = WorldGlow, 10 = None)
+#]
+
+
+#first version 27.08.2015
+#      version 28.08.2015
+#      version 14.10.2015 [+setHoloOffSet(vector) +setHoloTO(string)]
+#      version 29.12.2015 [+setRenderNumber(number)]
+#      version 01.01.2016 [+setHoloTO(entity) +setHoloIN(entity)]
+#      version 07.01.2016 [+setHoloAttach(string name, entity player)  +attach(number id, string name, entity player, string attachment) +attach(number id, entity player, string attachment) +attach(string name, entity player, string attachment)]
+#old   version 07.01.2016 [+setHolo(Ent:entity)]
+#end

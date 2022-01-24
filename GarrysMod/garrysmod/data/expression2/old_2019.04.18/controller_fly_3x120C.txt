@@ -1,0 +1,249 @@
+@name controller_fly_3x120C
+
+@inputs [T1 T2 T3]:entity
+@outputs HC
+@persist [E O Base]:entity [Q]:table
+
+@trigger 
+@model models/bull/gates/processor.mdl
+
+
+
+#include "AddHolo"
+
+
+################
+if(changed(0)) {
+    ################
+    #
+    #include "effect_turbineFlames_v01"
+    #
+    ################
+    
+    
+    
+    ################
+    #
+    E = entity() E:setSkin(1)
+    O = owner()
+    #
+    ################
+    
+    
+    
+    ################
+    #
+    
+    #
+    ################
+    if(changed(0)) {
+        Base = E:isWeldedTo()
+        
+        addHolo("base", vec(), vec(), ang(-90,0,0), vec(255), "cube", "", "") addHolo_INTO(Base)
+        for(C = 1,3) {
+            local T_e  = select(C, T1,T2,T3)
+            local T_a = select(C, ang(-12,180,-180),ang(6,-169.56,60.54),ang(6,169.56,-60.54))
+            addHolo("YawCorrect" + C, vec(), vec(), T_a, vec(), "tetra", "", "") addHolo_INTO(Base) #addHoloOffset(vec(0,0,-30),ang())
+            T_e:effect_turbineFlames("flame" + C,vec(-35,0,0),ang(-90,0,0),11,50,vec(255,30,0),15)
+            #effect01_clamping("flame" + C, 1) Effect01["flame" + C + "/rangerFilter", array] = array(T_e)
+            
+            #1[-12,180,-180]
+            #2[6,-169.56,60.54]
+            #3[6,169.56,-60.54]	
+            
+            
+            addHolo("Xcorrect" + C, vec(), vec(), ang(0,-120 * (C - 1),0), vec(255), "cube", "", "base")
+        }
+        addHolo_timer("1")
+        addHolo_start()
+    }
+}
+
+
+
+if(clk("1")) {
+        timer("1", 1)
+    
+    if(changed(0)) {
+        
+        for(C = 1,3) {
+            Q["Xcorrect/lastPos/" + C, vector] = AddHolo["Xcorrect" + C + "/entity", entity]:pos()
+        }
+        Q["lastCurtime", number] = curtime()
+    }
+    
+    local LastCurtime = Q["lastCurtime", number]
+    local Curtime = 0
+    Curtime = Q["lastCurtime", number] = curtime()
+    local Interval = Curtime - LastCurtime
+    local Loop = Interval / 0.015625
+    
+    local Key = O:keyPressed("mouse_4")
+    if(changed(Key) & Key) {
+        local Mode = 0
+        Mode = Q["mode", number] = !Q["mode", number]
+        
+        holoAng(AddHolo["base/index", number], Base:toWorld(ang((Mode ? 1 : -1) * 90,0,0)))
+    }
+    
+    if(Q["mode", number] == 0) {
+        #####
+        local Vel = Base:vel()
+              Vel_z = Vel[3]
+        
+        
+        #####     Control
+        # height
+        HC = Q["HC", number]
+        HC = Q["HC", number] = clamp(HC - clamp( Vel_z / 10 + $Vel_z * 5 ,-1.5,1.5)  ,0,50)
+        local HF = clamp(HC - clamp(Vel_z / 2,-6,6) ,0,50)
+        
+        
+        
+        #local Xcorrect
+        
+        
+        for(C = 1,3) {
+            local T_e = select(C, T1,T2,T3)
+            
+            
+            
+            local Xcorrect = AddHolo["Xcorrect" + C + "/entity", entity]
+            local Angles = Xcorrect:angles()
+            
+            local LastYaw = Q["Xcorrect" + C + "/yaw", number]
+            local Yaw = 0
+            Yaw = Q["Xcorrect" + C + "/yaw", number] = Angles:yaw()
+            local YC = sin(clamp((Yaw-LastYaw)*30,-90,90)) * 30
+            
+            
+            
+            local YawCorrect = AddHolo["YawCorrect" + C + "/entity", entity]
+            local LastAng = Q[C + "/lastAng", angle]
+            local Ang = ang()
+            Ang = Q[C + "/lastAng", angle] = angnorm(YawCorrect:toLocal(T_e:angles()))
+            local AngVel = Ang - LastAng                   #Добавь учет вращения в мире
+            
+            
+            
+            local A = (-YC-Ang*Loop)*2-AngVel * 10
+            
+            T_e:applyAngForce(ang(0,A[2]*T_e:mass()*9,0))
+            
+            
+            local LastPos = Q["Xcorrect/lastPos/" + C, vector]
+            local Vel = Xcorrect:toLocal(LastPos)
+            Q["Xcorrect/lastPos/" + C, vector] = Xcorrect:pos()
+            
+            
+            local LastPitch = Q["Xcorrect" + C + "/pitch", number]
+            local Pitch = 0
+            Pitch = Q["Xcorrect" + C + "/pitch", number] = Angles:pitch()
+            
+            local PC = sin(clamp(clamp((Pitch - clamp(Vel[1]*5,-30,30)) * 6,-90,90) + clamp((Pitch-LastPitch)*90,-180,180),-90,90))
+            
+            
+            
+            local F = HF * (1 + PC*0.5)
+            
+            T_e:applyOffsetForce(T_e:forward() * F/3 * 2700 * Loop, T_e:massCenter())
+            
+            effect_turbineFlames("flame" + C, F / 18)
+        }
+    }
+    else {
+        
+        
+        
+        for(C = 1,3) {
+            local T_e = select(C, T1,T2,T3)
+            
+            
+            
+            local Xcorrect = AddHolo["Xcorrect" + C + "/entity", entity]
+            local Angles = Xcorrect:angles()
+            
+            local LastYaw = Q["Xcorrect" + C + "/yaw", number]
+            local Yaw = 0
+            Yaw = Q["Xcorrect" + C + "/yaw", number] = Angles:yaw()
+            local YC = sin(clamp((Yaw-LastYaw)*30,-90,90)) * 30
+            
+            
+            
+            local YawCorrect = AddHolo["YawCorrect" + C + "/entity", entity]
+            local LastAng = Q[C + "/lastAng", angle]
+            local Ang = ang()
+            Ang = Q[C + "/lastAng", angle] = angnorm(YawCorrect:toLocal(T_e:angles()))
+            local AngVel = Ang - LastAng                   #    
+            
+            
+            
+            local A = (-YC-Ang*Loop)*2-AngVel * 10
+            
+            T_e:applyAngForce(ang(0,A[2]*T_e:mass()*9,0))
+            
+            
+            local LastPos = Q["Xcorrect/lastPos/" + C, vector]
+            local Vel = Xcorrect:toLocal(LastPos)
+            Q["Xcorrect/lastPos/" + C, vector] = Xcorrect:pos()
+            
+            
+            local LastPitch = Q["Xcorrect" + C + "/pitch", number]
+            local Pitch = 0
+            Pitch = Q["Xcorrect" + C + "/pitch", number] = Angles:pitch()
+            
+            local PC = sin(clamp(clamp((Pitch - clamp(Vel[1]*5,-30,30)) * 6,-90,90) + clamp((Pitch-LastPitch)*90,-180,180),-90,90))
+            
+            
+            
+            local F = 30 * (1 + PC*0.5)
+            
+            T_e:applyOffsetForce(T_e:forward() * F/3 * 2700 * Loop, T_e:massCenter())
+            
+            effect_turbineFlames("flame" + C, F / 18)
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+effect_turbineFlames()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

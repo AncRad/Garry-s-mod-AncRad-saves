@@ -1,0 +1,23 @@
+@name Google Chat To Voice by NAMBAVAN
+@persist [Lang IE]:string V [E O]:entity
+if(first()){
+    Lang="ru"
+    IE="utf-8"
+    V=100
+    runOnChat(1)
+    O=owner()
+    E=entity()
+}
+if(chatClk(owner())){
+    local LS=lastSaid()
+    local CIDAKEY = "15cb7fa3-dedf-4836-bb46-47cf0a9c4695"
+    local CIDAKEY = "a2ba101a-bf9d-41c0-99f9-f6e5e58d255c"
+    local CIDAKEY = "f80ac637-d428-4a40-95a1-eb5a4d1892bb"
+    local CIDAKEY = "1a626bd8-3f12-4b50-b428-4e46e630f241"
+    local CIDAKEY = "5b16a033-048d-4047-8414-de33fbe35f84"
+    
+    soundURLload(1,"https://tts.voicetech.yandex.net/generate?key=" + CIDAKEY + "&format=mp3&lang=ru-RU&emotion=evil&speaker=omazh&text="+httpUrlEncode(LS)+"&tl="+Lang+"&client=tw-ob",V,0,owner())
+    hideChat(1)
+}
+
+

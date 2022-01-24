@@ -1,0 +1,58 @@
+@name Omochao Relationships
+@inputs [EGP EGP_2]:wirelink 
+@outputs Scr_Size:vector2 I
+@persist L_Hight Rep:gtable
+
+interval(2000)
+
+if ( changed(EGP) )
+{
+    #ifdef wirelink:egpSize(number, vector2)
+    Scr_Size = EGP:egpSize()
+    #else 
+    Scr_Size = vec2(512,512)
+    #endif
+    
+    L_Hight = 14
+    
+    Rep = gTable("Omochao_Reputation", 1)
+}
+
+EGP:egpClear()
+
+EGP:egpText(1, "Таблица отношений Омочао", vec2(Scr_Size:x()/2-100, 0))
+EGP:egpText(2, "Объект", vec2(10, L_Hight*1.2))
+EGP:egpText(3, "Отношение", vec2(50 + Scr_Size:x()-150, L_Hight*1.2))
+    
+while( I < Rep:count() )
+{
+    I++
+    local S = Rep:toTable():keys()[I, string]
+    EGP:egpText(I+3, S, vec2( 2, L_Hight*(I+1.4) ))
+    
+    if ( Rep[S, number] > 1200 )
+        { Str = "Боготворение" }
+    elseif ( Rep[S, number] > 400 )
+        { Str = "Привязанность" }
+    elseif ( Rep[S, number] > 100 )
+        { Str = "Дружба" }
+    elseif ( Rep[S, number] > 30 )
+        { Str = "Симпатия" }
+    elseif ( Rep[S, number] > -30 )
+        { Str = "Нейтралитет" }
+    elseif ( Rep[S, number] > -100 )
+        { Str = "Неприязнь" }
+    elseif ( Rep[S, number] > -400 )
+        { Str = "Вражда" }
+    elseif ( Rep[S, number] > -1200 )
+        { Str = "Ненависть" }
+    else 
+        { Str = "Лютая ненависть" }
+       
+    EGP:egpLine(I+1003, vec2( 0, L_Hight*(I+1.6) ), vec2( Scr_Size:x(), L_Hight*(I+1.6) ) )
+        EGP:egpColor(I+1003, vec(120)) 
+    EGP:egpText(I+103, Str, vec2( Scr_Size:x()-140, L_Hight*(I+1.4) ))
+    
+}
+I = 0
+

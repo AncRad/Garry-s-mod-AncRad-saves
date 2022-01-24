@@ -1,0 +1,86 @@
+@name test_egp_getGlobalPos
+@inputs 
+@outputs 
+@persist W:wirelink
+@trigger 
+
+if(changed(0)) {
+    
+    
+    W = entity():isWeldedTo():wirelink()
+    
+    W:egpClear()
+    
+    local X = 75
+    
+    W:egpCircle(1,vec2(256),vec2(10))
+    W:egpBox(2,vec2(0,X/2),vec2(2,X))
+    W:egpColor(2,vec(150))
+    W:egpParent(2,1)
+    
+    W:egpCircle(3,vec2(0,X/2),vec2(3))
+    W:egpParent(3,2)
+    
+    W:egpBox(4,vec2(0,X/2),vec2(2,X))
+    W:egpColor(4,vec(150))
+    W:egpParent(4,3)
+    
+    W:egpCircle(5,vec2(0,X/2),vec2(3))
+    W:egpParent(5,4)
+    
+    W:egpBox(6,vec2(0,X/2),vec2(2,X))
+    W:egpColor(6,vec(150))
+    W:egpParent(6,5)
+    
+    W:egpCircle(7,vec2(0,X/2),vec2(3))
+    W:egpParent(7,6)
+    
+    
+    
+    W:egpCircleOutline(10,vec2(),vec2(5))
+    W:egpColor(10,vec(255,70,0))
+    
+    W:egpBoxOutline(11,vec2(),vec2(6))
+    W:egpColor(11,vec(0,100,255))
+}
+
+interval(100)
+
+
+W:egpAngle(1, -curtime()*10)
+W:egpAngle(3, curtime()*10)
+W:egpAngle(5, curtime()*10)
+
+
+local Pos = Ang = array()
+local E_p = W:egpPos(7)
+local P_i = W:egpParent(7)
+while(P_i) {
+    local Next = W:egpParent(P_i)
+    E_p = W:egpPos(P_i) + E_p:rotate(W:egpAngle(P_i) * (Next ? 1 : -1))
+    P_i = Next
+}
+
+W:egpPos(10, vec2(W:egpGlobalPos(7))) #[ VS ]# W:egpPos(11, E_p)
+
+
+
+
+
+
+
+
+#[
+while(P_i) {
+    E_p = W:egpPos(P_i) + E_p:rotate(angnorm(-W:egpAngle(P_i)))
+    P_i = W:egpParent(P_i)
+}
+]#
+
+
+
+
+
+
+
+

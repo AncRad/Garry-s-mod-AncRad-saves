@@ -1,0 +1,495 @@
+@name ion_fly
+
+@inputs 
+@outputs CH OPS
+@persist [E User Chest Base]:entity OO [M1 M2]:string [C1]:vector Water Force VL  [KeyW KeyA KeyS KeyD KeySpace KeyShift]
+
+@persist Stat T:table
+
+@trigger none
+@model models/hunter/plates/plate025x025.mdl
+
+
+#Version = 1.0
+#E = grab
+#E = on\off
+#E + R = drop
+
+
+
+##include "Holos"
+if(changed(0)) {
+    
+    #E = entity()
+    
+    function set(NAME:string, POS:vector, SIZE:vector, ANG:angle, COLOR:vector, ALPHA:number, MODEL:string, MATERIAL:string, OFFSET:vector, ENT:entity, IN:string, TO:string) {
+              ID = T["ID", number]
+        T[NAME, number] = ID
+        T[ID  , string] = NAME
+        T["1 "  + ID, vector ] = POS
+        T["2 "  + ID, vector ] = SIZE
+        T["3 "  + ID, angle  ] = ANG
+        T["4 "  + ID, vector ] = COLOR
+        T["5 "  + ID, number ] = ALPHA    
+        T["6 "  + ID, string ] = MODEL
+        T["7 "  + ID, string ] = MATERIAL
+        T["8 "  + ID, vector ] = OFFSET
+        T["9 "  + ID, entity ] = ENT
+        T["10 " + ID, string ] = IN
+        T["11 " + ID, string ] = TO
+        
+        GetName = NAME
+        T["ID", number] = ID + 1
+    }
+    
+    function number n(NAME:string) {return T[NAME, number]}
+    function string s(ID:number) {return T[ID, string]}
+    
+    function setClip(NAME:string, N:number, Length:number, ANG:angle) {
+        local ID = n(NAME)
+        local I = ID + " " + N
+        T[ID + " clips", number] = N
+        T[I + " length", number] = Length
+        T[I + " ang"   , angle ] = ANG
+    }
+    function clip(ID:number, N:number, Length:number, ANG:angle) {
+        holoClipEnabled( ID, N , 1 )
+        holoClip( ID , N , vec( Length , 0 , 0 ):rotate( ANG ) , vec( 1 , 0 , 0 ):rotate( ANG ) , 0)
+    }
+    function setTimer(NAME:string, TimerName:string, Time:number) {
+        local Tamer = NAME + " timers"
+        TamerN = T[              Tamer , number] = T[Tamer, number] + 1
+        T[NAME + " timerName " + TamerN, string] = TimerName
+        T[NAME + " time "      + TamerN, number] = Time
+    }
+    function setTimer(ID:number, TimerName:string, Time:number) {
+        local NAME = s(ID)
+        local Tamer = NAME + " timers"
+        TamerN = T[              Tamer , number] = T[Tamer, number] + 1
+        T[NAME + " timerName " + TamerN, string] = TimerName
+        T[NAME + " time "      + TamerN, number] = Time
+    }
+    function setTimer(TimerName:string, Time:number) {
+        local NAME = s(T["ID", number])
+        local Tamer = NAME + " timers"
+        TamerN = T[              Tamer , number] = T[Tamer, number] + 1
+        T[NAME + " timerName " + TamerN, string] = TimerName
+        T[NAME + " time "      + TamerN, number] = Time
+    }
+    
+    function create() {
+            timer("create", 10)
+        if(holoCanCreate()) {
+            local Create = T["create", number]
+            local ID = T["ID", number]
+            if(Create < ID) {
+                POS      = T["1 "  + Create, vector]
+                SIZE     = T["2 "  + Create, vector]
+                ANG      = T["3 "  + Create, angle ]
+                COLOR    = T["4 "  + Create, vector]
+                ALPHA    = T["5 "  + Create, number]
+                MODEL    = T["6 "  + Create, string]
+                MATERIAL = T["7 "  + Create, string]
+                OFFSET   = T["8 "  + Create, vector]
+                ENT      = T["9 "  + Create, entity]
+                IN       = T["10 " + Create, string]
+                TO       = T["11 " + Create, string]
+                NAME = T[Create, string] ##
+                
+                #
+                if(IN != "") {INE = holoEntity(n(IN))} else {INE = ENT}
+                if(TO != "") {TOE = holoEntity(n(TO))} else {TOE = ENT}
+                HE = holoCreate(Create, INE:toWorld( POS ), SIZE / 6, INE:toWorld( ANG ), COLOR, MODEL )
+                holoAlpha(Create, ALPHA)
+                holoMaterial(Create, MATERIAL)
+                holoParent(Create, TOE)
+                if(MODEL:left(7) == "models/") {HE:setModel( MODEL ) holoScale(Create, SIZE)}
+                if(OFFSET) {holoPos(Create, HE:toWorld( OFFSET ))}
+                
+                T[NAME + "e", entity] = HE
+                ##################
+                if(NAME != "") {
+                    local Clips = T[Create + " clips", number]
+                    if(Clips) {
+                        for(N = 1, Clips) {
+                            local I = Create + " " + N
+                            local Length = T[I + " length", number]
+                            local ANG    = T[I + " ang"   , angle ]
+                            clip(Create, N, Length, ANG)
+                        }
+                    }
+                    
+                    
+                    local Timers = T[NAME + " timers", number]
+                    if(Timers) {
+                        if(Timers > 0) {
+                            for(TamerN = 1, Timers) {
+                                local Time      = T[NAME + " time "      + TamerN, number]
+                                local TimerName = T[NAME + " timerName " + TamerN, string]
+                                timer(TimerName, Time)
+                            }
+                        }
+                    }
+                }
+                ##################
+                
+                
+                local END = T["end", number]
+                if(END) {
+                    if(Create + 1 == END) {
+                        if(T["print", number]) {print(Create + 1)}
+                        stoptimer("create")
+                        
+                        local Timers = T[" timers", number]
+                        if(Timers) {
+                            if(Timers > 0) {
+                                for(TamerN = 1, Timers) {
+                                    local Time      = T[" time "      + TamerN, number]
+                                    local TimerName = T[" timerName " + TamerN, string]
+                                    timer(TimerName, Time)
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                T["create", number] = Create + 1
+            }
+        }
+    }
+    
+    function end() {T["end", number] = T["ID", number] timer("create", 10)}
+    function stop() {stoptimer("create")}
+    
+    function setLocalPos(ID:number, TO:number, V:vector) {
+        local H = holoEntity(TO)
+        holoPos(ID, H:toWorld( V ))
+    }
+    function setLocalAng(ID:number, TO:number, A:angle) {
+        local H = holoEntity(TO)
+        holoAng(ID, H:toWorld( A ))
+    }
+    function number smooth(A:number, IN:number, TO:number) {
+        local A = clamp((A - IN) / (TO - IN) ,0,1) * 180
+        return (sin(A - 90) + 1) / 2
+    }
+    function number rounde(A:number, IN:number, TO:number) {
+        local A = clamp((A - IN) / (TO - IN) ,0,1) * 180
+        return sin(A)
+    }
+    
+    T["M1" , string] = "phoenix_storms/OfficeWindow_1-1"        #
+    T["M2" , string] = "phoenix_storms/fender_chrome"           #chrome
+    T["M3" , string] = "lights/white"                           #light
+    T["M4" , string] = "models/props_c17/frostedglass_01a_dx60" #reflenoe steclo
+    T["M5" , string] = "phoenix_storms/mat/mat_phx_metallic"    #pinmonkey ball
+    T["M7" , string] = "sprops/textures/sprops_metal4"          #metal
+    T["M8" , string] = "sprops/textures/sprops_metal6"          #metal
+    T["M9" , string] = "sprops/trans/wheels/wheel_d_rim2"       #
+    T["M10", string] = "sprops/trans/misc/ls_m1"                #plast black
+    T["M11", string] = "sprops/trans/misc/ls_m2"                #plast black
+    T["M12", string] = "sprops/textures/sprops_rubber2"         #rubber
+    #models/wireframe
+    
+
+
+    #set("", vec( 0.0 , 0.0 , 0.0 ), vec( 0.0 , 0.0 , 0.0 ), ang( 0 , 0 , 0 ), vec( 200 ), 255, "cube", "", vec(), E, "", "")
+    #setClip("", 1, 0, ang( 0 , 0 , 0 ))
+    #create()
+}
+if(clk("create")) {create()}
+
+ OPS = ops()
+if(first()) {
+        runOnTick(1)
+        runOnLast(1)
+    E = entity()
+    E:setAlpha(0)
+    E:setMass(5)
+    
+    #O:setModel("models/player/p2_chell.mdl")
+    
+    #physics/metal/metal_box_scrape_smooth_loop1.wav
+    #npc/turret_wall/turret_loop1.wav
+    #ambient/wind/wind_rooftop1.wav
+    #set("", vec( 0.0 , 0.0 , 0.0 ), vec( 0.0 , 0.0 , 0.0 ), ang( 0 , 0 , 0 ), vec( 200 ), 255, "cube", "", vec(), E, "", "")
+    #setClip("", 1, 0, ang( 0 , 0 , 0 ))
+    
+    #H = holoCreate(1000, E:toWorld(vec()), vec(1), E:toWorld(ang())) H:setModel("models/player/p2_chell.mdl") holoParent(1000, E)
+    
+    
+    C1 = vec( 255 )
+    M1 = T["M1", string]
+    M2 = "lights/white"
+    
+    
+    set("rt", vec( 0.0 , 7.0 , -8.0 ), vec( 0.0 , 0.0 , 0.0 ), ang( 80 , 90 , 0 ), vec( 200 ), 255, "cube", "", vec(), E, "", "")
+    set("chest", vec( 0.0 , 0.0 , 0.0 ), vec( 0.0 ), ang( 0 , 0 , 0 ), vec( 0 , 0 , 255 ), 255, "cube", "", vec(), E, "rt", "rt")
+    
+    set("base", vec( -8.0 , 0.0 , -2.0 ), vec( 0.0 ), ang( -5 , 0 , 0 ), vec( 255 , 0 , 0 ), 255, "cube", "", vec(), E, "chest", "chest")
+    
+    
+    local A = ang()
+    local V = vec()
+    for(C = 1, 4) {
+            if(C == 1) {V = vec( 1.1 , -2.5 ,  3.0 ) A = ang( -80 ,  20 , 0 ) A1 = 0  M =  1}
+        elseif(C == 2) {V = vec( 1.1 ,  2.5 ,  3.0 ) A = ang( -80 , -20 , 0 ) A1 = 0  M = -1}
+        elseif(C == 3) {V = vec( 0.9 ,  1.4 , -0.0 ) A = ang( -70 ,  -7 , 0 ) A1 = 0  M =  1}
+        elseif(C == 4) {V = vec( 0.9 , -1.4 , -0.0 ) A = ang( -70 ,   7 , 0 ) A1 = 0  M = -1}
+        
+        local F = C - 1
+        N1 = "fly " + C
+        N2 = N1 + " " + "axis " + C
+        set(N1, V, vec( 0.3 ), A, vec( 255 , 0 , 0 ), 255, "cube", "", vec(), E, "base", "base")
+        set(N2, vec( 0.0 ,  0.0 , 0.0 ), vec( 0.2 , 0.2 , 1.0 ), ang( 0 , A1 , 0 ), vec( 200 ), 255, "cube", "", vec(), E, N1, N1)
+        
+        
+        Z = 0.1
+        R = 1.5
+        set("", vec( 0.0 ,  0.0 , Z ), vec( R , R , Z ), ang( 0 , 0 , 0 ), C1, 255, "hq_cylinder", M1, vec(), E, N1, N1)
+        
+        Z2 = 0.3
+        set("", vec( 0.0 ,  0.0 , Z2 + Z * 2 ), vec( R , R , Z2 ), ang( 0 , 0 , 0 ), C1, 255, "hq_tube_thin", M1, vec(), E, N1, N1)
+        
+        R1 = R - 0.15
+        Z3 = Z2
+        set("", vec( 0.0 ,  0.0 , Z3 + Z * 2 ), vec( R1 , R1 , Z3 ), ang( 0 , 0 , 0 ), C1 / 2, 255, "hq_cylinder", M1, vec(), E, N2, N2)
+        set("", vec( 0.0 ,  0.0 , 1.1 ), vec( R , R , 0.4 ), ang( 0 , 0 , 0 ), C1, 255, "hq_cylinder", M1, vec(), E, N2, N2)
+        
+        
+        Len = 8
+        NN1 = "_" + C
+        set(NN1, vec( -Len / 2 - 1 ,  -0.45 * M , 1.2 ), vec( Len , 1.0 , 0.2 ), ang( 0 , 0 , 0 ), C1, 255, "rcube_thick", M1, vec(), E, N2, N2)
+        setClip(NN1, 1, -Len * 0.66, ang( 0 , 0 , 0 ))
+        setClip(NN1, 2, -Len * 0.66, ang( 0 , 180 , 0 ))
+        
+        NN2 = "__" + C
+        set(NN2, vec( -10.24 , -0.45 * M , 1.2 ), vec( 3 , 0.7 , 0.2 ), ang( 0 , -45 * M , 0 ), C1, 255, "rcube_thick", M1, vec(), E, N2, N2)
+        setClip(NN2, 1, 0, ang( 0 , -135 * M , 0 ))
+    }
+    
+    set("", vec( 1.4 ,  0.0 , 0.5 ), vec( 0.8 , 0.8 , 0.8 ), ang( -135 , 0 , 45 ), C1 / 2, 255, "models/gibs/scanner_gib02.mdl", "", vec(), E, "base", "base")
+    
+    function set1() {
+        local M = 1
+        for(C = 1,4) {
+            local N1 = "fly " + C
+            local N2 = N1 + " " + "axis " + C
+            for(C_ = 1, 8) {
+                NNN = C + "light " + C_
+                set(NNN, vec( -10 + C_ / 2 , -0.45 * M , 1.2 ), vec( 0.15 , 0.5 , 0.25 ), ang( 0 , 0 , 0 ), vec( 0 , 0 , 0 ), 255, "rcube_thick", M2, vec(), E, N2, N2)
+            }
+            M = -M
+        }
+    }
+    
+    timer("1", 100)
+    #end()
+    if(owner():keyUse()) {setTimer("getUser", 100)}
+    
+    function toChest() {
+        E:propNotSolid(1)
+        holoParentAttachment(1, User, "chest")
+        holoPos(1, User:attachmentPos("chest"))
+        holoAng(1, User:attachmentAng("chest"))
+    }
+    function toEntity() {
+        local RT = holoEntity(0)
+        local Base = holoEntity(2)
+        E:propNotSolid(0)
+        E:propFreeze(0)
+        #E:setPos(User:shootPos() + User:eye() * 20)
+        E:setPos(Base:pos())
+        E:setAng(Base:angles())
+        E:setVel(User:vel())
+        holoParent(1, 0)
+        holoPos(1, RT:toWorld(vec()))
+        holoAng(1, RT:toWorld(ang()))
+    }
+    function getUser(P:entity) {
+        User = P
+        User:setVarString("TypeChest", "ion")
+        toChest()
+    }
+    function drop() {
+        toEntity()
+        User:setVarString("TypeChest", "")
+        User = noentity()
+    }
+}
+
+if(clk("getUser")) {getUser(owner())}
+if(clk("1")) {
+    set1()
+    setTimer("anim", 1)
+    setTimer("force", 1)
+    setTimer("swep", 1)
+    end()
+}
+
+if(clk("anim")) {
+        timer("anim", 50)
+    
+    if(changed(CH)) {
+        Base = holoEntity(2)
+        holoEntity(3):soundPlay(1, 0, "ambient/wind/wind_rooftop1.wav") soundPitch(1, 0) soundVolume(1, 0)
+        Base:soundPlay(2, 0, "ambient/levels/caves/cave_howl_loop1.wav") soundPitch(2, 0) soundVolume(2, 0)
+        Base:soundPlay(3, 0, "ambient/machines/lab_loop1.wav") soundPitch(3, 0) soundVolume(3, 0)
+    }
+    
+    if(changed(User) | User) {
+        soundPitch(1, clamp(VL / 20 ,100,255))
+        soundVolume(1, VL / 2000)
+        
+        Use = User:keyUse() & !User:keyReload()
+        if(changed(Use) & Use) {OO = !OO}
+    }
+    if(changed(User)) {
+        soundPitch(1, 0) soundVolume(1, 0)
+        KeyW = KeyA = KeyS = KeyD = KeySpace = KeyShift = OO = 0
+        CH = 1
+    }
+    if(changed(OO)) {
+        T["need A" + 1, number] = OO *  140
+        T["need A" + 2, number] = OO * -140
+        T["need A" + 3, number] = OO * -40 + 2.5
+        T["need A" + 4, number] = OO *  40 - 2.5
+        CH = 1
+    }
+    
+    if(CH) {
+        local Luse = 0
+        if(T["real A" + 1, number] > 120) {}
+        for(C = 1,4) {
+            local Real = T["real A" + C, number]
+            local Need = T["need A" + C, number]
+            
+            if(abs(Real - Need) > 0.5) {
+                local N1 = "fly " + C
+                local N2 = N1 + " " + "axis " + C
+                local ID1 = T[N1, number]
+                local ID2 = T[N2, number]
+                local E1 = holoEntity(ID1)
+                local Real = T["real A" + C, number] = Real + clamp((Need - Real) / 4 ,-10,10)
+                
+                holoAng(ID2, E1:toWorld(ang( 0 , Real , 0 )))
+                
+            } else {Luse++}
+            
+            
+            if(Water) {NC = vec( 255 , 10 , 0 ) * abs(sin(curtime() * 100))} else {NC = vec( 0 , 100 , 255 ) }
+            local NC = NC * OO
+            local Color = T["color1", vector]
+            if(Color:distance(NC) > 5) {
+                local Color = T["color1", vector] = Color + (NC - Color) / 10
+                for(C_ = 1,8) {
+                    local NNN = C + "light " + C_
+                    local ID = T[NNN, number]
+                    holoColor(ID, Color)
+                }
+            } else {Luse++}
+        }
+        if(Luse == 8) {CH = 0}
+    }
+}
+
+
+
+
+VEL = toUnit("m", User:vel():length())
+
+
+
+
+
+if(clk("swep")) {
+        timer("swep", 50)
+    
+    if(!User) {
+        findIncludeClass("player")
+        findInSphere(E:pos(), 150)
+        local F = findToArray()
+        local Count = F:count()
+        if(Count) {
+            for(C = 1, Count) {
+                local P = F:entity(C)
+                if(P:keyUse()) {
+                    if(P:shootPos():distance(P:aimPos()) < 70) {
+                        if(P:aimEntity() == E) {
+                            local TypeChest = P:getVarString("TypeChest")
+                            if(TypeChest == "") {
+                                getUser(P)
+                            }
+                            elseif(TypeChest == "ion") {
+                                
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    if(User) {
+        local KD = User:keyUse() & User:keyReload()# | !User:isAlive()
+        if(changed(KD)) {if(KD) {drop()}}
+        KeyW = User:keyForward()
+        KeyS = User:keyBack()
+        KeyA = User:keyLeft()
+        KeyD = User:keyRight()
+        KeySpace = User:keyJump()
+        KeyShift = User:keySprint()
+    }
+    
+    
+    
+    
+}
+
+
+
+if(clk("force")) {
+        timer("force", 10)
+    
+    if(User) {
+        Water = Base:isUnderWater()
+        if(!Water) {
+            if(OO) {
+                if(T["real A" + 1, number] > 130) {
+                    Vel = User:vel()
+                    VL = Vel:length()
+                    local VZ = Vel:z()
+                    
+                    
+                    local Mul = 5 + clamp(VL / 100 ,0,40)
+                    local Norm = vec( KeyW - KeyS , KeyA - KeyD , KeySpace ):rotate( 0 , User:eyeAngles():yaw() , 0 )
+                    local Acc = Norm * vec( Mul , Mul , clamp(20 + VL / 50 ,15,35) ) + vec( 0 , 0 , clamp(-VZ / 20 ,0,25) * !KeyShift )
+                    
+                    local V = Acc
+                    User:setVel(V)
+                    Length = V:length()
+                    
+                    #User:takeDamage(0, "", V)
+                    #User:takeDamage(0, "bullet", V)
+                    #User:shootTo(User:shootPos(), V, 1, V:length(), 1, "")
+                }
+            }
+        } else {CH = 1}
+    }
+    
+    Force = Force + clamp((Length - Force) / 10 ,-1,1)
+    soundPitch(2, Force * 5.0) soundVolume(2, Force / 50)
+    soundPitch(3, Force * 5.0) soundVolume(3, Force / 50)
+}
+
+
+
+
+
+
+
+
+
+if(last()) {
+    if(User) {User:setVarString("TypeChest", "")}
+}

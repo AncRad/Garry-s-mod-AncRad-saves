@@ -1,0 +1,234 @@
+@name smite
+
+@inputs 
+@outputs 
+@persist [E O]:entity [Q]:table HoloCounter
+
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+
+if(changed(0)) {
+    
+    runOnLast(1)
+    E = entity() E:setSkin(1)
+    O = owner()
+    
+    
+    
+    function entity:fireBall(StartPos:vector, StartVel:vector, DIR:vector) {
+        
+        HoloCounter++
+        local ID = 2281448 + HoloCounter #Q["fireBall/counter", number] + 1 Q["fireBall/counter", number] = ID #DENISKA_SUKA#
+        
+        Q["fireBall/startCurtime" + ID, number] = curtime()
+        Q["fireBall/pos"          + ID, vector] = StartPos
+        Q["fireBall/vel"          + ID, vector] = StartVel
+        Q["fireBall/dir"          + ID, vector] = DIR
+        
+        Q["fireBall/flyList", array] = Q["fireBall/flyList", array]:add(array(ID))
+        timer("fireBall", 25)
+    }
+    
+    
+    
+    
+    
+    
+    timer("", 1)
+    timer("fireBall", 1)
+}
+
+
+
+if(clk("")) {
+        timer("", 75)
+    
+    local Key_fire = O:keyPressed("mouse_4")
+    
+    if(changed(Key_fire) & Key_fire) {
+        O:fireBall(O:shootPos()+O:eye() * 100, O:vel() + O:eye()*52.5*50, O:eye())
+        
+    }
+}
+
+
+
+
+if(clk("fireBall")) {
+    
+    local Curtime = curtime()
+    
+    
+    local FB_a = Q["fireBall/flyList", array]
+    local FB_c = FB_a:count()
+    
+    timer("fireBall", FB_c ? 50 : 100)
+    
+    
+    
+    
+    
+    local Step = 0
+    local C = Q["fireBall/flyList/C", number]
+    while(perf(80) & Step < FB_c) {
+        
+        Step++
+        C = max((C+1)%FB_c,1)
+        
+        
+        #
+        local ID = FB_a[C, number]
+        
+        local LastCurtime = Q["fireBall/curtime" + ID, number]
+        Q["fireBall/curtime" + ID, number] = Curtime
+        if(!LastCurtime) {LastCurtime = Q["fireBall/startCurtime" + ID, number]}
+        local Interval = Curtime - LastCurtime
+        
+        local Pos = Q["fireBall/pos" + ID, vector]
+        local Vel = Q["fireBall/vel" + ID, vector]
+        local DIR = Q["fireBall/dir" + ID, vector]
+        
+        local LastVel = Vel
+        local Vel = Vel - (Vel * 0.1 + vec(0,0,600)) * Interval
+        local Move = (LastVel+Vel)/2*Interval
+        local R = rangerOffset(Move:length(),Pos,Move)
+        local Pos = R:pos()
+        
+        if(R:hit()) {
+            Vel = -Vel:rotateAroundAxis(R:hitNormal(), 180) * (1 - abs(Vel:normalized():dot(R:hitNormal())))
+            
+            if(Vel:length() < 10) {
+                holoDelete(ID)
+                FB_a:remove(C)
+                Step--
+                FB_c--
+                C--
+                continue
+            }
+        }
+        
+        Q["fireBall/pos" + ID, vector] = Pos #DENISKA_SUKA#
+        Q["fireBall/vel" + ID, vector] = Vel #DENISKA_SUKA#
+        
+        local Holo = holoEntity(ID)
+        if(Holo) {
+            holoPos(ID, Pos)
+            
+            
+        }
+        else {
+            if(holoCanCreate()) {
+                Holo = holoCreate(ID,Pos,vec(-1),ang(),vec(255,70,0)) holoAlpha(ID, 75) holoMaterial(ID, "lights/white")
+                Holo:ignite(9999999999)
+            }
+        }
+        #
+    }
+    Q["fireBall/flyList", array] = FB_a
+    Q["fireBall/flyList/C", number] = C
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,37 @@
+@name massCenter
+@inputs 
+@outputs 
+@persist 
+@trigger 
+
+interval(133)
+
+findClearBlackList()
+findClearWhiteList()
+findIncludeClass("prop_physics")
+findInSphere(entity():pos(), 52.5 * 3)
+
+
+
+V = vec()
+M = 0
+foreach(C , E:entity = findToArray()) {
+    
+    
+    if(E:type() == "prop_physics") {
+        if(V == vec()) {
+            V = E:massCenter()
+            M = E:mass()
+        }
+        else {
+            EMC =  E:massCenter()
+            EM = E:mass()
+            DIF = (EMC-V)*0.5
+            
+            V = M>EM  ?  V+DIF*EM/M  :  EMC-DIF*M/EM
+            M+=EM
+        }
+    }
+}
+holoCreate(1, V, vec(0.01,0.01,10))
+if(changed(0)) {print(M)}

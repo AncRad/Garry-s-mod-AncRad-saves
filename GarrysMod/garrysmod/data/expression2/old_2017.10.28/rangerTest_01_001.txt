@@ -1,0 +1,76 @@
+@name rangerTest 01 001
+@inputs 
+@outputs 
+@persist [E O   H1 H2 H3   B1 B2 B3]:entity
+
+interval(50)
+
+
+if(last()) {
+    B1:remove()
+    B2:remove()
+    B2:remove()
+}
+
+if(changed(0)) {
+    
+    runOnLast(1)
+    
+    E = entity()
+    O = owner()
+    H1 = holoCreate(1, E:toWorld(vec(30,0,0)), vec(-0.05), ang(), vec(30,255,30), "hq_sphere") holoMaterial(1, "lights/white") holoParent(1, E)
+    H2 = holoCreate(2, E:toWorld(vec(60,0,0)), vec(-0.05), ang(), vec(70,70,255), "hq_sphere") holoMaterial(2, "lights/white") holoParent(2, E)
+    H3 = holoCreate(3, E:toWorld(vec(30,0,20)), vec(-0.05), ang(), vec(255,30,30), "hq_sphere") holoMaterial(3, "lights/white") holoParent(3, E)
+    
+    B1 = E:drawBeam("trails/smoke", E:pos(), H1, vec(30,255,30), 255, 3, 1, 1) #entity:setBeamEndPos(vector endpos)
+    B2 = H1:drawBeam("trails/smoke", H1:pos(), H2, vec(70,70,255), 255, 3, 1, 1)
+    B3 = H1:drawBeam("trails/smoke", H1:pos(), H3, vec(255,30,30), 255, 3, 1, 1)
+}
+
+Vel = 10
+Hull = 10
+
+Vel1 = E:forward() * Vel
+#Vel1 = vec(0,0,-10)
+Len1 = Vel1:length()
+
+rangerFilter(E)
+R1 = rangerOffsetHull(Len1, E:pos(), Vel1, vec(Hull))
+
+holoPos(1, R1:pos())
+
+
+
+
+Norm1 = R1:hitNormal()
+Vel2 = -Vel1:normalized()
+Cos = 1#abs(Vel2[1] * Norm1[1] + Vel2[2] * Norm1[2] + Vel2[3] * Norm1[3])
+if(0) {Cos = Cos ^ 0.2}
+Vel2 = Vel2:cross(Norm1):cross(Norm1) * Cos * (Len1 - R1:distance())
+Len2 = Vel2:length()
+
+R2 = rangerOffsetHull(Len2, H1:pos(), Vel2, vec(Hull))
+
+holoPos(2, R2:pos())
+
+
+
+
+holoPos(3, H1:pos() + Norm1 * 20)
+
+
+
+if(E:isFrozen()) {
+    if(O:keyPressed("mouse_4")) {
+        E:setPos(R2:pos()+Norm1 * 0.0)
+        if(R1:hit()) {E:setAng(E:toWorld(E:toLocal(clamp(angnorm(Vel2:toAngle()),-ang(3),ang(3)))))}
+    }
+}
+
+
+
+
+
+
+
+

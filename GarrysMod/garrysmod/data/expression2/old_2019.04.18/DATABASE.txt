@@ -1,0 +1,81 @@
+@name DATABASE
+
+@inputs [TrashDumpster]:entity
+
+#- database
+@persist [Obj_list]:table
+
+@outputs [E O]:entity
+
+
+
+if(changed(0)) {
+    
+    E = entity()
+    O = owner()
+    
+    timer("", 1)
+}
+
+if(clk("")) {
+        timer("", 350)
+    
+    
+    if(findCanQuery()) {
+        local ScanRadius = 52.5 * 5
+        local ScanPos = E:pos()
+        
+        if(!holoEntity(0)) {
+            holoCreate(0, ScanPos, vec(ScanRadius/6), ang(), vec(0,100,255)/3, "cplane")
+            holoDisableShading(0,1)
+            holoAlpha(0, 150)
+        }
+        holoPos(0, ScanPos)
+        
+        findClearWhiteList()
+        findClearBlackList()
+        findAllowClass("prop*")
+        findAllowClass("wire*")
+        findInSphere(ScanPos,ScanRadius)
+        local Find_c = findClipFromPlayerProps(O)
+        local Find_a = findToArray()
+        
+        if(changed(Find_c)) {
+            
+            
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

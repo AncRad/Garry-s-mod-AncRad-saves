@@ -1,0 +1,22 @@
+@name test_setViewEntity_001
+@inputs 
+@outputs 
+@persist D:entity
+@trigger 
+
+
+if(changed(0)) {
+    
+    D  = findPlayerByName("anc")
+    
+    holoCreate(0)
+    holoCreate(1):setViewEntity()
+
+}
+
+A = D:eyeAngles()
+holoPos(1, D:shootPos() + vec(-20,-20,-10):rotate(A:setPitch(0)))
+holoAng(1, A)
+
+
+interval(1)

@@ -1,0 +1,750 @@
+@name Assault drone 001
+
+@inputs 
+@outputs 
+@persist [E O User Drone]:entity [Q]:table [GT]:gtable
+
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+
+#include "old 28.10.2017/AddHolo"
+#include "old 28.10.2017/PBA001"
+#include "old 28.10.2017/Fire_particles"
+#include "old 28.10.2017/effect_01_001"
+if(changed(0)) {
+    
+    GT = gTable("Assault drone 001")
+    E = entity() E:setSkin(1)
+    O = owner()
+    
+    Effect01["interval", number] = 20
+    
+    
+    function number entity:steam() {
+        return max(This:steamID():right(8):toNumber(),10000)
+    }
+    function toChest() {
+        local User_i = User:steam()
+        
+        local Holo = holoEntity(0)
+        local Chest_e = holoEntity(User_i)
+        holoPos(0, Chest_e:pos())
+        holoAng(0, Chest_e:angles())
+        holoParent(0, Chest_e)
+        holoPos(0, Holo:toWorld(vec(-7,0,-14)))
+        holoAng(0, Holo:toWorld(ang(0,90,0)))
+        
+        local Crowbar = Q["user/crowbar", entity]
+        Crowbar:setAlpha(255)
+        Crowbar:drawShadow(1)
+        
+        Q["status", string] = "chest"
+    }
+    
+    
+    function toRightHand() {
+        local User_i = User:steam()
+        
+        local RT_e = holoEntity(0)
+        local RHand_e = holoEntity(User_i+1)
+        holoPos(0, RHand_e:pos())
+        holoAng(0, RHand_e:angles())
+        holoParent(0, RHand_e)
+        holoPos(0, RT_e:toWorld(vec()))
+        holoAng(0, RT_e:toWorld(ang(90,0,0)))
+        
+        local Crowbar = User:weapon()
+        Crowbar:setAlpha(0)
+        Crowbar:drawShadow(0)
+        Q["user/crowbar", entity] = Crowbar
+        
+        Q["status", string] = "rhand"
+    }
+    function toLeftHand() {
+        local User_i = User:steam()
+        
+        local RT_e = holoEntity(0)
+        local LHand_e = holoEntity(User_i+2)
+        holoPos(0, LHand_e:pos())
+        holoAng(0, LHand_e:angles())
+        holoParent(0, LHand_e)
+        holoPos(0, RT_e:toWorld(vec()))
+        holoAng(0, RT_e:toWorld(ang(90,0,0)))
+        
+        Q["status", string] = "lhand"
+    }
+    
+    
+    function drop() {
+        local RT_e = holoEntity(0)
+        
+        local Pos = RT_e:pos()
+        local Ang = RT_e:angles()
+        local Vel = User:vel()
+        Drone:propNotSolid(0)
+        Drone:propFreeze(0)
+        #Drone:unConstrain()
+        Drone:setPos(Pos)
+        Drone:setAng(Ang)
+        Drone:setVel(Vel)
+        holoUnparent(0)
+        holoScale(0, vec())
+        
+        local Crowbar = Q["user/crowbar", entity]
+        Crowbar:setAlpha(255)
+        Crowbar:drawShadow(1) 
+        
+        
+        GT[User:steam() + "/drone", entity] = noentity()
+        User = noentity()
+        Q["status", string] = "drop"
+    }
+    function throw(Norm:vector) {
+        local Norm = Norm:normalized()
+        
+        local Charge = Q["throw/charge", number]
+        
+        local RT_e = holoEntity(0)
+        
+        local Pos = RT_e:pos() + Norm:rotate(ang(-20,70,0)) * 12
+        local Ang = RT_e:angles()
+        local Vel = User:vel() + Norm * 52.5 * max(27 * Charge,5)
+        Drone:propNotSolid(0)
+        Drone:propFreeze(0)
+        #Drone:unConstrain()
+        Drone:setPos(Pos)
+        Drone:setAng(Ang)
+        Drone:setVel(Vel)
+        Drone:applyAngForce(ang(randvec(-50,50)*Drone:mass())*clamp(0.2+Charge,0,1))
+        holoUnparent(0)
+        holoScale(0, vec())
+        
+        
+        local Crowbar = Q["user/crowbar", entity]
+        Crowbar:setAlpha(255)
+        Crowbar:drawShadow(1)
+        
+        if(O:keyUse()) {
+            Q["cameraEnable", number] = 1
+            Q["cameraEnableTime", number] = curtime()
+            cameraToggle(0, 1)
+        }
+        
+        GT[User:steam() + "/drone", entity] = noentity()
+        Q["status", string] = "throw"
+        Q["throwLock", number] = curtime()
+        timer("throw", 1)
+    }
+    function entity:selectUser() {
+        if(!GT[This:steamID() + "/drone", entity]) {
+            User = This
+            
+            GT[User:steam() + "/drone", entity] = Drone
+            User:addPBA()
+            
+            local Chest_i = User:steam()
+            Q["userChest", entity] = holoCreate(Chest_i, User:attachmentPos("chest"), vec(0.2), User:attachmentAng("chest"), vec(255,0,0))
+            holoParentAttachment(Chest_i, User, "chest")
+            local RHand_i = Chest_i + 1
+            Q["rhand", entity] = holoCreate(RHand_i, User:attachmentPos("anim_attachment_rh"), vec(0.2), User:attachmentAng("anim_attachment_rh"), vec(255,0,0))
+            holoParentAttachment(RHand_i, User, "anim_attachment_rh")
+            local LHand_i = Chest_i + 2
+            Q["rhand", entity] = holoCreate(LHand_i, User:attachmentPos("anim_attachment_lh"), vec(0.2), User:attachmentAng("anim_attachment_lh"), vec(255,0,0))
+            holoParentAttachment(LHand_i, User, "anim_attachment_lh")
+            
+            if(User:weapon():type() == "weapon_crowbar") {
+                toRightHand()
+            }
+            else {
+                toChest()
+            }
+            
+            holoScale(0, vec(1))
+            #Drone:unConstrain()
+            Drone:setPos(vec())
+            Drone:extinguish()
+            Drone:propFreeze(1)
+            Drone:propNotSolid(1)
+            Q["throwLock", number] = curtime()
+        }
+    }
+    
+    
+    Q["drone/heath", number] = 120
+    Q["status", string] = "drop"
+    Drone = propSpawn("models/sprops/cuboids/height06/size_1/cube_6x12x6.mdl", E:pos() + vec(0,0,10), ang(), 0) Drone:propFreeze(0)
+    holoCreate(0, vec(), vec(1), ang(), vec(150,150,255)):setModel("models/sprops/cuboids/height06/size_1/cube_6x12x6.mdl")
+    holoParent(0, Drone)
+    runOnDamage(1, Drone)
+    
+    
+    FireParticles["part/need", number] = 40
+    FireParticles["prats/dropTime", number] = 8
+    FireParticles["ramgerFiler", array] = FireParticles["ramgerFiler", array]:add(array(Drone))
+    
+    runOnLast(1)
+    timer("user", 50)
+}
+
+
+
+
+
+
+if(clk("user")) {
+        timer("user", 75)
+    
+    if(Drone) {
+        if(changed(Drone)) {
+            Drone:setMass(25)
+            #Drone:setAlpha(150)
+            
+            O:selectUser()
+            Drone:effect01("flames", vec(0,0,-1.5), 1.5, 15, ang(180,0,0), vec(255,40,0), 20)
+            #Effect01["flames/random", number] = 1
+        }
+        
+        local Status = Q["status", string]
+        local InChest = Status == "chest"
+        local InHand  = Status == "rhand" 
+        if(changed(InHand)) {
+            if(InHand) {
+                O:addPBA(14, ang(-11.99,22.96,-105.24), ang(10), ang(4), "1")
+            }
+            else {
+                O:addPBA(14, ang(), ang(15), ang(5), "1")
+            }
+        }
+        if(InHand | InChest) {
+            local Weap_e = User:weapon()
+            local Weap_s = Weap_e:type()
+            local WeapCrowbar = Weap_s == "weapon_crowbar" | User:inVehicle()
+            if(changed(WeapCrowbar)) {
+                if(InHand & !WeapCrowbar) {
+                    drop()
+                }
+                Q["throw/charge", number] = 0
+            }
+            if(WeapCrowbar) {
+                local KeyChange = User:keyReload()
+                if(changed(KeyChange) & KeyChange) {
+                    if(InChest) {
+                        toRightHand()
+                    }
+                    elseif(InHand) {
+                        toChest()
+                    }
+                }
+                if(InHand) {
+                    local KeyThrow = User:keyAttack1()
+                    if(changed(KeyThrow) & KeyThrow) {
+                        if(curtime() - Q["throwLock", number] >= 0.3) {
+                            throw(User:eye())
+                        }
+                    }
+                    local KeyCharge = User:keyAttack2()
+                    local Charge = Q["throw/charge", number]
+                    if(Charge | KeyCharge) {
+                        if(!Charge) {
+                            Q["throw/startCurtime", number] = curtime()
+                        }
+                        local LastCurtime = Q["throw/startCurtime", number]
+                        local Curtime = Q["throw/startCurtime", number] = curtime()
+                        local Interval = Curtime - LastCurtime if(!Interval) {Interval = 0.005}
+                        Charge = Q["throw/charge", number] = clamp(Charge + 1 * Interval * (KeyCharge ? 1 : -1) ,0,1)
+                    }
+                }
+            }
+            
+            if(InChest) {
+                if(Weap_s) {
+                    if(User:keyPressed("mouse_4")) {
+                        toLeftHand()
+                    }
+                }
+            }
+            
+            if(!User:isAlive()) {
+                drop()
+            }
+            if(changed(User:model())) {
+                #User:selectUser()
+                #print(User:model())
+            }
+        }
+        elseif(Status == "lhand") {
+            Q["throw/charge", number] = 0 
+            
+            local RT_e = holoEntity(0)
+            
+            local Pos = RT_e:pos()
+            local Ang = RT_e:angles()
+            local Vel = User:vel() + clamp(User:eyeAngles(),-ang(90,999,0),ang(0,999,0)):forward() * 52.5 * 4
+            Drone:propNotSolid(0)
+            Drone:propFreeze(0)
+            Drone:setPos(Pos)
+            Drone:setAng(Ang)
+            Drone:setVel(Vel)
+            #Drone:applyAngForce(ang(randvec(-50,50)*Drone:mass())*clamp(0.2+Charge,0,1))
+            holoUnparent(0)
+            holoScale(0, vec())
+            
+            
+            local Crowbar = Q["user/crowbar", entity]
+            Crowbar:setAlpha(255)
+            Crowbar:drawShadow(1)
+            
+            if(O:keyUse()) {
+                Q["cameraEnable", number] = 1
+                Q["cameraEnableTime", number] = curtime()
+                cameraToggle(0, 1)
+            }
+            
+            GT[User:steam() + "/drone", entity] = noentity()
+            Q["status", string] = "throw"
+            Q["throwLock", number] = curtime()
+            timer("throw", 1)
+        }
+        else {
+            local Drop = Status == "drop"
+            local Throw = Status == "throw"
+            if(Drop | Throw) {
+                
+                local Drone_p = Drone:pos()
+                findClearBlackList()
+                findClearWhiteList()
+                findIncludeClass("player")
+                findInSphere(Drone_p, 100)
+                foreach(C, Player:entity = findToArray()) {
+                    if(Player:aimEntity() == Drone) {
+                        if(!Throw | Player == User) {
+                            if((Player:keyAttack1() & Player:weapon():type() == "weapon_crowbar")) { #(Player:keyAttack1() & Drone:isPlayerHolding())
+                                if((Player:shootPos()-Drone_p):length() <= 80) {
+                                    if(curtime() - Q["throwLock", number] >= 0.3) {
+                                        Player:selectUser()
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    else {
+        #Drone = propSpawn("models/sprops/cuboids/height06/size_1/cube_6x12x6.mdl", E:pos() + vec(0,0,10), ang(), 0) Drone:propFreeze(0)
+    }
+}
+
+
+if(damageEntClk() & (Q["status", string] == "throw")) {
+    local Damage_n = Drone:getDamage()
+    local Damage_t = Drone:getDamageType()
+    local Damage_a = Drone:getAttacker()
+    switch(Damage_t) {
+        case "bullet",
+            Damage_n*= 1
+        break
+        case "burn",
+            Damage_n*= 0.2
+        break
+        case "crush",
+            Damage_n*= 4
+        break
+        case "blast",
+            Damage_n*= 1.5
+        break
+        case "club",
+            Damage_n*= 1.5 * (Damage_a != User)
+        break
+        case "",
+            Damage_n*= 1.5
+        break
+    }
+    local Damage_n = Damage_n
+    local Drone_d = Q["drone/damage", number]
+    local Drone_d = Q["drone/damage", number] = Drone_d + Damage_n
+    if(Drone_d >= Q["drone/heath", number]) {
+        local Pos = Drone:boxCenterW()
+        findClearBlackList()
+        findClearWhiteList()
+        findIncludeClass("player")
+        findIncludeClass("npc")
+        findIncludeModel("models/props_c17/oildrum001.mdl")
+        findInSphere(Pos, 300)
+        local Find = findToArray()
+        for(C = 1, 10) {
+            local Target = Find[C, entity]
+            if(Target) {
+                local Vec = (Target:boxCenterW()-Pos):normalized()
+                toFly(Pos + Vec * 5, Vec * 10)
+            }
+            else {
+                local Vec = randvec(-1,1)
+                toFly(Pos + Vec * 5, Vec * 10)
+            }
+        }
+        Drone:effectSpawn("explosion",Pos,1)
+        explosion(75, 120, Pos, User, O)
+        Drone:setPos(vec())
+        Drone:propNotSolid(1)
+        Drone:propFreeze(1)
+        #Drone:unConstrain()
+        
+        Q["status", string] = "destroyed"
+    }
+    #print(Damage_t + "=" + floor(Damage_n,4) + " " + Damage_a:name() + "  damage=" + floor(Drone_d,4))
+}
+
+if(clk("throw")) {
+    if(changed(0)) {
+        
+    }
+    
+    local LastCurtime = Q["throw/curtime", number]
+    local Curtime = Q["throw/curtime", number] = curtime()
+    local Interval = Curtime - LastCurtime
+    local Loop = Interval / 0.015625
+    
+    if(Q["cameraEnable", number]) {
+        if(!cameraEntity(0)) {
+            cameraCreate(0, O:shootPos(), O:eyeAngles())
+            #cameraParent(0, Drone)
+            cameraToggle(0, 1)
+        }
+        
+        if((Curtime - Q["cameraEnableTime", number]) >= 1) {
+            local KeyCam = O:keyUse() #|O:keyAttack2()
+            if(changed(KeyCam) & KeyCam) {
+                Q["cameraEnable", number] = 0
+                cameraToggle(0, 0)
+            }
+        }
+        
+        
+        local Real_p = Q["camera_p", vector]
+        local Real_a = Q["camera_a", angle]
+        local Need_p = Real_p
+        local Need_a = Real_a
+        if(!Q["fly", number]) {
+            Need_a = clamp(angnorm(Drone:vel():toAngle()),-ang(80,180,30),ang(80,180,0))
+            Need_p = Drone:pos() + vec(-60,0,20):rotate(Need_a)
+        }
+        else {
+            Need_a = clamp(O:eyeAngles(),-ang(80,180,30),ang(80,180,30))
+            Need_p = Drone:pos() + vec(-60,0,20):rotate(ang(Need_a[1]*0.5,Need_a[2],0))
+        }
+        
+        Real_a = Q["camera_a", angle ] = Real_a + angnorm(Need_a - Real_a) / 4
+        Real_p = Q["camera_p", vector] = Real_p +        (Need_p - Real_p) / 2
+        cameraAng(0, Real_a)
+        cameraPos(0, Real_p)
+    }
+    
+    local FlyMode = Q["fly", number]
+    if(!FlyMode) {
+            timer("throw", 1)
+        
+        local Vel = Drone:vel()
+        
+        rangerHitWater(1)
+        rangerFilter(array(User,Drone))
+        local Distance = clamp(-20-Vel[3]*1.0,10,52.5*5)
+        local R = rangerOffsetHull(Vel:length() * (0.8 + min(vec(Drone:angVel()):length()/4000,1))*(Vel[3]<0), Drone:pos(), Vel, vec(4))
+        if(R:hit()) {
+            Q["fly", number] = 1
+            Q["throw/hc", number] = 10
+            Drone:soundPlay("start", 0.1, "doors/handle_pushbar_locked1.wav") soundPitch("start", 120) soundVolume("start", 0.2)
+        }
+    }
+    else {
+        timer("throw", 1)
+        
+        local Drone_p = Drone:pos()
+        local Drone_a = Drone:angles()
+        
+        
+        local Target = Q["target", entity]
+        if(Target) {
+            
+        }
+        else {
+            findClearBlackList()
+            findClearWhiteList()
+            findIncludeClass("npc")
+            findIncludeClass("player")
+            findInSphere(Drone_p, 52.5 * 10)
+            foreach(C, Ent:entity = findToArray()) {
+                local BCW = Ent:boxCenterW()
+                rangerFilter(Drone)
+                local R = rangerOffsetHull(Drone_p, BCW, vec(5))
+                if(R:entity() == Ent) {
+                    Target = Q["target", entity] = Ent
+                    break
+                }
+            }
+        }
+        if(Q["reload", number]) {
+            if(Q["reload", number] <= Curtime) {
+                Q["reload", number] = 0
+            }
+        }
+        
+        
+        
+        
+        
+        
+        
+        rangerFilter(Drone)
+        local Distance = 300
+        rangerHitWater(1)
+        local R = rangerOffsetHull(Distance, Drone_p, vec(0,0,-1), vec(4))
+        #local R = rangerOffset(Distance, Drone_p, vec(0,0,-1))
+        local Dist = R:distance()
+        
+        local NeedHeight = 50
+        local NeedVelZ = clamp(NeedHeight - Dist,-200,100)
+        
+        local Vel = Drone:vel()
+        local VelL = Drone:velL()
+        
+              VelZ = Vel[3] - NeedVelZ * 5
+        local HC = Q["throw/hc", number]
+              HC = Q["throw/hc", number] = clamp(HC + clamp(-VelZ / 30,-1.0,1.0) ,0,5)
+              HF   = clamp(HC + clamp(-$VelZ,-0.5,0.5) ,0,HC*1.2)
+        
+        rangerFilter(Drone)
+        rangerHitWater(1)
+        local RT = rangerOffsetHull(3, Drone_p, vec(0,0,-1), vec(40,40,5))
+        if(RT:hit()) {
+            for(C = 1, 4) {
+                local F = C - 1
+                rangerFilter(Drone)
+                rangerHitWater(1)
+                local R = rangerOffsetHull(40, Drone_p, vec(1,0,0):rotate(ang(0,Drone_a[2] + 90*F,0)), vec(5))
+                if(R:hit()) {
+                    local AddVel_l = 150
+                    local AddVel = vec()
+                    if(C == 1) {
+                        AddVel = vec(AddVel_l,0,0)
+                    }
+                    elseif(C == 2) {
+                        AddVel += vec(0,AddVel_l,0)
+                    }
+                    elseif(C == 3) {
+                        AddVel += vec(-AddVel_l,0,0)
+                    }
+                    elseif(C == 4) {
+                        AddVel +=vec(0,-AddVel_l,0)
+                    }
+                    VelL+=AddVel
+                }
+            }
+            #VelL += (RT:positionLeftSolid()-Drone_p):rotate(ang(0,-Drona_a[2],0)):normalized()*200
+        }
+        
+        local Ang = ang()
+        local Dif = ang()
+        local Aim = 0
+        if(Target) {
+            local BCW = Target:boxCenterW()
+            rangerFilter(Drone)
+            local RHit = rangerOffsetHull(Drone_p, BCW, vec(5)):entity() == Target
+            if(RHit) {
+                Aim = 1
+                local LocalPos = Drone_p - BCW
+                local Distance = LocalPos:length()
+                if((Distance < 52.5 * 11) & Target:isAlive()) {
+                    
+                    if(!Q["reload", number]) {
+                        local Norm = -LocalPos:normalized()
+                        
+                        local Pos = Drone_p + Norm * 7
+                        local Vel = (Norm * 10 + vec(0,0,min(Distance/300,5))) * 52.5
+                        toFly(Pos, Vel:rotate(ang(randvec(-5,5))))
+                        local Fire = Q["fire", number] = Q["fire", number] + 1
+                        if(Fire >= 3) {
+                            Q["fire", number] = 0
+                            Q["reload", number] = Curtime + 1.5
+                        }
+                    }
+                }
+                else {
+                    Target = noentity()
+                }
+            }
+            else {
+                if(Curtime - Q["noRHit", number] >= 4) {
+                    Q["noRHit", number] = 0
+                    Q["reload", number] = 0
+                    Q["fire", number] = 0
+                    Target = noentity()
+                }
+            }
+        }
+        if(Aim) {
+            local LocalPos = Drone_p - Target:boxCenterW()
+            local NeedYaw = angnorm((LocalPos):toAngle()[2])
+            local Distance = LocalPos:length()
+            Ang = clamp(ang(-VelL[1],0,VelL[2])/4,-45,45)
+            Dif = angnorm(Ang-Drone_a+ang(0,NeedYaw,0))
+        }
+        else {
+            Ang = clamp(ang(-VelL[1],0,VelL[2])/4,-45,45)
+            Dif = angnorm(Ang-Drone_a:setYaw(0)) 
+        }
+        
+        
+        
+        local ForceA = clamp((clamp(Dif*10,-350,350)-Drone:angVel()) / ang(10,30,10),-20,20)
+        
+        
+        HF = HF * max(Dif:up()[3],0)^2
+        
+        #ambient/levels/outland/ol03_lift01_weightimpact.wav
+        local Flames = Q["flames", number]
+        local Flames = Q["flames", number] = clamp(Flames + clamp((min(HF/2,1) - Flames)/2,-0.2,0.4),0,1)
+        effect01("flames", Flames)
+        
+        if(Dist <= Flames * Effect01["flames/lenght", number] * 2) {
+            effectSpawn("ElectricSpark",R:pos(),1)
+            #R:drawPaint("fadingScorch")
+        }
+        
+        local ForceV = Drone:up() * HF * 9
+        Drone:applyForce(ForceV*Drone:mass()*Loop)
+        Drone:applyAngForce(ForceA*Drone:mass()*Loop)
+        
+    }
+    
+    if(Q["status", string] != "throw") {
+        Q["fly", number] = 0
+        Q["cameraEnable", number] = 0
+        effect01("flames", 0)
+        cameraToggle(0, 0)
+        stoptimer("throw")
+    }
+}
+
+
+local Key = O:keyPressed("mouse_5")
+if(changed(Key) & Key) {
+    if(GT[O:steamID() + "/drone", entity] == Drone | !GT[O:steamID() + "/drone", entity]) {
+        Q["drone/damage", number] = 0
+        timer("throw", 1)
+        timer("user", 1)
+        O:selectUser()
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+if(last()) {
+    
+    
+    if(GT[User:steam() + "/drone", entity] == Drone) {
+        GT[User:steam() + "/drone", entity] = noentity()
+    }
+    
+    
+    Drone:remove()
+}
+setName("Assault drone 001\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1000000))
+Charge = Q["throw/charge", number]
+
+
+
+
+#[
+chest->toRH
+O:addPBA(4, ang(0,0,28.21), ang(20), ang(4), "1")
+O:addPBA(6, ang(0,0,-26.66), ang(20), ang(4), "1")
+O:addPBA(8, ang(-28.94,-0,0), ang(20), ang(4), "1")
+O:addPBA(14, ang(21.84,103.14,-63.42), ang(20), ang(4), "1")
+O:addPBA(15, ang(0,-12,0), ang(20), ang(4), "1")
+O:addPBA(16, ang(-5.4,7.14,39.07), ang(20), ang(4), "1")
+
+inRH
+O:addPBA(14, ang(-11.99,22.96,-105.24), ang(20), ang(4), "1")
+#]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

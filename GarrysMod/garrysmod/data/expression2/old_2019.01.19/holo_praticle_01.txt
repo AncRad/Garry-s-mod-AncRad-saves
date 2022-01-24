@@ -1,0 +1,129 @@
+@name holo_praticle_01
+
+@inputs 
+@outputs 
+@persist [E O]:entity [Q]:table
+
+@persist [ParticleT]:table Particle_counter:number
+
+
+
+if(changed(0)) {
+    
+    E = entity()
+    O = owner()
+    
+    ParticleT = table()
+    
+    timer("", 1)
+}
+
+
+
+
+if(clk("")) {
+        timer("", 10)
+    
+    if(changed(0)) {
+        
+        Q["curtime", number] = curtime()
+    }
+    
+    local LastCurtime = Q["curtime", number]
+    local Curtime = curtime()
+    Q["curtime", number] = Curtime
+    local Interval = Curtime - LastCurtime
+    local Loop = Interval / 0.015625
+
+    
+    
+    local Key_particle = O:keyPressed(1 ? "mouse_4" : "E")
+    if((changed(Key_particle) | 1) & Key_particle) {
+        
+        local Pos = E:toWorld(vec(0,0,10))
+        local Vel = E:vel() + E:up() * 52.5 * 10
+        
+        ParticleT:pushTable(table(
+             "pos" = Pos
+            ,"vel" = Vel
+            ,"spawnTime" = Curtime
+        ))
+        #"models/Gibs/HGIBS.mdl"
+    }
+    
+    
+    
+    
+    
+    local ParticleC = ParticleT:count()
+    local C = 0
+    while(perf() & (C < ParticleC)) {
+        C++
+        local Particle_T = ParticleT[C, table]
+        
+        local Particle_i = Particle_T["holoIndex", number]
+        local Particle_e = holoEntity(Particle_i)
+        
+        local Particle_p = Particle_T["pos", vector]
+        local Particle_v = Particle_T["vel", vector]
+        
+        
+        
+        local Acc = 0 #vec(0,0,-600*Interval) - Particle_v*min(min(Particle_v:length()/2500,1)^2,0.5)
+        
+        Particle_v = Particle_v:rotate(ang(randvec(-Interval,Interval)*1500))
+        
+        local Ranger = rangerOffset(Particle_p,Particle_p + (Particle_v - Acc/2) * Interval)
+        if(Ranger:hit()) {Particle_v = Particle_v * (1-max(Particle_v:normalized():dot(-Ranger:hitNormal()),0))}
+        Particle_p = Ranger:pos()
+        holoPos(Particle_i, Particle_p)
+        
+        
+        Particle_T["pos", vector] = Particle_p
+        Particle_T["vel", vector] = Particle_v
+        
+        if(Particle_v:length() < 1) {
+            ParticleT:remove(C)
+            C--
+            ParticleC--
+            holoDelete(Particle_i)
+            continue
+        }
+        
+        
+        if(!Particle_e & holoCanCreate()) {
+            Particle_counter = Particle_i = Particle_T["holoIndex", number] = max(Particle_counter + 1,1448228)
+            local Particle_e = holoCreate(Particle_i, Particle_p, vec(0.2), ang(), vec(255), "sphere")
+            Particle_e:setTrails(2.0, 0, 2, "trails/smoke", vec(255), 255)
+        }
+    }
+}
+
+
+
+
+
+
+
+setName("holo_praticle_01\nCount: " + ParticleT:count())
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

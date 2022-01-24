@@ -1,0 +1,185 @@
+@name dildo
+
+@inputs 
+@outputs [VelL]:vector
+@persist [E O]:entity
+
+@persist [H]:entity Curtime [Pos]:vector
+
+@trigger none
+@model models/sprops/cylinders/size_2/cylinder_3x18.mdl
+
+
+
+if(changed(0)) {
+    
+    E = entity()
+    Box = E:boxSize()/2
+    
+    H = holoCreate(0, E:toWorld(vec(0,0,-Box[3]*2)), vec(Box[1]*3,Box[2]*3,0.1)/6, E:toWorld(ang()), vec(255), "cube")
+    holoParent(0, E)
+    holoAlpha(0, 150)
+    
+    
+    
+    timer("", 1)
+}
+
+if(clk("")) {
+        timer("", 1)
+    
+    if(!Curtime) {
+        Curtime = curtime()
+        Pos = H:pos()
+    }
+    local LastCurtime = Curtime
+    Curtime = curtime()
+    local Interval = Curtime - LastCurtime
+    
+    local LastPos = Pos
+    Pos = H:pos()
+    local VelL = H:toLocal(LastPos)
+    
+    E:applyOffsetForce(toWorld(clamp(VelL*(1+clamp(VelL:setZ(0):length()/2,0,4)),-1.5,1.5)*23*vec(2,2,-0.3),ang(),vec(),H:angles()),Pos)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

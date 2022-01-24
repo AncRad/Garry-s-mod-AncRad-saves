@@ -1,0 +1,322 @@
+@name blade_test_startEngineLogic_01
+
+@inputs [Start Stop Gas]:number
+@outputs [Engines_Active Engines_Throttle Voltage]
+#@outputs Debug:string
+
+
+#- engines
+@inputs [Engine1_e Engine2_e]:entity
+
+#- electricStart
+@inputs [Starter_e Accumulator_e]:entity
+
+#- airStart
+@inputs [Compressor1_e]:entity
+@inputs [AirTank_e AirValve_e]:entity
+@persist [AirTank_pressure] [AirValve_open AirStart_startTime]
+
+#- fuel
+@inputs [FuelTank1_e FuelTank2_e]:entity
+@inputs [FuelTank3_e FuelTank4_e FuelTank5_e FuelTank6_e FuelTank7_e FuelTank8_e FuelTank9_e]:entity
+@persist [FuelTanks_e FuelTanks_w]:array
+@inputs [FuelPump_e]:entity
+
+
+#- 
+@persist [Engine1_w Engine2_w]:wirelink
+@persist [Engines_Stop]
+@persist [Engines_idleRPM]
+@persist [Curtime]
+@persist [Engines_RPM]:number
+@persist [StartTime]
+@trigger none
+
+
+if(duped()) {exit()}
+if(dupefinished()) {reset()}
+
+Debug="OPS: " + ops()
+Debug+="\n"+"Engines_RPM" + " = " + Engines_RPM
+
+if(changed(0)) {
+    
+    #- 
+    AirTank_pressure = 1
+    Engines_idleRPM = 200
+    Engine1_w = Engine1_e:wirelink()
+    
+    #- 
+    runOnUse(1, AirValve_e)
+    
+    #- 
+    FuelTanks_e = array(
+         FuelTank1_e
+        ,FuelTank2_e
+        ,FuelTank3_e, FuelTank4_e, FuelTank5_e, FuelTank6_e, FuelTank7_e, FuelTank8_e, FuelTank9_e
+    )
+    foreach(C, FuelTank_e:entity = FuelTanks_e) {
+        Engine1_e:acfLinkTo(FuelTank_e,0)
+        Engine2_e:acfLinkTo(FuelTank_e,0)
+        FuelTanks_w[C, wirelink] = FuelTank_e:wirelink()
+    }
+    function number fuel() {
+        local Fuel = 0
+        foreach(C, FuelTank_w:wirelink = FuelTanks_w) {
+            Fuel+=FuelTank_w["Fuel", number]
+        }
+        return Fuel
+    }
+    
+    #- 
+    timer("", 1) Curtime = curtime()
+    exit()
+}
+
+
+if(clk("")) {
+        timer("", 50)
+    
+    local LastCurtime = Curtime
+    Curtime = curtime()
+    local Interval = Curtime - LastCurtime
+    
+    
+    if(Engines_Active) {
+        Engines_Stop = Engines_Stop ? !Start : Stop | !FuelPump_e | !fuel()
+        
+        Engines_RPM = Engine1_w["RPM", number]
+        
+        local Engine1_loop_pitch = 40 + 60 * ((Engines_RPM-Engines_idleRPM)/(1000-Engines_idleRPM))
+        local Engine1_loop_volume = 0.5 + 0.5 * (Engine1_loop_pitch-40)/60
+        soundPitch("engine1_loop", Engine1_loop_pitch)
+        soundVolume("engine1_loop",Engine1_loop_volume)
+        
+        Engines_Throttle = !!Gas*100*!Engines_Stop #Engines_Throttle + clamp((!!Gas*100*!Engines_Stop - Engines_Throttle)/1.5,-100*Interval,50*Interval)
+        
+        if(AirTank_pressure!=1 & Compressor1_e & AirTank_e) {
+            AirTank_pressure = clamp(AirTank_pressure + Engines_RPM/300*Interval/60,0,1)
+        }
+        
+        if(Engines_Stop & Engines_RPM <= 250) {
+            Engines_Active = 0
+            Engines_Throttle = 0
+            soundStop("engine1_loop")
+            Engine1_e:soundPlay("engine1_off",5,"acf_extra/vehiclefx/engines/gnomefather/mausdown.wav") soundPitch("engine1_off",100) soundVolume("engine1_off",0.4)
+        }
+        
+        Debug+="\n============Active============="
+        #if(Gas) {Debug+="\n"+"Gas" + " = " + Gas}
+        #Debug+="\n"+"volume" + " = " + Engine1_loop_volume
+    }
+    else {
+        Engines_RPM = max(Engines_RPM - !Engines_Active*100*Interval,0)
+        if(StartTime | Start) {
+            if(!StartTime & Starter_e & Accumulator_e) {
+                StartTime = Curtime
+                Starter_e:soundPlay("starter_loop",0,"vehicles/crane/crane_extend_loop1.wav") soundVolume("starter_loop", 0.5)
+            }
+            local Time = Curtime-StartTime
+            
+            if(Start) {
+                Engines_Stop = 0
+                if(Starter_e & Accumulator_e) {
+                    Engines_RPM+= clamp((Engines_idleRPM*1.7-Engines_RPM),0,500)*Interval
+                }
+                
+                if(Engines_RPM>Engines_idleRPM*1 & fuel() & FuelPump_e) { # & randint(Engines_RPM/Engines_idleRPM*5,10)==10
+                    Engines_Active = 1
+                    Engines_Throttle = Engines_RPM/Engines_idleRPM*20
+                    StartTime = 0
+                    soundStop("starter_loop")
+                    Engine1_e:soundPlay("engine1_loop",0,"acf_extra/vehiclefx/engines/gnomefather/maus.wav") soundPitch("engine1_loop",0) soundVolume("engine1_loop",0.5)
+                }
+            }
+            soundPitch("starter_loop", Time<0.2 ? 30 : clamp(Engines_RPM/Engines_idleRPM*150 ,0,150))
+            
+            if(!Start & Engines_RPM <= 0) {
+                StartTime = 0
+                soundStop("starter_loop")
+            }
+            Debug+="\n============STARTER============"
+            Debug+="\n"+"Time" + " = " + Time
+        }
+    }
+    
+    if(AirValve_open | AirStart_startTime) {
+        if(!AirStart_startTime) {
+            AirStart_startTime = curtime()
+            AirValve_e:soundPlay("airValve_open",3,"acf_extra/vehiclefx/misc/air_01.wav") soundPitch("airValve_open",100) soundVolume("airValve_open",0.5)
+            AirValve_e:soundPlay("airValve_loop",0,"thrusters/jet04.wav") soundPitch("airValve_loop",0) soundVolume("airValve_loop",0.0)
+        }
+        local Time = Curtime-AirStart_startTime
+        
+        AirTank_pressure = max(AirTank_pressure - Interval/120 ,0)
+        Engines_RPM+= clamp((Engines_idleRPM*2-Engines_RPM),0,250)*Interval*AirTank_pressure^0.7 *!!AirTank_e
+        
+        soundPitch("airValve_loop", 100*AirTank_pressure^0.5)
+        soundVolume("airValve_loop", AirTank_pressure*0.1)
+        
+        if(!AirValve_open & Time>=0.5) {
+            soundStop("airValve_loop")
+            AirValve_e:soundPlay("airValve_close",3,"acf_extra/vehiclefx/misc/air_07.wav") soundPitch("airValve_close",100) soundVolume("airValve_close",0.5)
+            AirValve_open = 0
+            AirStart_startTime = 0
+        }
+        Debug+="\n===========AirStart============"
+        Debug+="\n"+"pressure" + " = " + AirTank_pressure
+    }
+    
+    # [Compressor1_e]:entity
+    # [AirTank_e AirValve_e]:entity
+    # [AirTank_pressure]
+    
+    
+    
+    
+    exit()
+}
+
+
+
+if(useEntClk() == AirValve_e) {
+    AirValve_open=!AirValve_open
+    exit()
+}
+
+if(dupefinished()) {reset()}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

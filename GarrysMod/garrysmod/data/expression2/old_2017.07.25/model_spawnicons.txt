@@ -1,0 +1,29 @@
+@name model spawnicons
+@inputs W:wirelink
+@outputs 
+@persist [E]:entity
+@trigger 
+
+if(changed(0)) {
+    
+    #include "EGPS"
+    
+    E = entity()
+    holoCreate(0, E:toWorld(vec(0,0,30)), vec(0.01,0.01,30/6), E:angles(), vec(0,50,255)) holoMaterial(0, "models/wireframe")
+    holoParent(0, E)
+    
+    
+    egpSelect(W)
+    egpClear()
+    
+    egpAddBox("d", v(256), v(400), "")
+}
+timer("", 200)
+
+Model = rangerOffsetHull(30, E:toWorld(vec(0,0,6)), E:up(),vec(5)):entity():model()
+if(changed(Model) & Model) {
+    Mat = "spawnicons/" + Model:left(Model:length()-4) + ".png"
+    egpSetMaterial(Mat)
+    
+    setName("Model: "+Model + "\nIcon: " + Mat)
+}

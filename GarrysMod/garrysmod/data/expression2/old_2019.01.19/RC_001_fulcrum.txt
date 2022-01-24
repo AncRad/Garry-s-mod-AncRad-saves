@@ -1,0 +1,171 @@
+@name RC_001_fulcrum
+
+@inputs 
+@outputs 
+@persist [E O W]:entity [Q]:table
+@persist Fulcrum_scale
+
+@trigger 
+
+
+
+if(changed(0)) {
+    
+    E = entity()
+    O = owner()
+    
+    
+    
+    W = entity():isWeldedTo()
+    if(W & 0) {
+        E:setMass(0.0001)
+        E:propGravity(0)
+    }
+    else {
+        W = E
+        E:setMass(10)
+        E:propGravity(1)
+    }
+    
+    
+    
+    
+    
+    
+    timer("", 1)
+}
+
+
+if(clk("")) {
+        timer("", 50)
+    
+    
+    if(Q["fulcrum", number]) {
+        
+        if(changed(0)) {
+            Q["curtime", number] = curtime()
+        }
+        local LastCurtime = Q["curtime", number]
+        local Curtime = curtime() Q["curtime", number] = Curtime
+        local Interval = Curtime - LastCurtime
+        
+        local FP = Q["fulcrum/pos", vector]
+        local FR = Q["fulcrum/rad", number]
+        
+        
+        local WP = W:massCenter()
+        
+        if((WP-FP):setZ(0):length() < FR | 1) {
+            
+            local VEL = W:vel()
+            local Vel = VEL:setZ(0):length()
+            
+            local Angle = angnorm(VEL:toAngle()[2])
+            local Dist = FR * min(Vel/300,1)
+            
+            local FC = WP:setZ(FP[3]) + vec(Dist,0,0):rotate(0,Angle,0)
+            local FC = FC - FP
+            local FC = FP + vec(min(FC:length(),FR),0,0):rotate(0,FC:toAngle()[2],0)
+            
+            local DIF = WP-FC
+            
+            local Mul = 1
+            if((WP-FP):setZ(0):length() > FR) {
+                Mul = clamp(1-(FC-WP):setZ(0):length()/FR,0,1)
+            }
+            
+            local V = DIF:normalized()/max(abs(DIF:normalized()[3]),0.5)*(600*0.99 - clamp(VEL[3],-100,100))
+            W:applyForce(V*W:mass()*Interval*Mul)
+            
+            
+            
+            
+        }
+    }
+    else {
+        
+        Fulcrum_scale = W:boxSize():length()
+        
+        rangerFilter(E)
+        rangerFilter(W)
+        local R = rangerOffset(Fulcrum_scale*10,W:boxCenterW(),vec(0,0,-1))
+        if(R:hit()) {
+            
+            Fulcrum_scale*=1
+            
+            Q["fulcrum", number] = 1
+            
+            Q["fulcrum/pos", vector] = R:pos()
+            Q["fulcrum/rad", number] = Fulcrum_scale
+            Q["fulcrum/dir", vector] = R:hitNormal()
+            
+            holoCreate(1, Q["fulcrum/pos", vector]+vec(0,0,1), vec(Fulcrum_scale/6), ang(), vec(255), "cplane")
+            holoMaterial(1, "models/wireframe")
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName("RC_001_fulcrum\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1e6))

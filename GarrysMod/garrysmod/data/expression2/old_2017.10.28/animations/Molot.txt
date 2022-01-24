@@ -1,0 +1,66 @@
+@name Molot
+@inputs 
+@outputs 
+@persist 
+@trigger 
+
+#include "PBA001"
+if(changed(0)) {
+    TargetAnimate = owner()
+    TargetAnimate:addPBA()
+    
+    "5"
+    TargetAnimate:addPBA(1, ang(0,-14.85,0), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(2, ang(0,-7.36,0), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(3, ang(0,-8.67,0), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(5, ang(0,-13.21,0), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(13, ang(18.61,15.13,0), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(14, ang(21.98,-66.37,54.21), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(15, ang(0,-81.67,41.55), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(16, ang(-47.18,0,0), ang(20), ang(4), "1")
+    "6"
+    TargetAnimate:addPBA(1, ang(0,-16.47,0), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(2, ang(0,-10.36,0), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(3, ang(0,-10.68,0), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(5, ang(0,-13.21,0), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(13, ang(0,26.04,0), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(14, ang(-33.26,-57.48,40.58), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(15, ang(0,-48.7,0), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(16, ang(21.86,0,0), ang(20), ang(4), "1")
+    "7"
+    TargetAnimate:addPBA(1, ang(4.44,-23.48,-11.36), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(2, ang(2.6,-13.55,-12.17), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(3, ang(4.98,8.78,-2.93), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(5, ang(22.59,-21.49,7.63), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(13, ang(-0.43,3.56,-38.6), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(14, ang(-13.71,19.75,-82.7), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(15, ang(0,26.78,0), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(16, ang(-71.71,0,0), ang(20), ang(4), "1")
+    "8"
+    TargetAnimate:addPBA(1, ang(-2.31,-25.93,-19.09), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(2, ang(-6.69,-12.07,-16.95), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(3, ang(2.4,12.44,-8.36), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(13, ang(-8.72,-11.93,0), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(14, ang(20.05,5.09,-58.95), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(15, ang(0,31.3,0), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(16, ang(0,0,-110.94), ang(20), ang(4), "1")
+    "10"
+    TargetAnimate:addPBA(1, ang(4.88,-24.03,-9.71), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(2, ang(-1.84,-11.73,-11.79), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(3, ang(6.03,11.32,-6.51), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(13, ang(0,27.58,0), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(14, ang(-0.84,-95.71,44.7), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(15, ang(0,24.21,0), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(16, ang(54.74,0,0), ang(20), ang(4), "1")
+    "11"
+    TargetAnimate:addPBA(1, ang(7.39,7.78,13.55), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(2, ang(9.12,11.31,17.05), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(3, ang(10.58,16.57,15.42), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(4, ang(-7.4,0,11.82), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(9, ang(16.21,-45.05,-42.18), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(10, ang(0,54.49,0), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(13, ang(40.5,8.96,-25.76), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(14, ang(6.1,-32.34,7.83), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(15, ang(0,43.67,0), ang(20), ang(4), "1")
+    TargetAnimate:addPBA(16, ang(-64.16,0,0), ang(20), ang(4), "1")
+}

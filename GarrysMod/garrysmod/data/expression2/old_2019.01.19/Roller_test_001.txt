@@ -1,0 +1,331 @@
+@name Roller_test_001
+
+
+@persist [E O]:entity E_gateName:string [Q Helper]:table
+
+
+@inputs [Pod_e Base_e Cam_e]:entity
+
+@persist Cam_rt1_i
+@persist [User_e]:entity [User_eyeAngles]:angle [User_wasdss]:vector
+
+@persist 
+
+
+@outputs Debug:string
+
+
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+
+#include "AddObj"
+
+
+
+if(changed(0)) {
+    #if(!isSinglePlayer()) {noDuplications()}
+    
+    
+    E = entity() E:setSkin(1)
+    E_gateName = E:getName():explode("\n")[1, string]
+    
+    
+    addHolo("cam_rt1", vec(), vec(), ang(), vec(), "cube", "", "")
+    add_INTO(Cam_e)
+    addHolo("cam_rt2", vec(-150,0,50), vec(), ang(), vec(), "cube", "", "cam_rt1")
+    add_timer("user")
+    
+    
+    if(!Base_e) {Base_e = E:isWeldedTo()}
+    local Radius = Base_e:boxSize()[1]/2*1.03
+    
+    local Mater1 = ""
+    local Color1 = vec(200)
+    
+    
+    addHolo("rt", vec(), vec(), ang(), vec(), "cube", "", "")
+    add_INTO(Base_e)
+    
+    addHolo("", vec(), vec(Radius), ang(), Color1, "hq_sphere", Mater1, "rt")
+    add_holoClip(vec(),ang(),0)
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    timer("", 50)
+    
+    
+    ################
+    #
+    function entity helper_point(Point_n:string, [Point_p Point_s]:vector) {
+        local StartHolo_e = Helper[Point_n + "/entity", entity]
+        if(!StartHolo_e) {
+            if(holoCanCreate()) {
+                local StartHolo_i = 0
+                StartHolo_i = Helper[Point_n + "/index" , number] = Helper["indexCounter", number] = max(Helper["indexCounter", number] + 1 ,2281448)
+                StartHolo_e = Helper[Point_n + "/entity", entity] = holoCreate(StartHolo_i, Point_p, Point_s, ang(), vec(254), "models/editor/axis_helper.mdl")
+            } else {return noentity()}
+        } elseif(Point_p) {holoPos(Helper[Point_n + "/index", number], Point_p)}
+        return StartHolo_e
+    }
+    function entity helper_beam([Beam_n PointStart_n PointEnd_n]:string, [Helper_color]:vector, Width:number) {
+        local PointStart_e = Helper[PointStart_n + "/entity", entity]
+        local PointEnd_e   = Helper[PointEnd_n   + "/entity", entity]
+        if(PointStart_e & PointEnd_e & !Helper[Beam_n + "/beam/entity", entity]) {
+            local Helper_e = PointStart_e:drawBeam("trails/physbeam",PointStart_e:pos(),PointEnd_e:pos(),Helper_color,254,Width)
+            Helper_e:setBeamEndEnt(PointEnd_e)
+            Helper[Beam_n + "/beam/entity", entity] = Helper_e
+            return Helper_e
+        }
+        else {
+            return noentity()
+        }
+    }
+    #
+    ################
+}
+
+
+
+if(clk("user")) {
+    
+    if(changed(0)) {
+        Cam_e:setColor(vec(255,80,0))
+        Cam_e:setMass(10)
+        Cam_e:propNotSolid(1)
+        E:setMass(0.01)
+        Base_e:setMass(200)
+        Base_e:propBuoyancy(0)
+        
+        
+        Cam_rt1_i = AddObj["cam_rt1/index", number]
+        local Cam_rt2_e = AddObj["cam_rt2/entity", entity]
+        cameraCreate(1,Cam_rt2_e:pos(),Cam_rt2_e:angles())
+        cameraParent(1,Cam_rt2_e)
+        
+        
+        function number entity:userKey(Key:string) {
+            switch(Key) {
+                case "keyForward", return This:keyForward()
+                case "keyBack"   , return This:keyBack()
+                case "keyLeft"   , return This:keyLeft()
+                case "keyRight"  , return This:keyRight()
+                case "keyJump"   , return This:keyJump()
+                case "keyDuck"   , return This:keyDuck()
+                case "keyWalk"   , return This:keyWalk()
+                case "keySprint" , return This:keySprint()
+                case "keyUse"    , return This:keyUse()
+                case "keyReload" , return This:keyReload()
+                case "keyZoom"   , return This:keyZoom()
+                case "keyAttack1", return This:keyAttack1()
+                case "keyAttack2", return This:keyAttack2()
+                case "none"      , return 0
+            }
+            return This:keyPressed(Key)
+        }
+    }
+    
+    
+    
+    
+    User_e = Pod_e:driver()
+    timer("user", User_e ? 50 : 500)
+    
+    local User_e_changed = changed(User_e)
+    
+    if(User_e) {
+        
+        User_eyeAngles = angnorm(Pod_e:toLocal(User_e:eyeAngles())-ang(0,90,0))
+        holoAng(Cam_rt1_i, User_eyeAngles)
+        
+        local Key_W     = User_e:keyPressed("W")
+        local Key_A     = User_e:keyPressed("A")
+        local Key_S     = User_e:keyPressed("S")
+        local Key_D     = User_e:keyPressed("D")
+        
+        local Key_Shift = User_e:keyPressed("lshift")
+        local Key_Ctrl  = User_e:keyPressed("lcontrol")
+        
+        User_wasdss = vec(Key_W-Key_S,Key_A-Key_D,Key_Shift-Key_Ctrl)
+    }
+    
+    
+    
+    if(User_e_changed) {
+        
+        if(User_e) {
+            
+            holoAng(Cam_rt1_i, ang())
+            cameraToggle(1,1,Pod_e)
+            
+            #
+        }
+        else {
+            
+            #
+            
+            User_eyeAngles = ang()
+            User_wasdss = vec()
+            
+            holoAng(Cam_rt1_i, ang())
+            cameraToggle(1,0,Pod_e)
+            
+        }
+    }
+}
+
+
+
+if(clk("")) {
+        timer("", 50)
+    
+    if(changed(0)) {
+        
+        #Q["curtime", number] = curtime()
+    }
+    
+    local LastCurtime = Q["curtime", number]
+    local Curtime = curtime()
+    Q["curtime", number] = Curtime
+    local Interval = Curtime - LastCurtime
+    local Loop = Interval / 0.015625
+    
+    
+    #local Ang = ang(0,User_eyeAngles[2],0)
+    local NeedVel = User_wasdss:setZ(0):rotate(0,User_eyeAngles[2],0)*select(User_wasdss[3]+2,1,10,30)*52.5
+    
+    local Base_vv = Base_e:angVelVector()
+    
+    local Radius = 24
+    
+    local AccA_vv = Base_e:toLocal(Base_e:pos() + ((NeedVel-Base_e:vel())*0.1):setZ(0):rotate(0,90,0)*(2*_PI*Radius))
+    local AccB_vv = -Base_vv
+    
+    local Acc_vv = AccA_vv+AccB_vv
+    local Acc_vv = Acc_vv:normalized()*min(Acc_vv:length(),2*52.5/(2*_PI*Radius)*360)
+    Base_e:applyTorque(Acc_vv*Base_e:inertia()/Interval)
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    Debug="============="
+    
+    
+    
+    
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName(E_gateName + "\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1e6))

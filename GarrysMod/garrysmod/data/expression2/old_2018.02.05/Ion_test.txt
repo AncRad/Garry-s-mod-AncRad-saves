@@ -1,0 +1,216 @@
+@name Ion_test
+@inputs 
+@outputs V1:vector
+@persist [E O]:entity [Q]:table
+@model models/sprops/rectangles/size_2/rect_12x18x3.mdl
+
+
+
+if(changed(0)) {
+    
+    E = entity()
+    O = owner()
+    
+    Q["", vector] = O:pos() + vec(75,0,50)
+    Q["move/targetType", string] = "player"
+    
+    E:noCollideAll(0)
+    
+    timer("", 1)
+}
+
+if(clk("")) {
+        timer("", 30)
+    
+    if(changed(0)) {
+        
+        holoCreate(1,E:pos(),vec(2),E:toWorld(ang(0,0,0)),vec(255),"models/editor/axis_helper.mdl") holoParent(1,E)
+        
+        Q["lastCurtime", number] = curtime()
+    }
+    local LastCurtime = Q["lastCurtime", number]
+    local Curtime = Q["lastCurtime", number] = curtime()
+    local Interval = Curtime-LastCurtime
+    local Loop = Interval / 0.015625
+    
+    
+    local Key_M4 = O:keyPressed("mouse_4")
+    if(changed(Key_M4) & Key_M4) {
+        if(Q["move/targetType", string] == "player") {
+            
+            Q["move/targetType", string] = "zadan"
+            
+            local AP = O:aimPos()
+            local AN = O:aimNormal()
+            local AE = O:aimEntity()
+            Q["move/target/pos"   , vector] = AE ? AE:toLocal(AP         ) : AP
+            Q["move/target/norm"  , vector] = AE ? AE:toLocal(AN+AE:pos()) : AN
+            Q["move/target/entity", entity] = AE
+        }
+        else {
+            Q["move/targetType", string] = "player"
+        }
+    }
+    
+    
+    
+    
+    local NeedPos = vec()
+    local PY_need = vec(1,0,0)
+    local R_need = vec(0,0,1)
+    
+    local Targte_t = Q["move/targetType", string]
+    if(Targte_t == "player") {
+        local AP = O:attachmentPos("chest")
+        local AA = O:attachmentAng("chest")
+        
+        NeedPos = AP - AA:forward()*25 #Q["", vector]
+        PY_need = AA:up()#vec(0,0,1)
+        R_need = -AA:forward()#vec(-1,0,0)
+    }
+    elseif(Targte_t == "zadan") {
+        local T_p = Q["move/target/pos"   , vector]
+        local T_n = Q["move/target/norm"  , vector]
+        local T_e = Q["move/target/entity", entity]
+        if(T_e) {
+            NeedPos = T_e:toWorld(T_p)
+            
+            rangerFilter(E)
+            local R = rangerOffset(E:pos(),NeedPos)
+            if(R:entity() == T_e & R:pos():distance(NeedPos)<=3) {
+                
+                NeedPos+= T_n*1.5
+                T_n = T_n:rotate(T_e:angles())
+            }
+            else {
+                rangerFilter(E)
+                local T_P = T_e:boxCenterW()
+                local R = rangerOffset(E:pos(),T_P)
+                if(R:entity() == T_e) {
+                    T_n = R:hitNormal()
+                    NeedPos = R:pos()
+                }
+            }
+        }
+        else {
+            NeedPos = T_p + T_n*1.5
+        }
+        PY_need = T_n:rotateAroundAxis(vec(0.000175,0,-1):cross(T_n),90)
+        R_need  = T_n #T_n:rotateAroundAxis(vec(0,0,1):cross(T_n),90)
+        
+        if(NeedPos:distance(E:pos())<=7) {
+            if(E:up():dot(T_n) >= 0.85) {
+                if(T_e) {
+                    T_e:weldTo(E,0)
+                }
+                else {
+                    #T_e:propFreeze(1)
+                }
+            }
+        }
+    }
+    else {
+        
+    }
+    
+    
+    
+    #
+    #- forces
+    #
+    local Mass = E:mass() + E:isWeldedTo():mass()
+    #- move
+    local V = -E:vel()/3+vec(0,0,7.5)
+    if(NeedPos) {
+        V+= NeedPos-E:boxCenterW()
+    }
+    E:applyForce(V*Mass*Loop)
+    
+    #- root
+    local RootPY = angnorm(E:toLocal(E:pos()+PY_need):toAngle())
+    local RootR  = asin(   E:toLocal(E:pos()-R_need )[2])
+    local Root   = RootPY:setRoll(RootR)
+    
+    local A = Root-E:angVel()/7
+    #local V = -E:angVelVector()*2
+    E:applyAngForce(A*Mass*Loop)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

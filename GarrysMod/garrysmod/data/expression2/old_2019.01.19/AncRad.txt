@@ -1,0 +1,140 @@
+@name AncRad
+
+@inputs 
+@outputs 
+
+#- base
+@persist [E]:entity [Gate_name]:string
+
+#- 
+@persist [O]:entity
+
+#- 
+@persist Hide Clone_e:entity Clone_time
+
+
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+
+if(changed(0)) {
+    if(!isSinglePlayer()) {noDuplications()}
+    
+    #- base
+    E = entity()
+    E:setSkin(1)
+    Gate_name = E:getName():explode("\n"):string(1)
+    
+    #- 
+    O = owner()
+    
+    
+    
+    
+    
+    
+    
+    
+    timer("", 1)
+}
+
+
+if(clk("")) {
+        timer("", 50)
+    
+    
+    local Color = vec()
+    if(1) {
+        Color = hsv2rgb(curtime()*20 % 360, 1, 1)
+    }
+    
+    
+    local Key_hide = O:keyPressed("mouse_4")
+    if(changed(Key_hide) & Key_hide) {
+        Hide = !Hide
+    }
+    
+    local Key_clone = O:keyPressed("mouse_5")
+    if(changed(Key_clone) & Key_clone) {
+        Hide = 1
+        Clone_time = curtime()
+        Clone_e = holoCreate(1, O:pos(),vec(1),O:angles(),Color,O:model())
+        if(O:keyDuck()) {
+            holoAnim(1,"cwalk_all") #cidle_all
+        }
+        else {
+            holoAnim(1,"run_all_01")
+        }
+    }
+    
+    
+    
+    foreach(C, Weap:entity = O:weapons()) {
+        Weap:setAlpha(0)
+        Weap:drawShadow(0)
+        Weap:setMaterial("models/roller/rollermine_glow")
+    }
+    O:drawShadow(0)
+    O:setColor(Color * !Hide)
+    O:setMaterial("models/roller/rollermine_glow")
+    
+    if(Clone_e) {
+        local Clone_hide = 1-clamp((curtime()-Clone_time)/2.5,0,1)^2
+        
+        
+        Clone_e:drawShadow(0)
+        Clone_e:setColor(Color*Clone_hide)
+        Clone_e:setMaterial("models/roller/rollermine_glow")
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#setName(Gate_name + "\nOPS: " + ops() + "\nCPU: " + int(cpuUsage()*1e6))
+if(dupefinished()) {reset()}

@@ -1,0 +1,175 @@
+@name my_window
+
+@inputs 
+@outputs 
+
+#- base
+@persist [E]:entity [Gate_name]:string
+
+#- 
+@persist [O]:entity
+
+#- 
+@persist Res:vector2
+
+
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+
+#include "AddHolo"
+
+
+
+if(changed(0)) {
+    #if(!isSinglePlayer()) {noDuplications()}
+    
+    #- base
+    E = entity()
+    E:setSkin(1)
+    Gate_name = E:getName():explode("\n"):string(1)
+    
+    #- 
+    O = owner()
+    
+    
+    local WB_s = vec2(1445,515)
+    local WS_s = vec2(1250,415)
+    local W_offset1 = 250
+    local W_offset2 = 130
+    
+    WB_s *= 52.5/1000
+    WS_s *= 52.5/1000
+    W_offset1 *= 52.5/1000
+    W_offset2 *= 52.5/1000
+    
+    local WB_S = vec(1,WB_s[2],WB_s[1])
+    local WS_S = vec(1,WS_s[2],WS_s[1])
+    local WS_p = (W_offset1 + WS_s[2])/2
+    local WB_p = WS_p + (W_offset1 + WS_s[2] + WB_s[2])/2
+    
+    
+    
+    
+    addHolo("rt", vec(), vec(), ang(), vec(), "cube", "", "") addHolo_INTO(E)
+    
+    
+    #- windows
+    addHolo("w", vec(2,0,0), vec(), ang(), vec(), "cube", "", "rt")
+    
+    addHolo("w1", vec(0,  WS_p, 0), WS_S/2, ang(), vec(10), "cube", "", "w")
+    addHolo("w2", vec(0,  WB_p, 0), WB_S/2, ang(), vec(10), "cube", "", "w")
+    
+    addHolo("w3", vec(0, -WS_p, 0), WS_S/2, ang(), vec(10), "cube", "", "w")
+    addHolo("w4", vec(0, -WB_p, 0), WB_S/2, ang(), vec(10), "cube", "", "w")
+    
+    addHolo("w_contur", vec(), vec(-3,WB_p+WB_s[2]/2,WB_s[1]/2), ang(), vec(255), "cube", "models/wireframe", "w")
+    addHolo_clip(vec(), ang(0,  0,0), -1)
+    addHolo_clip(vec(), ang(0,180,0), -1)
+    #
+    
+    #- display
+    local C_s = vec2()
+    #C_s *= 52.5/1000
+    C_s = vec2(WS_s[1],WB_p*2+WB_S[2])
+    
+    local C_S = vec(-6, C_s[2], C_s[1])
+    
+    addHolo("d", vec(2,0,0), vec(), ang(), vec(), "cube", "", "rt")
+    addHolo("dc", vec(0,-C_S[2],-C_S[3])/2, vec(), ang(), vec(), "cube", "", "d")
+    
+    local DC_S = C_S
+    addHolo("d_contur", vec(), DC_S/2, ang(), vec(255,0,0), "cube", "models/wireframe", "d")
+    addHolo_clip(vec(), ang(0,  0,0), -1)
+    addHolo_clip(vec(), ang(0,180,0), -1)
+    
+    local Offset = 14
+    local W_In = 0
+    local W_To = ceil(floor(C_S[3]/52.5*100)/Offset)+1
+    local H_In = 0
+    local H_To = ceil(floor(C_S[2]/52.5*100)/Offset)+1
+    print("[" + W_In + ", " + W_To + "] x [" + H_In + ", " + H_To + "]")
+    
+    local Counter = 0
+    for(W = W_In, W_To) {
+        for(H = H_In, H_To) {
+            addHolo("px[" + W + "," + H + "]", vec(0, DC_S[2]/H_To*H, DC_S[3]/W_To*W ), vec(1), ang(), vec(255), "cube", "lights/white", "dc")
+            Counter++
+        }
+    }
+    print("Counter = " + Counter)
+    #
+    
+    Res = vec2(H_To,W_To)
+    
+    addHolo_timer("", 1)
+    addHolo_start()
+    
+    
+    
+    
+    
+    
+}
+
+
+if(clk("")) {
+        timer("", 1000/30)
+    
+    for(H = 0, Res[1]) {
+        for(W = 0, Res[2]) {
+            holoColor(AddHolo["px[" + W + "," + H + "]/index", number], hsv2rgb((H/(Res[1]+1)*360 + curtime()*50) % 360, 1, 1))
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName(Gate_name + "\nOPS: " + ops() + "\nCPU: " + int(cpuUsage()*1e6))
+if(dupefinished()) {reset()}

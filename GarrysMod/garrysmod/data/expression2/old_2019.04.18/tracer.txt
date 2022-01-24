@@ -1,0 +1,116 @@
+@name tracer
+@inputs P:entity
+@outputs 
+@persist  E:entity A B C BAC4 [Start Pos Dir Hit]:vector Radius Beam:entity
+@trigger 
+
+interval(100)
+
+
+if(first()) {
+    
+    
+    E=entity()
+    Radius = 60
+    Pos = E:pos()
+    holoCreate(1, E:pos())
+    holoModel(1,"hq_sphere")
+    holoAlpha(1,20)
+    holoScale(1,vec(Radius/6))
+    holoMaterial(1,"models/wireframe")
+    holoCreate(2, E:pos())
+    holoModel(2,"hq_sphere")
+    holoAlpha(2,2)
+    holoScale(2,vec(-Radius/6))
+    holoMaterial(2,"models/wireframe")
+    Hit=vec(0)
+    holoCreate(3, E:pos())
+    holoModel(3,"models/holograms/icosphere2.mdl")
+    holoColor(3,vec(255,0,0))
+    
+    Beam=P:drawBeam("effects/laser1",P:pos(),P:pos()+P:forward()*100,vec(255),255,10)
+    
+    
+    
+}
+
+Start = P:pos()
+Dir = P:forward()
+Beam:setBeamEndPos(P:pos()+P:forward()*100)
+#drawBeam("effects/laser1",P:pos(),Dir,vec(255),255,1)
+
+#### Start Dir Pos
+Dif = Start-Pos
+Ang = Dir:toAngle()
+LPos = toWorld(Dif,ang(),vec(),Ang)
+setName("" + Dif:toString())
+
+#### Vec
+#print(Start+(Dir*100))
+Beam:removeOnDelete(holoEntity(1))
+
+
+#[
+A = 2 * (Dir:length())^2
+B = 2 * (Dir:dot(Start - Pos))
+C = (Pos:length())^2 + (Start:length())^2 - 2 * (Pos:dot(Start)) - Radius^2
+BAC4 = B^2-(2*A*C)
+
+if (BAC4 >= 0 & B < 0) {
+    Hit = Start + ((-sqrt(BAC4) - B) / A)*Dir
+    holoColor(1,vec(0,255,0))
+    holoPos(3,Hit)
+}
+    else
+    {
+        ##Hit = 0
+        holoColor(1,vec(255))
+}
+]#
+
+
+
+
+
+#vis
+if(changed(0)) {
+    
+    holoCreate(101, Pos, vec(),ang(),vec(255,255,255), "hq_cylinder")
+    holoMaterial(101, "models/wireframe")
+    holoAlpha(101,200)
+    
+    
+}
+
+Dif = Pos-Start
+Dif_n = Dif:normalized()
+Dist = Dif:length()
+Rad = Radius*sin(acos(Radius/Dist))
+
+Cos = 1-Radius/Dist
+print((1-Cos^2)^0.5 + "#" + sin(acos(Cos)))
+
+#print(round(Radius/Dist,3) + "#" + round(Dir:dot(Dif_n),3))
+if(Radius/Dist<Dir:dot(Dif_n)) {
+    Hit = Start+Dir/Dir:dot(Dif_n)*(Dist-(Radius^2-Rad^2)^0.5)
+    holoColor(101,vec(0,255,0))
+    holoPos(3,Hit)
+}
+else {
+    holoColor(101,vec(255))
+    holoPos(3,vec(9e9))
+}
+
+holoAng(101,Dif:toAngle() + ang(90,0,0))
+holoScale(101,vec(Rad,Rad,0.1)/6)
+holoPos(101, Pos-Dif_n*(Radius^2-Rad^2)^0.5)
+
+
+
+
+
+
+
+
+
+

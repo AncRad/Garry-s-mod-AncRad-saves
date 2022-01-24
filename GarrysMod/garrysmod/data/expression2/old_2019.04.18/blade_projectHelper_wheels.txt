@@ -1,0 +1,156 @@
+@name blade_projectHelper_wheels
+@model 
+
+@inputs [Wheel Prop1 Prop2 Prop3]:entity
+@persist [E]:entity [Color]:vector
+
+
+if(changed(0)) {
+    
+    Color = vec(0,255,29)
+    
+    E = entity()
+    
+    if(0&(dupefinished() | first())) {
+        if(!Prop1 & propCanCreate()) {
+            Prop1 = propSpawn("models/sprops/geometry/sphere_12.mdl",E:pos()+vec(0,0,20),ang(),1)
+            Prop1:setColor(Color)
+            E:createWire(Prop1,"Prop1","entity")
+        }
+        if(!Prop2 & propCanCreate()) {
+            Prop2 = propSpawn("models/sprops/geometry/sphere_12.mdl",E:pos()+vec(0,0,40),ang(),1)
+            Prop2:setColor(Color)
+            E:createWire(Prop2,"Prop2","entity")
+        }
+        if(!Prop3 & propCanCreate()) {
+            Prop3 = propSpawn("models/sprops/geometry/sphere_12.mdl",E:pos()+vec(0,0,60),ang(),1)
+            Prop3:setColor(Color)
+            E:createWire(Prop3,"Prop2","entity")
+        }
+    }
+    
+    
+    holoCreate(10, vec(), vec(1), ang(0,180,0), Color, "models/sprops/trans/wheel_b/wheel40.mdl")
+    holoCreate(11, vec(), vec(1), ang(0,180,0), Color, "models/sprops/trans/wheel_b/wheel50.mdl")
+    holoCreate(12, vec(), vec(1), ang(0,180,0), Color, "models/sprops/trans/wheel_b/wheel50.mdl")
+}
+
+interval(100)
+
+
+
+
+local Pos1 = Wheel:massCenter()
+local Pos2 = Prop1:pos()
+local Pos3 = Prop2:pos()
+local Pos4 = Prop3:pos()
+
+if(changed(Pos1) + changed(Pos2)) {
+    Pos2 = Pos2:setY(Pos1[2])
+    local Dif = Pos2-Pos1
+    
+    local Pos = Pos1 + Dif/2
+    holoPos(10, Pos)
+    #propSpawn("models/sprops/trans/wheel_b/wheel40.mdl",Pos,ang(),1)
+    
+    local R = (50/2-40/2)*0
+    local Pos = Pos2 + Dif:normalized()*R + Dif:toAngle():up() + vec(0,R,0)
+    holoPos(11, Pos)
+    #propSpawn("models/sprops/trans/wheel_b/wheel50.mdl",Pos,ang(),1)
+}
+
+if(changed(Pos1) + changed(Pos3)) {
+    local X = (Pos3[1]-Pos1[1])/6
+    for(C = 1,6) {
+        if(!holoEntity(C)) {
+            holoCreate(C, vec(), vec(1), ang(0,180,0), Color, "models/sprops/trans/wheel_b/wheel40.mdl")
+        }
+        
+        local Pos = Pos1 + vec(X*C,0,0)
+        holoPos(C, Pos)
+        #if(C == 1) {propSpawn("models/sprops/trans/wheel_b/wheel40.mdl",Pos,ang(),1)}
+    }
+}
+
+if(changed(Pos1+Pos2+Pos3+Pos4)) {
+    
+    local X = Pos4[1]
+    local Y = holoEntity(6):pos()[2]
+    local Z = holoEntity(11):pos()[3]
+    local Pos = vec(X,Y,Z)
+    holoPos(12, Pos)
+    #propSpawn("models/sprops/trans/wheel_b/wheel50.mdl",Pos,ang(),1)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

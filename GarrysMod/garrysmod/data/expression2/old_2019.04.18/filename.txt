@@ -1,0 +1,102 @@
+@name 
+
+@persist [Q]:table [Q_interval Q_perf]:number
+@persist [Q_list]:array [Q_holoIndex]:number
+
+
+Q_interval = 50
+Q_perf = 80
+timer("effect_turbineFlames", 1)
+
+function number entity:effect_turbineFlames(Effect_n:string, LocalPos:vector, LocalAng:angle, [Radius Lenght]:number, Color:vector, NeedParts:number) {
+    if(!Effect_n) {
+        printColor("[",vec(255,50,0),entity():getName():explode("\n")[1, string],vec(255),"] ","Эффекту \"",vec(),"turbineFlames",vec(255),"\" следует указать имя")
+        return 0
+    }
+    if(Q:exists(Effect_n)) {
+        printColor("[",vec(255,50,0),entity():getName():explode("\n")[1, string],vec(255),"] ","Повторная попытка создать эффект \"",vec(),Effect_n,vec(255),"\"")
+        return 0
+    }
+    
+    Q_list:pushString(Effect_n)
+    Q[Effect_n, table] = table(
+         "LocalTO"     = This
+        ,"LocalPos"    = LocalPos
+        ,"LocalAng"    = LocalAng
+        ,"Radius"      = Radius
+        ,"Lenght"      = Lenght
+        ,"Color"       = Color
+        ,"NeedParts" = NeedParts
+        
+        ,"real_multiplier"  = 0
+        ,"clamp"       = 0
+        ,"holoID"      = array()
+    )
+    return 1
+}
+
+
+function effect_turbineFlames() {
+    if(clk("effect_turbineFlames")) {
+            timer("effect_turbineFlames", Q_interval)
+        
+        local Perf = 100 while(perf(Perf)) {Perf--} Perf = min(Perf+Q_perf,95)
+        
+        local Count = Q_list:count()
+        local C = 0
+        while(perf(Perf) & C < Count) {
+            C++
+            local Name = Q_list[C, string]
+            local Table = Q[Name, table]
+            
+            local RT_e = Table["RT_e", entity]
+            local Parts_list = Table["holoID", array]
+            local Parts_real = Table:count()
+            local Parts_need = Table["NeedParts", number]
+            local Radius = Table["Radius", number]
+            
+            #- holo spawn
+            while(Parts_real != Parts_need & perf(Perf-2) & holoCanCreate()) {
+                while(!!holoEntity(Q_holoIndex)) {Q_holoIndex++}
+                
+                if(!RT_e) {
+                    local LocalTO = Table:removeEntity("LocalTO")
+                    local Pos = LocalTO:toWorld(Table:removeVector("LocalPos"))
+                    local Ang = LocalTO:toWorld(Table:removeAngle("LocalAng"))
+                    RT_e = Table["RT_e", entity] = holoCreate(Q_holoIndex,Pos,vec(),Ang,vec(),"tetra")
+                    holoParent(Q_holoIndex,LocalTO)
+                    continue
+                }
+                Parts_real++
+                Table["holoID", array]:pushNumber(Q_holoIndex)
+                holoCreate(Q_holoIndex, RT_e:pos(),vec(),RT_e:toWorld(ang(0,360/Parts_need*(Parts_real - 1),0)),vec(),"hq_sphere")
+                holoAlpha(Q_holoIndex, 254)
+                holoMaterial(Q_holoIndex, "models/roller/rollermine_glow")
+                holoClipEnabled(Q_holoIndex, 1, 1)
+                holoClip(Q_holoIndex,1,vec(),vec(0,0,1),0)
+                holoParent(Q_holoIndex, RT_e)
+                holoRenderFX(Q_holoIndex, 11)
+            }
+            #- scale & color
+            local Multiplier_real = Table["real_multiplier", number]
+            local Multiplier_need = Table["need_multiplier", number]
+            if(Multiplier_real != Multiplier_need) {
+                Table["real_multiplier", number] = Multiplier_real = Multiplier_need
+                
+                local Lenght = Table["Lenght", number]
+                local Scale = vec(Radius,Radius,-Lenght * Multiplier_real)/6
+                local Color = Table["Color", vector] * Multiplier_real^0.6
+                foreach(C, ID:number = Parts_list) {
+                    holoScale(ID, Scale)
+                    holoColor(ID, Color)
+                }
+            }
+            #- random pos
+            local Random = Radius-Radius / 3 * Multiplier_real^0.6
+            foreach(Part, ID:number = Parts_list) {
+                local A = 360/Parts_need*(Part - 1)
+                holoPos(ID, RT_e:toWorld(vec(random(Radius,Random),0,0):rotate(0,A,0)))
+            }
+        }
+    }
+}

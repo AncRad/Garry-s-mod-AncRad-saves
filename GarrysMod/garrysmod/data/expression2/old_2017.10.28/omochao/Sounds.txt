@@ -1,0 +1,105 @@
+@persist [S_Spark S_Poiman S_Poiman_2 S_Damage S_Damage_2 S_Whoops S_Whoops_2 S_Thanks S_Hi S_Behind S_Underwater S_Scare S_Scare_2]:array #Sounds
+@persist I_Damage I_Whoops I_Poiman T_Poiman T_Whoops T_Damage I_Died T_Hi I_Hi T_Look T_Scare T_EyeTar I_Eye T_Afk I_Afk # Timers
+
+#include "Omochao/Model"
+
+function omoLoadSounds()
+{
+    Chao:soundPlay(1,0,"vehicles/airboat/fan_blade_idle_loop1.wav")
+        soundVolume(1,0.4)
+        
+    S_Poiman = array(
+        "vo/npc/female01/startle01.wav",
+        "vo/npc/female01/startle02.wav"
+    )
+    S_Poiman_2 = array(
+        "vo/npc/female01/help01.wav",
+        "vo/npc/female01/watchwhat.wav"
+    )
+    
+    
+    S_Damage = array(
+        "vo/npc/female01/no02.wav",
+        "vo/npc/female01/ow02.wav",
+         "vo/npc/female01/pain01.wav",
+        "vo/npc/female01/pain06.wav",
+        "vo/npc/female01/pain06.wav"
+    )
+    S_Damage_2 = array(
+        "vo/npc/female01/imhurt02.wav",
+        "vo/npc/female01/watchwhat.wav"
+    )
+    T_Damage = 30
+    
+    S_Whoops = array(
+        "vo/npc/female01/whoops01.wav",
+        "vo/npc/alyx/uggh01.wav"
+    )
+    S_Whoops_2 = array(
+        "vo/npc/female01/pardonme01.wav",
+        "vo/npc/female01/pardonme02.wav",
+        "vo/npc/female01/excuseme01.wav",
+        "vo/npc/female01/excuseme02.wav"
+    )
+    T_Whoops = 100
+    
+    S_Thanks = array(
+        "vo/npc/female01/nice02.wav",
+        "vo/npc/female01/fantastic02.wav",
+        "vo/npc/female01/fantastic01.wav"
+    )
+    S_Behind = array(
+        "vo/npc/female01/behindyou01.wav", 
+        "vo/npc/female01/behindyou02.wav",
+        "vo/npc/female01/overhere01.wav"
+    )
+    S_Hi = array(
+        "vo/npc/female01/hi01.wav", 
+        "vo/npc/female01/hi02.wav"
+    )
+    S_Underwater = array(
+        "player/pl_drown1.wav",
+        "player/pl_drown2.wav",
+        "player/pl_drown3.wav"
+    )
+    
+    S_Spark = array(
+        "ambient/energy/spark1.wav",
+        "ambient/energy/spark2.wav",
+        "ambient/energy/spark3.wav",
+        "ambient/energy/spark4.wav",
+        "ambient/energy/spark5.wav",
+        "ambient/energy/spark6.wav"
+    )
+    
+    S_Scare = array(
+        "vo/npc/female01/uhoh.wav", 
+        "vo/npc/female01/no01.wav",
+        "vo/npc/female01/no02.wav"
+    )   
+    S_Scare_2 = array(
+        "vo/npc/female01/runforyourlife01.wav",
+        "vo/npc/female01/runforyourlife02.wav", 
+        "vo/npc/female01/help01.wav"
+    )
+}
+function say(Sound:array, Num, Pitch)
+{
+    soundStop(3)
+    #EyeTar = Target
+    if (Chao:isUnderWater())
+        { Chao:soundPlay( 3, 10, S_Underwater[randint(3), string] ) }
+    else
+        { Chao:soundPlay( 3, 10, Sound[Num, string] ) }
+    soundPitch(3, Pitch)
+}
+function say(Sound:string, Pitch)
+{
+    soundStop(3)
+    #EyeTar = Target
+    if (Chao:isUnderWater())
+        { Chao:soundPlay( 3, 10, S_Underwater[randint(3), string] ) }
+    else
+        { Chao:soundPlay( 3, 10, Sound ) }
+    soundPitch(3, Pitch)
+}

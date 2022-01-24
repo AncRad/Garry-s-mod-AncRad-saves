@@ -1,0 +1,442 @@
+@name RC_002_pointInPolygon
+
+@inputs 
+@outputs T:string
+@persist [E O]:entity Helper:table #Radius:array
+
+@persist [Q]:table
+
+
+
+if(changed(0)) {
+    
+    
+    function array array:sort() {
+        local Prior = array()
+        local Ret = array()
+        local Count = This:count()
+        
+        foreach(C1, N:number = This) {
+            for(C2 = C1, Count){
+                local V = This[C2, number]
+                
+                if(V < N){
+                    Prior[C1, number] = Prior[C1, number]+1
+                }
+                else {
+                    Prior[C2, number] = Prior[C2, number]+1
+                }
+            }
+        }
+        foreach(C, P:number = Prior){
+            Ret[P, number] = This[C, number]
+        }
+        
+        return Ret
+    }
+    
+    
+    
+    
+    if(0) {Helper = table()}
+    function entity helper_point(Point_n:string, Point_p:vector) {
+        local StartHolo_e = Helper[Point_n + "/entity", entity]
+        if(!StartHolo_e) {
+            if(holoCanCreate()) {
+                local StartHolo_i = 0
+                StartHolo_i = Helper[Point_n + "/index" , number] = Helper["indexCounter", number] = max(Helper["indexCounter", number] + 1 ,2281448)
+                StartHolo_e = Helper[Point_n + "/entity", entity] = holoCreate(StartHolo_i, Point_p, vec(0.2), ang(), vec(255), "models/editor/axis_helper.mdl")
+            } else {return noentity()}
+        } elseif(Point_p) {holoPos(Helper[Point_n + "/index", number], Point_p)}
+        return StartHolo_e
+    }
+    function entity helper_beam([Beam_n PointStart_n PointEnd_n]:string, Helper_color:vector) {
+        
+        local PointStart_e = Helper[PointStart_n + "/entity", entity]
+        local PointEnd_e   = Helper[PointEnd_n   + "/entity", entity]
+        
+        if(PointStart_e & PointEnd_e & !Helper[Beam_n + "/beam/entity", entity]) {
+            local Helper_e = PointStart_e:drawBeam("trails/smoke",PointStart_e:pos(),PointEnd_e:pos(),Helper_color,255,5)
+            Helper_e:setBeamEndEnt(PointEnd_e)
+            
+            Helper[Beam_n + "/beam/entity", entity] = Helper_e
+            return Helper_e
+        }
+        else {
+            return noentity()
+        }
+    }
+    function entity helper([Helper_n StartHolo_n EndHolo_n]:string, [StartPos EndPos Helper_color]:vector) {
+        local StartHolo_e = helper_point(StartHolo_n, StartPos)
+        local EndHolo_e   = helper_point(EndHolo_n  , EndPos  )
+        
+        return helper_beam(Helper_n, StartHolo_n, EndHolo_n, Helper_color)
+    }
+    
+    E = entity()
+    O = owner()
+    
+    
+    
+    timer("", 1)
+}
+
+if(clk("")) {
+        timer("", 50)
+    
+    Radius = array(10,13,16,19,25,39,30,20,10,5,10)
+    
+    
+    
+    findIncludeModel("models/hunter/blocks/cube025x025x025.mdl")
+    findInSphere(E:pos(), 52.5*15)
+    local Find_a = findToArray()
+    local Find_c = Find_a:count()
+    
+    
+    if(0) {
+        foreach(C, Prop_e:entity = Find_a) {
+            Find_a:remove(C)
+            if(randint(0,1)) {
+                Find_a:pushEntity(Prop_e)
+            }
+            else {
+                Find_a:unshiftEntity(Prop_e)
+            }
+        }
+    }
+    
+    
+    
+    #step 1
+    local ArPos = array()
+    local CenterPos = vec()
+    foreach(C, Prop_e:entity = Find_a) {
+        
+        rangerFilter(Prop_e)
+        local R = rangerOffset(20, Prop_e:pos(), vec(0,0,-1))
+        
+        
+        if(R:hit()) {
+            local R_p = R:pos()
+            ArPos:pushVector(R_p)
+            CenterPos+=R_p
+        }
+    }
+    local Count = ArPos:count() Q["count", number] = Count
+    
+    T="Debug\nCount: " + Count
+    
+    
+    if(Count) {
+        CenterPos/=Count
+        local CenterPos2 = vec2(CenterPos)
+        
+        #step 2
+        local ArYaw = array()
+        foreach(C, Pos:vector = ArPos) {
+            
+            local Pos2 = vec2(Pos-CenterPos)
+            ArYaw:pushNumber(Pos2:toAngle())
+            ArPos[C, vector2] = vec2(Pos)
+        }
+        
+        #step 3
+        if(Count > 2) {
+            local Prior = array()
+            local ArPos_ = array()
+            local ArYaw_ = array()
+            local Radius_ = array()
+            
+            foreach(C1, N1:number = ArYaw) {
+                for(C2 = C1, Count){
+                    local N2 = ArYaw[C2, number]
+                    
+                    if(N2 < N1){
+                        Prior[C1, number] = Prior[C1, number]+1
+                    }
+                    else {
+                        Prior[C2, number] = Prior[C2, number]+1
+                    }
+                }
+            }
+            foreach(C, P:number = Prior){
+                ArYaw_[P, number] = ArYaw[C, number]
+                ArPos_[P, vector2] = ArPos[C, vector2]
+                Radius_[P, number] = Radius[C, number]
+                
+                local ID = 228+C if(!holoEntity(ID)) {holoCreate(ID,vec(),vec(Radius_[P, number]/6),ang(),vec(),"cplane") holoMaterial(ID, "models/wireframe")} holoPos(ID, vec(ArPos[C, vector2],CenterPos[3])) holoColor(ID, 1 ? vec(0,100,255) : vec()) holoScale(ID, vec(Radius_[P, number]/6))
+            }
+            ArYaw = ArYaw_
+            ArPos = ArPos_
+            Radius = Radius_
+        }
+        
+        #step 4
+        if(Count > 3) {
+            local C = 0
+            local OK = 0
+            while(OK < Count) {
+                C = C==Count ? 1 : C+1
+                OK++
+                
+                local P1 = ArPos[C==1 ? Count : C-1,vector2]-CenterPos2
+                local P2 = ArPos[C,vector2]-CenterPos2
+                local P3 = ArPos[C==Count ? 1 : C+1,vector2]-CenterPos2
+                
+                local P3P1_yaw = (P1-P3):toAngle()
+                local P2P3_local = (P2-P3):rotate(-P3P1_yaw)
+                
+                if(P2P3_local[2] < 0) {
+                    ArYaw:remove(C)
+                    ArPos:remove(C)
+                    Radius:remove(C)
+                    C--
+                    OK=0
+                    Count--
+                }
+            }
+        }
+        #step 5
+        local CenterPos2 = vec2(CenterPos)
+        local ForceCenter_P = E:pos():setZ(CenterPos[3])
+        local ForceCenter_p = vec2(ForceCenter_P)-CenterPos2
+        
+        local ForceCenter_a = ForceCenter_p:toAngle()
+        foreach(C1, Y1:number = ArYaw) {
+            local C2 = C1 == Count ? 1 : C1 + 1
+            local Y2 = angnorm(ArYaw[C2, number] - Y1)
+            
+            if(inrange(angnorm(ForceCenter_a-Y1),0,Y2) | (Count < 3)) {
+                T+="\nsector: " + C1 + "#" + C2
+                
+                local P1 = ArPos[C1,vector2]-CenterPos2
+                local P2 = ArPos[C2,vector2]-CenterPos2
+                
+                local P1P2 = P1-P2
+                local P1P2_yaw = P1P2:toAngle()
+                local P1P2_L = P1P2:length()
+                
+                local FCP1 = ForceCenter_p-P1
+                local FCP1_l = FCP1:rotate(-P1P2_yaw)
+                
+                local P1_r = Radius[C1, number]
+                local P2_r = Radius[C2, number]
+                local P1P2_r = P2_r-P1_r
+                local LengthProcent = -FCP1_l[1]/P1P2_L
+                local Radius = P1_r + P1P2_r*clamp(LengthProcent,0,1)
+                
+                T+="\nRadius: " + Radius
+                
+                local OK = 0
+                    if(Count == 2) {OK = abs(FCP1_l[2]) < Radius & inrange(LengthProcent,0,1)}
+                elseif(Count  > 2) {OK =     FCP1_l[2]  < Radius & inrange(LengthProcent,0,1)}
+                if(OK) {
+                    
+                    T+="\nOK"
+                    
+                    ForceCenter_P = ForceCenter_P
+                }
+                else {
+                    
+                    if(inrange(LengthProcent,0,1)) {
+                        
+                        T+="\nNOPE"
+                        T+="\nDISTANCE: " + (abs(FCP1_l[2])-Radius)
+                        
+                        ForceCenter_P = vec(P1+CenterPos2+vec2(clamp(FCP1_l[1],-P1P2_L,0),Radius*sign(FCP1_l[2])):rotate(P1P2_yaw),CenterPos[3])
+                    }
+                    else {
+                        if(Count==1 & FCP1:length() <= P1_r) {
+                            
+                            T+="\nOK"
+                            
+                        }
+                        else {
+                            
+                            T+="\nNOPE"
+                            
+                            local P   = LengthProcent > 0 ? P2   : P1
+                            local P_r = LengthProcent > 0 ? P2_r : P1_r
+                            local FCP_LP = ForceCenter_p-P
+                            ForceCenter_P = vec(P+CenterPos2+FCP_LP:normalized()*P_r,CenterPos[3])
+                            
+                            T+="\nDISTANCE: " + (FCP_LP:length()-P_r)
+                        }
+                    }
+                }
+                break
+            }
+        }
+        if(!holoEntity(3333)) {holoCreate(3333,vec(),vec(0.2))} else {holoPos(3333,ForceCenter_P)}
+    }
+    
+    
+    
+    if(0) {
+        #helper
+        if(changed(Count) + changed(Q["count", number]) | changed(0)) {
+            
+            foreach(C, Beam_e:entity = Q["beams",array]) {Beam_e:remove()}
+            
+            local Beams = array()
+            foreach(C, Pos:vector2 = ArPos) {
+                local Helper_e = holoEntity(1):drawBeam("trails/smoke",vec(),vec(),vec(255),255,5)
+                Beams:pushEntity(Helper_e)
+            }
+            Q["beams",array] = Beams
+        }
+        elseif(changed(floor(curtime()*5)) & Count > 1) {
+            foreach(C, Beam_e:entity = Q["beams",array]) {
+                local N1 = C
+                local N2 = C==Count ? 1 : C+1
+                
+                local Pos1 = vec(ArPos[N1, vector2],CenterPos[3])
+                local Pos2 = vec(ArPos[N2, vector2],CenterPos[3])
+                Beam_e:setPos(Pos1)
+                Beam_e:setBeamEndPos(Pos2)
+            }
+        }
+        if(holoEntity(1)) {holoPos(1,CenterPos)} else {holoCreate(1,CenterPos,vec(0.5))}
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName("RC_002_pointInPolygon\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1e6))

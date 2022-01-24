@@ -1,0 +1,37 @@
+@name Model manager loader
+@inputs 
+@outputs 
+@persist Json:string Project:table E:entity V:vector
+@trigger 
+
+#include "AddHolo"
+if(changed(0)) {
+fileLoad("MMtest.txt")
+runOnFile(1)
+E = entity()
+V = E:pos()
+timer("", 1)
+}
+
+if(clk("")) {
+    timer("", 50)
+    if(!Json) {
+        Json = fileRead()
+        Project = vonDecodeTable(Json)
+    }
+    else {
+        
+        if(Project["d", number] < Project["counter", number]) {
+            local ID = Project["d", number] = Project["d", number] + 1
+            
+            
+            
+            
+            local Pos = Project[ID + "/pos"     , vector]
+            local Ang = Project[ID + "/angl"    , angle]
+            local Model = Project[ID + "/model"   , string]
+            addHolo("test" + ID, Pos, vec(1), Ang, vec(255), Model, "", "")
+        }
+    }
+}
+

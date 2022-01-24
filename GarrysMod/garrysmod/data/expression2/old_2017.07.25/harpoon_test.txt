@@ -1,0 +1,170 @@
+@name harpoon test
+@inputs 
+@outputs 
+@persist [E O]:entity [Q]:table
+
+
+
+if(changed(0)) {
+    
+    E = entity()
+    O = owner()
+    
+    #models/props_junk/harpoon002a.mdl
+    
+    
+    PropRT = Q["propRT", entity] = propSpawn("models/hunter/blocks/cube025x025x025.mdl", O:pos() - vec(0,0,400), ang(90,0,0), 1)
+    PropRT:setMass(50000)
+    Prop = Q["prop", entity] = propSpawn("models/props_junk/harpoon002a.mdl", PropRT:toWorld(vec()), PropRT:toWorld(ang()), 0)
+    Prop:weldTo(PropRT, 0)
+    Prop:noCollide(PropRT)
+    
+    
+    
+    
+    
+    runOnLast(1)
+    timer("", 1)
+}
+
+if(clk("")) {
+        timer("", 50)
+    
+    
+    local PropRT = Q["propRT", entity]
+    local Prop = Q["prop", entity]
+    
+    PropRT:setPos(PropRT:pos() - vec(0,0,60))
+    
+    
+    
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+if(last()) {
+    
+    Q["prop", entity]:remove()
+    Q["propRT", entity]:remove()
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

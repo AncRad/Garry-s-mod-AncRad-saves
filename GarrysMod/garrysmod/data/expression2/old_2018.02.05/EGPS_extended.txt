@@ -1,0 +1,14 @@
+@name EGPS_extended
+
+@persist 
+
+
+
+if(changed(0)) {
+    
+    if(entity():getName() == "EGPS_extended") {
+        #include "EGPS"
+    }
+    
+    
+}

@@ -1,0 +1,197 @@
+@name effect 002
+
+@inputs 
+@outputs 
+@persist [E O]:entity [Q]:table
+
+@trigger none
+
+
+
+#include "AddHolo"
+if(changed(0)) {
+    
+    E = entity()
+    O = owner()
+    
+    
+    local Pos = E:pos() + vec(0,0,10)
+    for(C = 1, 20) {
+        local P = randvec(-3,3)
+        addHolo("" + C, Pos + P, vec(1.5), ang(), vec(255,50,0), "icosphere2", "lights/white", "")
+        Q[C + "/vel", vector] = P:normalized() * 52.5 * 10
+    }
+    addHoloTimer("", 1)
+    
+    #timer("", 1)
+}
+
+
+if(clk("")) {
+        timer("", 50)
+    
+    if(changed(0)) {
+        for(C = 1, 20) {
+            local ID = AddHolo["" + C + "/entity", entity]
+            
+            
+        }
+        
+        Q["lc", number] = curtime()
+    }
+    local LC = Q["lc", number]
+    local Curtime = Q["lc", number] = curtime()
+    local Interval = Curtime - LC
+    
+    
+    for(C = 1, 20) {
+        local ID = AddHolo["" + C + "/id", number]
+        local Holo = AddHolo["" + C + "/entity", entity]
+        
+        local Vel = Q[C + "/vel", vector]
+        
+        local Pos = Holo:pos()
+        local R = rangerOffset(Vel:length() * Interval, Pos, Vel)
+        local Pos = R:pos()
+        
+        Q[C + "/vel", vector] = Vel = Vel - (Vel * 0.1 + vec(0,0,600)) * Interval
+        
+        holoPos(ID, Pos)
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

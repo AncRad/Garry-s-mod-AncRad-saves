@@ -1,0 +1,348 @@
+@name AAA
+
+@inputs 
+@outputs OPS
+@persist [E O]:entity
+
+
+if(changed(0)) {
+    
+    #include "old 28.10.2017/25.07.2017/EGPS"
+    
+    
+    function string toText000( Number , MaxNumber ) {
+        local Text = ""
+        for(C = 1, MaxNumber - (Number + ""):length()) {Text = Text + "  "}
+        Text = Number + Text
+        
+        return Text
+    }
+    
+    function egpAddRoster( Name:string , [Pos Size]:vector2 ) {
+        
+        egpAddBox(Name + "/base", Pos, Size, "")
+        egpSetColor(vec(10))
+        #egpSetAlpha(150)
+        egpAddTextLayout(Name , Name, -Size / 2, Size )
+        #egpSetSize(TextSize)
+        egpSetParent(Name + "/base")
+        
+        EGP["obj/" + Name + "/type", string] = "roster"
+        #EGP["obj/roster/list", array] = EGP["obj/roster/list", array]:add(array( Name ))
+    }
+    function egpActRoster( Name:string , Changed:array ) {
+        
+        #chamge stringSize
+        local StrinSize = EGP["obj/roster/" + Name + "/stringSize", number] = 15
+        egpSetSize(Name, StrinSize)
+        
+        #change size
+        local Size = egpGetSize( Name )
+        EGP["obj/roster/" + Name + "/size", vector2] = Size
+        
+        
+        #change list
+        if(EGP["obj/roster/" + Name + "/changed/list", number]) {
+            local Size = egpGetSize( Name )
+            local StrinSize = EGP["obj/roster/" + Name + "/stringSize", number]
+            local ListNumber = floor(Size[2] / StrinSize)
+            local Offset = EGP["obj/roster/" + Name + "/offset", number]
+            
+            local List = EGP["obj/roster/" + Name + "/needTextList", array]
+            local Count = List:count()
+            local Text = ""
+            
+            
+            Offset = EGP["obj/roster/" + Name + "/offset", number] = clamp(Offset, 0, 1)
+            
+            local OffSet = floor((Count-ListNumber) * Offset)
+            local In = 1 + OffSet
+            local To = clamp(Count,0,ListNumber) + OffSet
+            for(C = In, To) {
+                
+                Text = Text + (Text ? "\n" : "") + toText000(C, 3) + List[C, string]
+            }
+            
+            egpSetText(Name, Text)
+            EGP["obj/roster/" + Name + "/changed/list", number] = 0
+        }
+        
+        
+        
+        #[
+        foreach(C, Change:string = Changed) {
+            switch(Change) {
+                case "list",
+                    
+                break
+                case "",
+                    
+                break
+            }
+        }
+        ]#
+        
+        #
+    }
+    
+    function egpAddScroll( Name:string , [Pos Size]:vector2 , [Incline Type CellName]:string ) {
+        if(Type != "r") {Type = ""}
+        
+        egpAddBox(Name + "/base", Pos, Size, Type)
+        egpSetColor(vec(20))
+        
+        egpAddBox(Name + "/fon", v(), Size - v( 4 ), Type)
+        egpSetColor(vec(75))
+        egpSetParent(Name + "/base")
+        
+        egpAddBox(Name, v(), Size - v( 6 ), Type)
+        egpSetColor(vec(20))
+        egpSetParent(Name + "/base")
+        EGP["obj/" + Name + "/act/type", string] = "scroll"
+        EGP["obj/" + Name + "/act/scroll/cellName", string] = CellName
+    }
+    function egpActScroll( Name:string ) {
+        local Size = egpGetSize(Name)
+        local MaxSize = egpGetSize(Name + "/fon") - v(2)
+        local FullSize = EGP["obj/scroll/" + Name + "/fullSize", number]
+        local ListSize = EGP["obj/scroll/" + Name + "/listSize", number]
+        local Offset   = EGP["obj/scroll/" + Name + "/offset"  , number]
+        
+        
+        Size = clamp(clamp(ListSize / FullSize ,0,1) * MaxSize ,v(4,15),MaxSize)
+        #Size = v( 4 , 100)
+        egpSetSize(Name, Size)
+        
+        
+        local Hod = clamp(MaxSize[2] - Size[2],0,9999)
+        local Pos = v(0, (Offset-0.5) * Hod)
+        egpSetPos(Name, Pos)
+        
+        #EGP["obj/roster/" + "window/objList" + "/changed/list", number]
+    }
+    
+    
+    
+    
+    
+    
+    E = entity()
+    O = owner()
+    
+    
+    egpSelect(E:isWeldedTo():wirelink())
+    egpClear()
+    
+    
+    
+    local WName = "window"
+    local WPos = egpScrSize(O) * v( 0.3 , 0.85 )
+    local WSize = v( 310 , 300 )
+    
+    local SShir = 12
+    local SName = WName + "/objListScroll"
+    local SSize = v( SShir , WSize[2] )
+    local SPos  = v(  (WSize[1] - SSize[1]) / 2 , 0 )
+    
+    local RName = WName + "/objList"
+    local RSize = WSize - v( SShir , 0 )
+    local RPos  = v( (RSize[1] - WSize[1]) / 2 , 0 )
+    
+    
+    egpAddBox(WName, WPos, WSize, "")
+    egpSetColor(vec(100))
+    EGP["windows", array] = EGP["windows", array]:add(array(WName))
+    
+    egpAddScroll(SName, SPos, SSize, "", "r", "obj/roster/" + RName + "/offset")
+    egpSetParent(SName + "/base", WName)
+    
+    egpAddRoster(RName, RPos, RSize)
+    egpSetSize(RName, 15)
+    egpSetParent(RName + "/base", WName)
+    EGP["obj/" + WName + "/parentedObj", array] = array(SName,RName + "/base")
+    
+    
+    findIncludeClass("prop")
+    findInSphere(vec(), 9999999999)
+    local Array = array()
+    local Find = findToArray()
+    for(C = 1, clamp(Find:count(), 0, 30)) {
+        Array:pushString(Find[C, entity]:toString())
+    }
+    EGP["obj/roster/" + "tester" + "/roster", array ] = Array
+    
+    timer("", 1)
+    timer("find", 1)
+}
+
+
+
+if(clk("")) {
+        timer("", 50)
+    
+    
+    
+    #####
+    ##
+    Eye        = O:eye()
+    EyeAngles  = O:eyeAngles()
+    EyeA       = EyeAngles:forward()
+    EgpScrSize = egpScrSize(O)
+    
+    Holo = holoEntity(0)
+    if(!Holo) {Holo = holoCreate(0,vec(),vec())}
+    holoAng(0, EyeAngles)
+    
+    Cos = Eye[1] * EyeA[1] + Eye[2] * EyeA[2] + Eye[3] * EyeA[3]
+    CursorV = (Holo:toLocal( Eye / Cos ) / vec( 1 , -1.332 , -0.75 ) + vec( 0 , 1 , 1 )) / 2
+    ##
+    
+    Cursor = EGP["cursor/pos", vector2] = vec2( CursorV[2] , CursorV[3] ) * EgpScrSize
+    #####
+    
+    local KeyClick = O:keyPressed("E")
+    if(changed(KeyClick)) {
+        if(KeyClick) {
+            EGP["cursor/click/pos", vector2] = Cursor
+            
+            
+            local StepObj = ""
+            local StepObjList = EGP["windows", array]:add(array())
+            while(StepObjList:count()) {
+                local Step = StepObjList[1, string]
+                StepObjList:remove(1)
+                
+                local StepSize = egpGetSize(Step) / 2
+                local StepPos  = egpGetGlobalPos(Step)
+                
+                if(inrange(Cursor - StepPos, -StepSize, StepSize)) {
+                    StepObj = Step
+                    StepObjList = EGP["obj/" + StepObj + "/parentedObj", array]:add(array())
+                }
+            }
+            
+            local ActType = EGP["obj/" + StepObj + "/act/type", string]
+            if(ActType) {
+                local ActID = EGP["act/id", number] = EGP["act/id", number] + 1
+                
+                EGP["act/" + ActID + "/type", string] = ActType
+                EGP["act/" + ActID + "/obj" , string] = StepObj
+                EGP["act/list", array] = EGP["act/list", array]:add(array( ActID ))
+                print("add act " + ActType + ActID + " " + StepObj)
+            }
+        }
+    }
+    
+    egpActRoster("window/objList", array("list"))
+    egpActScroll("window/objListScroll")
+    
+    
+    
+    #[
+    
+    egpActScroll("scroll")
+    EGP["obj/roster/" + "tester" + "/offset", number] = EGP["obj/scroll/" + "scroll" + "/offset", number]
+    ]#
+    
+    
+    
+    
+    
+    
+    
+    OS = EGP["obj/roster/window/objList/offset", number]
+    OS = EGP["obj/roster/window/objList/offset", number] = OS + O:keyPressed("mouse_4") - O:keyPressed("mouse_5")
+    
+    
+    
+    
+    
+    
+    #block act
+    local ActList = EGP["act/list", array]
+    foreach(C, ActID:number = ActList) {
+        
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+}
+
+
+
+
+if(clk("find")) {
+        timer("find", 1000)
+    
+    findClearWhiteList()
+    #findIncludeClass("prop")
+    findInSphere(vec(), 10000000000)
+    local Find = findToArray()
+    local TextList = array()
+    for(C = 1, clamp(Find:count() ,1,50)) {
+        local Ent = Find[C, entity]
+        
+        TextList:pushString(Ent:toString())
+        
+        #Text = Text + toText000(C, 3) + " " + Ent:toString()
+    }
+    #egpSetText("window/objList", Text)
+    EGP["obj/roster/" + "window/objList" + "/needTextList", array ] = TextList
+    EGP["obj/roster/" + "window/objList" + "/changed/list", number] = 1
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+OPS = ops()

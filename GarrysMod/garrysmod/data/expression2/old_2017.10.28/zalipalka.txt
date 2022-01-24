@@ -1,0 +1,123 @@
+@name zalipalka square in circle 001
+
+@inputs 
+@outputs 
+@persist [E O]:entity [Q]:table
+
+@trigger 
+
+if(changed(0)) {
+    
+    E = entity()
+    O = owner()
+    
+    Q["id/need", number] = 180
+    local Rad = 30
+    local Color = vec( 20 , 0 , 100 )
+    local Alpha = 6
+    
+    holoCreate(1000, E:toWorld(vec()), vec( -Rad       ), E:toWorld(ang()), vec(), "hq_sphere") holoMaterial(1000, "models/light"    ) holoParent(1000, E)
+    holoCreate(1001, E:toWorld(vec()), vec( -Rad + 0.2 ), E:toWorld(ang()), Color, "hq_sphere") holoMaterial(1001, "models/wireframe") holoParent(1001, E)
+    holoAlpha(1001, Alpha)
+    
+    
+    E:setAlpha(0)
+    
+    
+    
+    
+    timer("", 1)
+}
+
+
+if(clk("")) {
+        timer("", 75)
+    
+    if(Q["id", number] < Q["id/need", number]) {
+        local Pos = E:pos()
+        local DDD = 0
+        while((DDD < 5) & holoCanCreate() & (Q["id", number] < Q["id/need", number])) {
+            DDD++
+            local ID = Q["id", number] = Q["id", number] + 1
+            local Color = vec( ID / 180 , 1 - ID / 180 , 0 ) * 255
+            
+            local Holo = holoCreate(ID, Pos, vec(), ang(), vec(), "tetra")
+            Holo:setTrails(1.5, 0, 3, "trails/laser", Color, 255)
+            #entity:setTrails(number startSize,number endSize,number length,string material,vector color,number alpha)
+            
+            Q["holos/entList", array] = Q["holos/entList", array]:add(array( Holo ))
+        }
+        
+    } else {
+        
+        if(changed(0)) {
+            printColor(vec( 200 , 255 , 255 ), "Created " + Q["id", number] + " in " + Q["id/need", number] + " holos")
+            
+            Q["time", number] = 0
+        }
+        
+        local T = Q["time", number] = Q["time", number] + 0.75
+        local EP = E:pos()
+        local R = 90
+        foreach(C, Holo:entity = Q["holos/entList", array]) {
+            
+            local A = 0
+            local B = 0
+            local C = 0
+            
+            local X = 0
+            local Y = 0
+            local Z = 0
+            
+            local Pos = vec( X , Y , Z ) * R
+            holoPos(C, EP + Pos)
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

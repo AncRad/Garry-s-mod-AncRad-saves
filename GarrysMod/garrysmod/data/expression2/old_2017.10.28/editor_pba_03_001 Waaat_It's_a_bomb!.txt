@@ -1,0 +1,595 @@
+@name editor pba 03 001
+
+@inputs 
+@outputs 
+@persist [E O]:entity [Q]:table
+
+@trigger none
+
+
+#--- loop include
+#include "old 28.10.2017/PBA001"
+
+
+if(changed(0)) {
+    
+    
+    #--- include
+    #include "old 28.10.2017/EGPS"
+    
+    
+    #--- functions
+    
+    #### chat interface
+    function addPrint(Print_a:array) {
+        local Print_i = Q["printQueueCountr", number] = Q["printQueueCountr", number] + 1
+        
+        Q[Print_i + "/print_a", array] = array(vec(255,70,0), "EPBA|", vec(255)):add(Print_a)
+        
+        Q["printsQueue", array] = Q["printsQueue", array]:add(array(Print_i))
+    }
+    
+    #### egp interface
+    function vector2 cursorPos(Player:entity) {
+        ###########################################################################################
+        ############################################################################################
+        local EyeAngles  = Player:eyeAngles()                                                     ###
+        local Eye        = Player:eye()                                                            ###
+        if(Q["cam/toggle", number]) {                                                               ##
+            Eye = Eye:rotate(angnorm(EyeAngles-Q["cam/ang", angle]))                                ##
+        }                                                                                           ##
+        if(changed(Eye) | changed(EyeAngles)) {                                                     ##
+            local EyeA       = EyeAngles:forward()                                                  ##
+            local EgpScrSize = vec2(1920,1080) #egpScrSize(Player)                                  ##
+                                                                                                    ##
+            local Holo = holoEntity(454560)                                                         ##
+            if(!Holo) {holoCreate(454560,vec(),vec())}                                              ##
+            holoAng(454560, EyeAngles)                                                              ##
+                                                                                                    ##
+            local Cos = Eye[1] * EyeA[1] + Eye[2] * EyeA[2] + Eye[3] * EyeA[3]                      ##
+            local CursorV = (Holo:toLocal(Eye / Cos) / vec(1, -1.332, -0.75) + vec(0, 1, 1)) / 2    ##
+                                                                                                    ##
+            local Cursor = Q["cursorPos", vector2] = vec2(CursorV[2], CursorV[3]) * EgpScrSize      ##
+            return Cursor                                                                          ###
+        }                                                                                         ###
+        ############################################################################################
+        ###########################################################################################
+    }
+    
+    
+    #--- other
+    E = entity() E:setSkin(1)
+    O = owner()
+    
+    
+    timer("chatInterface", 1)
+    
+    timer("", 1)
+    Q["spawnStep", number] = 1
+    
+    
+    addPrint(array(vec(), "###########################################"))
+    addPrint(array(
+        vec(200,200,255), "Е2 успешно запущен. ",
+        vec(200,200,255), "Запускаю ",
+        vec( 30,200,255), "Пошаговую процедуру загрузки."
+    ))
+}
+
+
+
+
+
+if(clk("")) {
+        timer("", 50)
+    
+    
+    #--- spawns
+    local SpawnStep = Q["spawnStep", number]
+    if(SpawnStep) {
+        
+        switch(perf(30) ? SpawnStep : 0) {
+            case 1, #--- step1
+                
+                local EGP_w = EGPS["egp_w", wirelink]
+                if(!EGP_w) {
+                    local Weld_e = E:isWeldedTo()
+                    if(Weld_e:type() == "gmod_wire_egp_hud") {
+                        if(Weld_e:owner() == O) {
+                            EGP_w = Weld_e:wirelink()
+                            egpSelect(EGP_w)
+                        }
+                    }
+                    elseif(changed(Weld_e)) {
+                        if(Weld_e:type() == "gmod_wire_egp_emitter") {
+                            addPrint(array(
+                                vec( 30,200,255), "Шаг1|",
+                                vec(200,200,255), "Лол. Это EGP EMITTER, а нужен EGP HUD.  XD"
+                            ))
+                        }
+                        elseif(Weld_e:type() == "gmod_wire_egp") {
+                            addPrint(array(
+                                vec( 30,200,255), "Шаг1|",
+                                vec(200,200,255), "Это EGP SCREEN. Нужен EGP HUD."
+                            ))
+                        }
+                    }
+                }
+                
+                if(EGP_w) {
+                    addPrint(array(
+                        vec( 30,200,255), "Шаг1|",
+                        vec(200,200,255), "Соединение с EGP HUD установлено. Запускаю ",
+                        vec( 30,200,255), "Шаг2"
+                    ))
+                    Q["spawnStep", number] = Q["spawnStep", number] + 1
+                }
+                else {
+                    if(changed(0)) {
+                        addPrint(array(
+                            vec( 30,200,255), "Шаг1|",
+                            vec(200,200,255), "Ожидается соединение с EGP HUD..."
+                        ))
+                    }
+                }
+            break
+            
+            
+            case 2, #--- step2
+                
+                local FontSize = Q["fontSize", number] = 15
+                local Indent   = Q["indent"  , number] = 2
+                
+                egpClear()
+                egpDrawTopLeft(0)
+                
+                
+                #boneList
+                local BP = "bonePanel"
+                
+                local BPB_n = BP + "_base"
+                local BPB_s = v(250,300)
+                local BPB_p = v(400,1080-BPB_s[2]/2)
+                egpAddBox(BPB_n, BPB_p, BPB_s, "")
+                egpSetColor(0)
+                Q["cursorTargets", array] = Q["cursorTargets", array]:add(array(BPB_n))
+                
+                
+                local BPPB_n = BPB_n + "_pointsBase"
+                local BPPB_s = v(100-Indent, BPB_s[2])
+                local BPPB_p = v((BPPB_s[1]-BPB_s[1])/2,0)
+                egpAddBox(BPPB_n, BPPB_p, BPPB_s, "")
+                egpSetParent(BPB_n)
+                egpSetColor(20)
+                Q[BPB_n + "/cursorTargets", array] = Q[BPB_n + "/cursorTargets", array]:add(array(BPPB_n))
+                
+                
+                local BPLB_n = BPB_n + "_listBase"
+                local BPLB_s = v(BPB_s[1]-BPPB_s[1]-Indent, BPB_s[2])
+                local BPLB_p = v((BPB_s[1]-BPLB_s[1])/2,0)
+                egpAddBox(BPLB_n, BPLB_p, BPLB_s, "")
+                egpSetParent(BPB_n)
+                egpSetColor(20)
+                Q[BPB_n + "/cursorTargets", array] = Q[BPB_n + "/cursorTargets", array]:add(array(BPLB_n))
+                
+                
+                local BPLSB_n = BPLB_n + "_scrollBase"
+                local BPLSB_s = v(15, BPLB_s[2])  *0
+                local BPLSB_p = v((BPLB_s[1]-BPLSB_s[1])/2,0)
+                egpAddBox(BPLSB_n, BPLSB_p, BPLSB_s, "")
+                egpSetParent(BPLB_n)
+                egpSetColor(20)
+                local BPLS_n = BPLSB_n + "_scroll"
+                local BPLS_s = BPLSB_s*v(1,0.5)
+                local BPLS_p = v(0,(BPLS_s[2]-BPLSB_s[2])/2)
+                egpAddBox(BPLS_n, BPLS_p, BPLS_s, "")
+                egpSetParent(BPLSB_n)
+                egpSetColor(30)
+                Q[BPLB_n + "/cursorTargets", array] = Q[BPLB_n + "/cursorTargets", array]:add(array(BPLSB_n))
+                
+                
+                local BPLBDL_n = BPLB_n + "_dashedLine"
+                local BPLBDL_s = v(BPLB_s[1]-Indent*(BPLSB_s[1]|0)-BPLSB_s[1],BPLB_s[2])
+                local BPLBDL_p = v((BPLBDL_s[1]-BPLB_s[1])/2,0)
+                egpAddBox(BPLBDL_n, BPLBDL_p, BPLBDL_s, "")
+                egpSetParent(BPLB_n)
+                egpSetColor(20)
+                
+                local BPLBDLP_s = BPLBDL_s/2
+                X = BPLBDL_s[2]/FontSize
+                local V1 = v(-1,1)
+                local V2 = v( -1,-1)
+                local V3 = v( X/2-1.0, 1)
+                local V4 = v( X/2-1.0, -1)
+                local Ar = array(
+                    v(-BPLBDLP_s[1],-BPLBDLP_s[2],V1[1],V1[2]),
+                    v( BPLBDLP_s[1],-BPLBDLP_s[2],V2[1],V2[2]),
+                    v( BPLBDLP_s[1], BPLBDLP_s[2],V3[1],V3[2]),
+                    v(-BPLBDLP_s[1], BPLBDLP_s[2],V4[1],V4[2])
+                )
+                egpAddPoly(BPLBDL_n+"Poly", Ar, "")
+                egpSetParent(BPLBDL_n)
+                egpSetMaterial("vgui/dashed_line")
+                egpSetColor(17)
+                local BPLTS_n = BPLBDL_n + "_selector"
+                local BPLTS_s = v(BPLBDL_s[1], FontSize)
+                local BPLTS_p = v(0,(BPLTS_s[2]-BPLBDL_s[2])/2)
+                egpAddBox(BPLTS_n, BPLTS_p, BPLTS_s, "")
+                egpSetParent(BPLBDL_n)
+                egpSetColor(v(0,75,255)/3)
+                
+                local BPLT1_n = BPLB_n + "_text1"
+                local BPLT1_s = BPLBDL_s
+                local BPLT1_p = v(Indent,0)-BPLT1_s/2
+                egpAddTextLayout(BPLT1_n, BPLT1_n:right(5), BPLT1_p, BPLT1_s)
+                egpSetParent(BPLBDL_n)
+                egpSetSize(FontSize)
+                egpSetColor(hsv2rgb(200, 0, 0.3)) #не анимируется
+                local BPLT_n = BPLB_n + "_text2"
+                egpAddTextLayout(BPLT_n, "\n"+BPLT_n:right(5), v(), BPLT1_s)
+                egpSetParent(BPLT1_n)
+                egpSetSize(FontSize)
+                egpSetColor(hsv2rgb(200, 0, 1.0)) #анимир
+                
+                
+                
+                local Text1 = ""
+                local Text2 = ""
+                for(C = 1, 20) {
+                    
+                    Text1 += "bone " + C + "\n"
+                    Text2 += "\n"
+                }
+                egpSetText(BPLT1_n, Text1)
+                egpSetText(BPLT_n , Text2)
+                
+                
+                
+                
+                addPrint(array(
+                    vec( 30,200,255), "Шаг2|",
+                    vec(200,200,255), "Запускаю ",
+                    vec( 30,200,255), "Шаг3"
+                ))
+                Q["spawnStep", number] =  Q["spawnStep", number] + 1
+            break
+            
+            case 3,
+                
+                local Step3 = Q["step3", number]
+                
+                local FontSize = Q["fontSize", number] = 15
+                local Indent   = Q["indent"  , number] = 2
+                
+                
+                local TP = "toolPanel"
+                local TPB_n = TP + "_base"
+                local TPTB_n = TPB_n + "_toolsBase"
+                local TPB_s = v(870,250)
+                local TPTB_s = v(TPB_s[1],200)
+                if(Step3 == 0) {
+                    local TPB_p = egpScrSize(O) * v(0.5,1) - v(0,TPB_s[2]/2)
+                    egpAddBox(TPB_n, TPB_p, TPB_s, "")
+                    egpSetColor(0)
+                    Q["cursorTargets", array] = Q["cursorTargets", array]:add(array(TPB_n))
+                    
+                    
+                    local TPTB_p = v(0,(TPB_s[2]-TPTB_s[2])/2)
+                    egpAddBox(TPTB_n, TPTB_p, TPTB_s, "")
+                    egpSetParent(TPB_n)
+                    egpSetColor(10)
+                    Q[TPB_n + "/cursorTargets", array] = Q[TPB_n + "/cursorTargets", array]:add(array(TPTB_n))
+                }
+                
+                
+                local Step3 = Q["step3", number] = Step3 + 1
+                    local C2 = Step3 - 2
+                    
+                    local ToolType = select(Step3, "PITCH", "YAW", "ROLL")
+                    
+                    local T_n = TPTB_n + "_" + ToolType + "_Base"
+                    local T_s = v(TPB_s[1]/3-Indent/2,TPTB_s[2])
+                    local T_p = v((TPB_s[1]-T_s[1])/2*C2,0)
+                    egpAddBox(T_n, T_p, T_s, "")
+                    egpSetParent(TPTB_n)
+                    egpSetColor(20)
+                    Q[TPTB_n + "/cursorTargets", array] = Q[TPTB_n + "/cursorTargets", array]:add(array(T_n))
+                    
+                    local TR_n = T_n + "_root"
+                    local TR_s = v(T_s[2]/2-Indent)
+                    local TR_p = v(TR_s[1]-T_s[1]/2+Indent,0)
+                    egpAddCircle(TR_n, TR_p, TR_s, "")
+                    egpSetParent(T_n)
+                    egpSetColor(255,50,0)
+                    egpAddCircle(TR_n + "_layer1", v(), TR_s-v(1), "")
+                    egpSetParent(TR_n)
+                    egpSetColor(5)
+                    Q[TR_n  + "/actTag", string] = Step3 + ""
+                    Q[TR_n + "/actName", string] = "bonePanel_base_toolsBase_XXX_Base_root"
+                    Q[T_n + "/cursorTargets", array] = Q[T_n + "/cursorTargets", array]:add(array(TR_n))
+                    
+                    
+                    local TRN_n = TR_n + "_need"
+                    egpAddCircle(TRN_n, v(), v(), "")
+                    egpSetParent(TR_n)
+                    
+                    local TRNS_n = TRN_n + "_strelka"
+                    local TRNS_s = 1
+                    local TRNS_U = 70 * TRNS_s
+                    local TRNS_D = 30 * TRNS_s
+                    local TRNS_LR = 10 * TRNS_s
+                    local TRNS_p = array(
+                        v(TRNS_LR, 5),
+                        v(0,TRNS_D),
+                        v(-TRNS_LR,5),
+                        v(0,-TRNS_U)
+                    )
+                    egpAddPoly(TRNS_n, TRNS_p, "o")
+                    egpSetParent(TRN_n)
+                    egpSetColor(255,50,0)
+                    
+                    local TRR_n = TR_n + "_real"
+                    egpAddCircle(TRR_n, v(), v(2), "")
+                    egpSetParent(TR_n)
+                    local TRRS_n = TRR_n + "_strelka"
+                    local TRRS_s = v(Indent,TR_s[1] * 0.1)
+                    local TRRS_p = v(0,TRRS_s[2]/2-TR_s[2]+Indent)
+                    egpAddBox(TRRS_n, TRRS_p, TRRS_s, "")
+                    egpSetParent(TRR_n)
+                    egpSetColor(255,50,0)
+                    egpSetSize(1)
+                if(Step3 == 3) {
+                    addPrint(array(
+                        vec( 30,200,255), "Шаг3|",
+                        vec(200,200,255), "Запускаю ",
+                        vec( 30,200,255), "Шаг4"
+                    ))
+                    Q["spawnStep", number] = Q["spawnStep", number] + 1
+                }
+            break
+            
+            case 4,
+                
+                
+                
+                addPrint(array(
+                    vec( 30,200,255), "Шаг4|",
+                    vec(200,200,255), "Завершен"
+                    #vec(200,200,255), "Запускаю ",
+                    #vec( 30,200,255), "Шаг5"
+                ))
+                Q["spawnStep", number] = 0#Q["spawnStep", number] + 1
+            break
+        }
+        
+        
+        local MaxPerf = 95
+        local Perf = !perf(MaxPerf)
+        if(Perf) {
+            if(changed(SpawnStep)) {
+                
+                E:soundPlay("warning", 2, "buttons/button16.wav")
+                addPrint(array(
+                    vec( 30,200,255), "Шаг" + SpawnStep + "|",
+                    vec(255, 50,  0), "Педупреждение! ",
+                    vec( 30,200,255), "Превышена нагрузка ",
+                    vec(255, 50,  0), MaxPerf + "%"
+                ))
+            }
+        }
+    }
+    
+    
+    #--- work
+    
+    local KeyC2 = O:keyPressed("mouse_left")
+    
+    local KeyC = O:keyPressed("C") | changed(KeyC2) | KeyC2    | O:keyPressed("E") | O:keyPressed("mouse_left")
+    if(KeyC & !O:keyZoom()) {
+        cursorPos(O)
+        local CursorPos = Q["cursorPos", vector2]
+        egpAddCircle("cursor", CursorPos, v(2), "")
+        
+        
+        local KeyClick = O:keyPressed("E") | O:keyPressed("mouse_left")
+        if(changed(KeyClick) & KeyClick) {
+            local CursorTarget_a = Q["cursorTargets", array]
+            local CursorTarget_c = CursorTarget_a:count()
+            local CursorTarget_n = 0
+            local CursorTarget = ""
+            
+            while(CursorTarget_c > CursorTarget_n) {
+                CursorTarget_n++
+                local Obj_n = CursorTarget_a[CursorTarget_n, string]
+                if(egpGlobalInrange(Obj_n, CursorPos)) {
+                    CursorTarget_n = 0
+                    CursorTarget = Obj_n
+                    CursorTarget_a = Q[CursorTarget + "/cursorTargets", array]
+                    CursorTarget_c = CursorTarget_a:count()
+                }
+            }
+            
+            if(CursorTarget & !Q[CursorTarget + "/lock", number]) {
+                
+                local Act_i = Q["act", number] = Q["act", number] + 1
+                local Act_n = Q[CursorTarget + "/actName", string]
+                
+                if(!Act_n) {
+                    Act_n = CursorTarget
+                }
+                
+                Q[Act_i + "/actName", string] = Act_n
+                Q[Act_i + "/actTag" , string] = Q[CursorTarget + "/actTag", string]
+                Q["acts", array] = Q["acts", array]:add(array(Act_i))
+                
+                addPrint(
+                    array(
+                        vec( 30,200,255), "Клинкнул по \"",
+                        vec(255,255,255), CursorTarget,
+                        vec( 30,200,255), "\""
+                    )
+                )
+            }
+        }
+    }
+    
+    
+    
+    
+    
+    
+    local Clear = array()
+    foreach(Act_C, Act_i:number = Q["acts", array]) {
+        local Act_n = Q[Act_i + "/actName", string]
+        local NoRemove = 0
+        switch(Act_n) {
+            #
+            #
+            #
+            case "bonePanel_base_listBase",
+                
+                local CursorPos = Q["cursorPos", vector2]
+                local FontSize = Q["fontSize", number]
+                
+                local BPLB_n = "bonePanel_base_listBase"
+                local BPLB_s = egpGetSize(BPLB_n)
+                local BPLB_P = egpGetGlobalPos(BPLB_n)
+                
+                local LocaCursorPos = CursorPos - BPLB_P
+                
+                local NewSelect = Q["selectBone", number] = ceil((BPLB_s[2]/2+LocaCursorPos[2])/FontSize)
+                
+                local BPLTS_n = BPLB_n + "_dashedLine" + "_selector"
+                local BPLTS_p = v(0, (NewSelect-0.5)*FontSize-BPLB_s[2]/2)
+                egpSetPos(BPLTS_n, BPLTS_p)
+                
+                addPrint(array(
+                    vec( 30,200,255), "Выделена кость ",
+                    vec(255,255,255), NewSelect
+                ))
+            break
+            #
+            case "bonePanel_base_listBase_scrollBase",
+                
+                
+            break
+            #
+            #
+            #
+            case "bonePanel_base_pointsBase",
+                
+                
+            break
+            #
+            #
+            #
+            case "bonePanel_base_toolsBase_XXX_Base_root",
+                
+                addPrint(array(
+                    vec( 30,200,255), "Запущен акт  \"",
+                    vec(255,255,255), Q[Act_i + "/actTag" , string],
+                    vec( 30,200,255), "\""
+                ))
+            break
+            #
+            case "",
+                
+                
+            break
+        }
+        if(!NoRemove) {
+            Clear = Clear:add(array(Act_C))
+        }
+    }
+    foreach(C, I:number = Clear) {
+        Q["acts", array]:remove(I)
+    }
+    
+    
+    setName("editor pba 03 001\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage() * 1000000) + "\n")
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+if(clk("chatInterface")) {
+        timer("chatInterface", 350)
+    
+    if(Q["printsQueue", array]:count()) {
+        local Print_i = Q["printsQueue", array][1, number]
+        printColor(Q[Print_i + "/print_a", array])
+        
+        Q["printsQueue", array]:remove(1)
+    }
+    
+    #[
+    local Clear = array()
+    foreach(C, Print_i:number = Q["printsQueue", array]) {
+        
+        printColor(Q[Print_i + "/print_a", array])
+        
+        Clear:unshiftNumber(C)
+    }
+    foreach(C, I:number = Clear) {
+        Q["printsQueue", array]:remove(I)
+    }
+    ]#
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

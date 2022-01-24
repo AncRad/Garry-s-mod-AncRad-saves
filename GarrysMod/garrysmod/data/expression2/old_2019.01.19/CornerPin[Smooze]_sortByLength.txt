@@ -1,0 +1,50 @@
+@name CornerPin[Smooze]_sortByLength
+@persist Points:array
+
+if(first()){
+    runOnTick(1)
+    
+    function array array:sortByLength(){
+        local Prior = array()
+        local Ret = array()
+        local Count = This:count()
+        
+        foreach(J, N:vector = This){
+            local NLength = N:length()
+            for(I = J, Count){
+                local V = This[I, vector]
+                
+                if(V:length() < NLength){
+                    Prior[J, normal] = Prior[J, normal]+1
+                }else{
+                    Prior[I, normal] = Prior[I, normal]+1
+                }
+            }
+        }
+        
+        foreach(I, P:normal = Prior){
+            Ret[P, vector] = This[I, vector]
+        }
+        
+        return Ret
+    }
+    
+    Poitns = array(
+        randvec(),
+        randvec(),
+        randvec(),
+        randvec(),
+        randvec(),
+        randvec(),
+        randvec(),
+        randvec(),
+        randvec(),
+        randvec(),
+        randvec(),
+        randvec(),
+        randvec(),
+        randvec()
+    )
+}
+
+Points:sortByLength()

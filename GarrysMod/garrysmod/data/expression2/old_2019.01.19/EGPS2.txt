@@ -1,0 +1,129 @@
+@name EGPS2
+
+@inputs 
+@outputs 
+
+@persist [EGPS]:table
+@persist [EGPS_lastName]:string EGPS_noNameCounter
+@persist 
+
+
+
+function void addEgpBox(E_n:string, [E_s E_p]:vector2, E_v:number) {
+    if(!E_n) {return}
+    if(EGPS:exists(E_n + "/table")) {
+        EGPS_noNameCounter++
+        E_n = "noName" + EGPS_noNameCounter
+    }
+    
+    EGPS[E_n + "/table", table] = table(
+        
+    )
+}
+
+
+
+
+
+
+
+
+
+function number egpGiveFreeIndex(E_n:string) {
+    if(!E_n) {return 0}
+    local Index = EGPS[E_n + "/table", table]["index", number]
+    if(Index) {return Index}
+    
+    if(EGPS["freeIndexes", array]:count()) {
+        return EGPS["freeIndexes", array]:removeNumber(1)
+    }
+    
+    local IndexCounter = EGPS["indexCounter", number]
+    if(IndexCounter < egpMaxObjects()) {
+        Index = EGPS["indexCounter", number] = EGPS["indexCounter", number] + 1
+        return Index
+    }
+    printColor(vec(255,75,0), "[EGPS] ", vec(255,0,0), "   . ", vec(0,100,255), " \"" + E_n + "\"")
+    return 0
+}
+
+function table:egpAddElement(E_n:string, E_i:number) {
+    
+    local Groups = array()
+    foreach(C, G_n:string = EGPS["groups/open", array]) {
+        Groups:pushString(G_n)
+        EGPS[G_n + "/egpGroup/array", array] = EGPS[G_n + "/egpGroup/array", array]:add(array(E_n))
+    }
+    
+    
+    EGPS[E_n + "/table", table] = This:add(table(
+        "name"        = E_n,
+        "index"       = E_i,
+        "groups"      = Groups,
+        "parentTypes" = array("position")
+    ))
+    
+    
+    EGPS_lastName = E_n
+    EGPS_lastIndex = E_i
+    
+    EGPS["position/childList", array] = EGPS["position/childList", array]:add(array(E_n))
+}
+
+
+
+
+function number egpAddBox(E_n:string, [E_s E_p]:vector2, E_v:number) {
+        local E_i = egpGiveFreeIndex(E_n)
+        
+        if(E_i) {
+            
+            
+            local E_v = clamp(floor(E_v),0,3)
+            table(
+                "type"         = "box",
+                "typeVariable" = E_v
+            ):egpAddElement(E_n, E_i)
+            
+            
+            local EGPW = EGPS["egp/wirelink", wirelink]
+            switch(E_v) {
+                case 0, EGPW:egpBox(              E_i,E_p,E_s) break
+                case 1, EGPW:egpBoxOutline(       E_i,E_p,E_s) break
+                case 2, EGPW:egpRoundedBox(       E_i,E_p,E_s) break
+                case 3, EGPW:egpRoundedBoxOutline(E_i,E_p,E_s) break
+            }
+        }
+        return E_i>0
+    }
+
+
+Scale = vec2(50)
+Pos=  vec2(256)
+egpAddBox("name", Scale, Pos, 0)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

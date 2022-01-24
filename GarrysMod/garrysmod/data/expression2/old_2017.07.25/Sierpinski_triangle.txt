@@ -1,0 +1,102 @@
+@name Sierpinski triangle
+
+@inputs 
+@outputs 
+@persist [E O]:entity [Q]:table
+
+@trigger none
+
+
+
+
+#include "AddHolo"
+if(changed(0)) {
+    
+    E = entity()
+    O = owner()
+    
+    
+    local Scale = 50
+    local Size = Q["size", number] = Scale / 1.5
+    addHolo("base", vec(0,0, Size + 20), vec(Size), ang(0,0,180), vec(255), "pyramid", "models/wireframe", "")
+    addHoloINTO(E)
+    Q["previousBranchs", array] = array("base")
+    Q["size", number] = Size / 2
+    
+    
+    
+    timer("", 1)
+}
+
+if(clk("")) {
+        timer("", 350)
+    
+    local NeedStep = Q["needStep", number]
+    local RealStep = Q["realStep", number]
+    if(NeedStep != RealStep) {
+        if(ops() < 1000) {
+            local PreviousBranch = Q["previousBranch", number] = Q["previousBranch", number] + 1
+            local PreviousBranchs_a = Q["previousBranchs", array]
+            local PreviousBranchs_c = PreviousBranchs_a:count()
+            if(PreviousBranchs_c >= PreviousBranch) {
+                local PreviousBranch_n = PreviousBranchs_a[PreviousBranch, string]
+                
+                
+                local Size = Q["size", number]
+                
+                
+                local NewBranch_n = PreviousBranch_n + "#" + 0
+                addHolo(NewBranch_n, vec(0,0,-Size-Size*2), vec(Size), ang(), vec(255), "pyramid", "models/wireframe", PreviousBranch_n)
+                Q["newBranchs", array] = Q["newBranchs", array]:add(array(NewBranch_n))
+                
+                for(C = 1, 4) {
+                    local F = C - 1
+                    local NewBranch_n = PreviousBranch_n + "#" + C
+                    
+                    addHolo(NewBranch_n, vec(Size*2,Size*2,Size):rotate(ang(0,F*90,0)), vec(Size), ang(), vec(255), "pyramid", "models/wireframe", PreviousBranch_n)
+                    Q["newBranchs", array] = Q["newBranchs", array]:add(array(NewBranch_n))
+                }
+            }
+            else {
+                Q["realStep", number] = NeedStep
+                Q["size", number] = Q["size", number] / 2
+                Q["previousBranch", number] = 0
+                Q["previousBranchs", array] = Q["newBranchs", array]
+                Q["newBranchs", array] = array()
+                addHoloPrint("Step " + NeedStep + " ended")
+            }
+        }
+    }
+    else {
+        local Key = O:keyPressed("mouse_4")
+        if(changed(Key) & Key) {
+            NeedStep = Q["needStep", number] = NeedStep + 1
+            print("Step " + NeedStep + " started")
+        }
+    }
+}
+
+
+
+
+#holoAmount()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

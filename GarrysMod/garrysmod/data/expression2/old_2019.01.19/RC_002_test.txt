@@ -1,0 +1,84 @@
+@name RC_002_test
+@inputs 
+@outputs [F R U]:vector
+@persist V:bone
+@trigger 
+
+
+
+    function vector bone:normal_dir(Direction_t) {
+        switch(This:index()) {
+            case  0, return select(Direction_t,  This:up()     , -This:forward(), -This:right()  ) #pelvic
+            case  1, return select(Direction_t, -This:right()  , -This:up()     ,  This:forward()) #chest
+            #case  2, return select(Direction_t,  This:forward(),  This:right()  ,  This:up()     )
+            #case  3, return select(Direction_t,  This:forward(),  This:right()  ,  This:up()     )
+            #case  4, return select(Direction_t,  This:forward(),  This:right()  ,  This:up()     )
+            #case  5, return select(Direction_t,  This:forward(),  This:right()  ,  This:up()     )
+            #case  6, return select(Direction_t,  This:forward(),  This:right()  ,  This:up()     )
+            #case  7, return select(Direction_t,  This:forward(),  This:right()  ,  This:up()     )
+            #case  8, return select(Direction_t,  This:forward(),  This:right()  ,  This:up()     )
+            #case  9, return select(Direction_t,  This:forward(),  This:right()  ,  This:up()     )
+            case 10, return select(Direction_t,  This:right()  ,  This:up()     ,  This:forward()) #head
+            #case 11, return select(Direction_t,  This:forward(),  This:right()  ,  This:up()     )
+            #case 12, return select(Direction_t,  This:forward(),  This:right()  ,  This:up()     )
+            case 13, return select(Direction_t,  This:forward(), -This:up()     ,  This:right()  ) #foot left
+            case 14, return select(Direction_t,  This:forward(), -This:up()     ,  This:right()  ) #foot right
+            
+            default, print("error function \"vector bone:normal_dir(Direction_t)\"! Bone index = " + This:index()) return vec()
+        }
+    }
+    function angle bone:normal_angles(A:angle) {
+        switch(This:index()) {
+            #case  1, return ang( A[1], A[2], A[3]) #pelvic
+            #case  2, return ang( A[1], A[2], A[3]) #chest
+            #case  3, return ang( A[1], A[2], A[3])
+            #case  4, return ang( A[1], A[2], A[3])
+            #case  5, return ang( A[1], A[2], A[3])
+            #case  6, return ang( A[1], A[2], A[3])
+            #case  7, return ang( A[1], A[2], A[3])
+            #case  8, return ang( A[1], A[2], A[3])
+            #case  9, return ang( A[1], A[2], A[3])
+            #case 10, return ang( A[1], A[2], A[3]) #head
+            #case 11, return ang( A[1], A[2], A[3])
+            #case 12, return ang( A[1], A[2], A[3])
+            #case 13, return ang( A[1], A[2], A[3]) #foot left
+            #case 14, return ang( A[1], A[2], A[3]) #foot right
+            default, print("error function \"angle bone:normal_angles(A:angle)\"! Bone index = " + This:index()) return ang()
+        }
+    }
+    
+interval(50)
+
+
+V = entity():isWeldedTo():bone(14)
+F = V:normal_dir(1)
+R = V:normal_dir(2)
+U = V:normal_dir(3)
+#[
+C = 0
+while(perf()) {
+    C++
+    
+    select(1, V:forward(),V:right(),V:up())
+    
+    
+    V:normal_dir(0)
+}
+
+
+
+print(C)
+
+
+
+
+
+
+
+
+
+
+
+
+
+

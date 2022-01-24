@@ -1,0 +1,374 @@
+@name RC_004
+#
+#
+#- chip
+@inputs [T1 T2 T3]:entity
+@outputs [Debug]:string
+@persist [E O]:entity [Q]:table [Chip_n]:string
+#
+#
+#- user
+@persist [User]:entity
+@persist 
+#
+#
+#- ragdoll
+@persist [R_e]:entity [Chest Pelvic Head   LFoot RFoot   LHand RHand   LShin RShin]:bone
+@persist [FootRadius HandRadius ShinRadius   Ragdoll_mass]:number
+@persist Standing
+#
+#
+#- helper
+@persist [Helper]:table
+#
+#
+#
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+
+if(changed(0)) {
+    ################{
+    #
+    #- chip
+    #
+    #
+    #- 
+    E = entity() E:setSkin(1)
+    O = owner()
+    #
+    #- 
+    if(!isSinglePlayer()) {noDuplications()}
+    #
+    ################}
+    
+    ################{
+    #
+    #- user
+    #
+    #
+    #- functions
+    #ifdef runOnLast(number,entity)
+    #else
+        function runOnLast(Num:number,Ent:entity) {}
+    #endif
+    function entity entity:playerragdoll() {
+        #ifdef entity:playerRagdoll()
+            if(!This:playerIsRagdoll()) {
+                return This:playerRagdoll()
+            }
+        #endif
+        return noentity()
+    }
+    function entity:playerUnragdoll() {
+        #ifdef entity:playerRagdoll()
+            if(This:playerIsRagdoll()) {
+                local EyeAngles = This:eyeAngles()
+                This:playerRagdoll()
+                This:setEyeAngles(EyeAngles:setRoll(0))#
+            }
+        #else
+        #endif
+    }
+    #
+    #- 
+    if(E:isWeldedTo():type() == "prop_ragdoll") {
+        R_e = E:isWeldedTo()
+        Chip_n = "Ragdoll (" + R_e:owner():name() + ")"
+        timer("ragdoll", 1)
+    }
+    else {
+        User = O
+        Chip_n = "User: " + User:name()
+        timer("user", 1)
+    }
+    #
+    ################}
+    
+    ################{
+    #
+    #- helper
+    #
+    function entity helper_point(Point_n:string, [Point_p]:vector, [Point_s]:number) {
+        local StartHolo_e = Helper[Point_n + "/entity", entity]
+        if(!StartHolo_e) {
+            if(holoCanCreate()) {
+                local StartHolo_i = 0
+                StartHolo_i = Helper[Point_n + "/index" , number] = Helper["indexCounter", number] = max(Helper["indexCounter", number] + 1 ,2281448)
+                StartHolo_e = Helper[Point_n + "/entity", entity] = holoCreate(StartHolo_i, Point_p, vec(Point_s/6), ang(), vec(255), "models/editor/axis_helper.mdl")
+            } else {return noentity()}
+        } elseif(Point_p) {holoPos(Helper[Point_n + "/index", number], Point_p)}
+        return StartHolo_e
+    }
+    function entity helper_beam([Beam_n PointStart_n PointEnd_n]:string, [Helper_color]:vector, Width:number) {
+        local PointStart_e = Helper[PointStart_n + "/entity", entity]
+        local PointEnd_e   = Helper[PointEnd_n   + "/entity", entity]
+        if(PointStart_e & PointEnd_e & !Helper[Beam_n + "/beam/entity", entity]) {
+            local Helper_e = PointStart_e:drawBeam("trails/physbeam",PointStart_e:pos(),PointEnd_e:pos(),Helper_color,255,Width)
+            Helper_e:setBeamEndEnt(PointEnd_e)
+            Helper[Beam_n + "/beam/entity", entity] = Helper_e
+            return Helper_e
+        }
+        else {
+            return noentity()
+        }
+    }
+    #
+    ################}
+    
+    ################{
+    #
+    #- ragdoll
+    #
+    #
+    #- functions
+    function angle bone:getAngles() {
+        switch(This:index()) {
+            case  0,return toWorldAng(vec(),ang( -90,   0, -90),vec(),angnorm(This:angles()))
+            case  1,return toWorldAng(vec(),ang(   0,  90,  90),vec(),angnorm(This:angles()))
+            case  2,return toWorldAng(vec(),ang(   0,   0,   0),vec(),angnorm(This:angles()))#
+            case  3,return toWorldAng(vec(),ang(   0, -90,  90),vec(),angnorm(This:angles()))
+            case  4,return toWorldAng(vec(),ang(   0,   0,   0),vec(),angnorm(This:angles()))#
+            case  5,return toWorldAng(vec(),ang(   0,   0,   0),vec(),angnorm(This:angles()))#
+            case  6,return toWorldAng(vec(),ang(   0,   0,   0),vec(),angnorm(This:angles()))#
+            case  7,return toWorldAng(vec(),ang(   0,   0,   0),vec(),angnorm(This:angles()))#
+            case  8,return toWorldAng(vec(),ang(   0,   0,   0),vec(),angnorm(This:angles()))#
+            case  9,return toWorldAng(vec(),ang(   0,   0,   0),vec(),angnorm(This:angles()))#
+            case 10,return toWorldAng(vec(),ang(   0, -90, -90),vec(),angnorm(This:angles()))
+            case 11,return toWorldAng(vec(),ang(   0, -90,  90),vec(),angnorm(This:angles()))
+            case 12,return toWorldAng(vec(),ang(   0, -90,  90),vec(),angnorm(This:angles()))
+            case 13,return toWorldAng(vec(),ang(   0,   0,   0),vec(),angnorm(This:angles()))#
+            case 14,return toWorldAng(vec(),ang(   0,   0,   0),vec(),angnorm(This:angles()))#
+            default,return toWorldAng(vec(),ang(   0,   0,   0),vec(),angnorm(This:angles()))
+        }
+    }
+    function vector bone:toworld(VEC:vector) {
+        switch(This:index()) {
+            case  0,return This:toWorld(VEC:rotate(   0,   0,   0))#
+            case  1,return This:toWorld(VEC:rotate(   0,  90,  90))
+            case  2,return This:toWorld(VEC:rotate(   0,   0,   0))#
+            case  3,return This:toWorld(VEC:rotate(   0,   0,   0))#
+            case  4,return This:toWorld(VEC:rotate(   0,   0,   0))#
+            case  5,return This:toWorld(VEC:rotate(   0,   0,   0))#
+            case  6,return This:toWorld(VEC:rotate(   0,   0,   0))#
+            case  7,return This:toWorld(VEC:rotate(   0,   0,   0))#
+            case  8,return This:toWorld(VEC:rotate(   0,   0,   0))#
+            case  9,return This:toWorld(VEC:rotate(   0,   0,   0))#
+            case 10,return This:toWorld(VEC:rotate(   0,   0,   0))#
+            case 11,return This:toWorld(VEC:rotate(   0,   0,   0))#
+            case 12,return This:toWorld(VEC:rotate(   0,   0,   0))#
+            case 13,return This:toWorld(VEC:rotate(   0,   0,   0))#
+            case 14,return This:toWorld(VEC:rotate(   0,   0,   0))#
+            default,return This:toWorld(VEC:rotate(   0,   0,   0))
+        }
+    }
+    #
+    #- chip settings
+    runOnLast(1)
+    #
+    ################}
+    
+    
+}
+
+
+if(clk("user")) {
+        timer("user", User ? 50 : 500)
+    
+    
+    local Key_ragdoll = User:keyPressed("R")
+    if(changed(Key_ragdoll) & Key_ragdoll) {
+        if(User:playerIsRagdoll()) {
+            User:playerUnragdoll()
+            R_e = noentity()
+            stoptimer("ragdoll")
+        }
+        else {
+            R_e = User:playerragdoll()
+            runOnLast(1, R_e)
+            timer("ragdoll", 50)
+        }
+    }
+    
+    if(R_e) {
+        local Key_standing = User:keyPressed("E")
+        if(changed(Key_standing) & Key_standing) {
+            Standing = !Standing
+        }
+    }
+}
+
+
+
+
+if(clk("ragdoll")) {
+        timer("ragdoll", R_e ? 30 : 500)
+    
+    if(R_e) {
+        if(changed(R_e)) {
+            FootRadius = 7
+            HandRadius = 2.5
+            ShinRadius = 3
+            
+            Chest  = R_e:bone(1)
+            Pelvic = R_e:bone(0)
+            Head   = R_e:bone(10)
+            
+            LFoot  = R_e:bone(13)
+            RFoot  = R_e:bone(14)
+            Q["radius/" + 13, number] = FootRadius
+            Q["radius/" + 14, number] = FootRadius
+            
+            LHand  = R_e:bone(5)
+            RHand  = R_e:bone(7)
+            Q["radius/" + 5, number] = HandRadius
+            Q["radius/" + 7, number] = HandRadius
+            
+            LShin  = R_e:bone(12)
+            RShin  = R_e:bone(9)
+            Q["radius/" + 12, number] = ShinRadius
+            Q["radius/" +  9, number] = ShinRadius
+            
+            Ragdoll_mass = 0
+            foreach(C, B:bone = R_e:bones()) {
+                Ragdoll_mass+=B:mass()
+            }
+            
+            Standing = 0
+            
+            Q["lastCurtime", number] = curtime()
+        }
+        local LastCurtime = Q["lastCurtime", number]
+        local Curtime = curtime()
+        Q["lastCurtime", number] = Curtime
+        local Interval = Curtime - LastCurtime
+        local Loop = Interval / 0.015625
+        
+        Debug=""
+        #Debug+="\nInterval: " + floor(Interval*1e3) + "\nLoop: " + floor(Loop,3)
+        
+        
+        if(Standing) {
+            
+            
+            
+            
+            
+            
+            
+            
+        }
+        
+        
+        
+        
+        
+        
+        
+        #[
+        #holoCreate(123, rangerOffsetHull(7.5,Chest:massCenter(),vec(0,0,-1),vec(2,2,0.1)):pos(), vec(0.1))
+        
+        rangerFilter(R_e)
+        if(rangerOffsetHull(10,Chest:massCenter(),vec(0,0,-1),vec(2,2,0.1)):hit()) {
+            local Yaw = angnorm(toLocal(vec(0,0,-1),ang(),vec(),Chest:getAngles()):toAngle()[2]) #angnorm(Chest:toLocal(T1:pos()):rotate(0,90,90):toAngle()[2])
+            Chest:applyAngForce(ang(0,0,clamp(Yaw/20,-1,1)*150*Chest:mass()*Loop))
+            #Debug+="\n" + "Chest"
+        }
+        rangerFilter(R_e)
+        if(rangerOffsetHull(7.5,Pelvic:massCenter(),vec(0,0,-1),vec(2,2,0.1)):hit()) {
+            local Yaw = angnorm(toLocal(vec(0,0,-1),ang(),vec(),Pelvic:getAngles()):toAngle()[2]) #angnorm(Pelvic:toLocal(T1:pos()):rotate(0,90,90):toAngle()[2])
+            Pelvic:applyAngForce(ang(clamp(Yaw/20*Pelvic:mass()*Loop,-1,1)*250,0,0))
+            #Debug+="\n" + "Pelvic" + floor(Yaw)
+        }
+        
+        
+        #-Pelvic:right()   #UP
+        #Pelvic:forward() #RIGHT
+        local Angle = toWorldAng(vec(),ang(0,90,180),vec(),angnorm(Pelvic:angles()))*ang(1,1,0) #angnorm((-Pelvic:right()):toAngle():setRoll(-Pelvic:forward():toAngle()[1]))
+        
+        helper_point("left" , Pelvic:massCenter() + vec(-38,8,0):rotate(Angle), 3)
+        helper_point("right", Pelvic:massCenter() + vec(-38,-8,0):rotate(Angle), 3)
+        
+        #Debug+="\n" + floor(Angle)
+        
+        #Chest:applyForce(vec(0,0,0*Ragdoll_mass*Loop))
+        ]#
+    }
+}
+
+
+
+
+
+
+
+
+
+
+if(last() | last(R_e)) {
+    User:playerUnragdoll()
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#- chip
+setName("RC_004" + (Chip_n ? "\n" + Chip_n : "") + "\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1e6))#

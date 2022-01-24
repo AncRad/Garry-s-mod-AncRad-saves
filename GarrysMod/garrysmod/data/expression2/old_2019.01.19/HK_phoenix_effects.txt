@@ -1,0 +1,39 @@
+@name HK_phoenix_effects
+
+@inputs F1 F2 F3 [T1 T2 T3]:entity
+@outputs 
+@persist [E O]:entity
+
+@model models/bull/gates/processor.mdl
+
+
+
+#include "old_2017.10.28/AddHolo"
+#include "old_2017.10.28/effect_01_001"
+if(changed(0)) {
+    
+    E = entity() E:setSkin(1)
+    O = owner()
+    
+    
+    T1:effect01("flame1", vec(), 7, 50, ang(-180,0,0), vec(255,40,20), 20)
+    T2:effect01("flame2", vec(), 7, 50, ang(-180,0,0), vec(255,40,20), 20)
+    T3:effect01("flame3", vec(), 5, 40, ang(-180,0,0), vec(255,40,20), 20)
+    
+    
+    timer("flames", 1)
+}
+
+if(clk("flames")) {
+        timer("flames", 50)
+    
+    
+    effect01("flame1", min(F1 / 1360 / 2.0,1) ^ 1.5)
+    effect01("flame2", min(F2 / 1360 / 2.0,1) ^ 1.5)
+    effect01("flame3", min(F3 /  518 / 2.0,1) ^ 1.5)
+}
+
+if(dupefinished()) {reset()}
+
+
+setName("HK_phoenix_effects\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage() * 1e6) + "\n")

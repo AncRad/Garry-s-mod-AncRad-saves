@@ -1,0 +1,214 @@
+@name Q003LIB
+@outputs 
+
+
+if(changed(0)) {
+    
+    if(entity():getName() == "Q003LIB") {
+        #include "old 28.10.2017/25.07.2017/EGPS"
+        Q = table()
+        
+        hint("Q003LIB", 4)
+    }
+    
+    
+    
+    Q["fontSize", number] = 15
+    Q["indent"  , number] = 2
+    
+    
+    
+    
+    ###############################################################################################################
+    ###############################################################################################################  ACT
+    ###############################################################################################################
+    function number addAct() {
+        
+    }
+    function number addAct() {
+        return addAct()
+    }
+    ###############################################################################################################
+    ###############################################################################################################  CURSOR
+    ###############################################################################################################
+    function cursorPos(Player:entity) {
+        ###########################################################################################
+        ############################################################################################
+        local Eye        = Player:eye()                                                           ###
+        local EyeAngles  = Player:eyeAngles()                                                      ###
+        if(changed(Eye) | changed(EyeAngles)) {                                                     ##
+            local EyeA       = EyeAngles:forward()                                                  ##
+            local EgpScrSize = egpScrSize(Player)                                                   ##
+                                                                                                    ##
+            local Holo = holoEntity(0)                                                              ##
+            if(!Holo) {holoCreate(0,vec(),vec())}                                                   ##
+            holoAng(0, EyeAngles)                                                                   ##
+                                                                                                    ##
+            local Cos = Eye[1] * EyeA[1] + Eye[2] * EyeA[2] + Eye[3] * EyeA[3]                      ##
+            local CursorV = (Holo:toLocal(Eye / Cos) / vec(1, -1.332, -0.75) + vec(0, 1, 1)) / 2    ##
+                                                                                                    ##
+            local Cursor = Q["cursor", vector2] = vec2(CursorV[2], CursorV[3]) * EgpScrSize        ###
+        }                                                                                         ###
+        ############################################################################################
+        ###########################################################################################
+    }
+    ######################################
+    ###################################### global inrange
+    ######################################
+    function number globalInrange(Name:string, CursorPos:vector2) {
+        local TargetGP = egpGetGlobalPos(Name)
+        local TargetS  = egpGetSize(Name) / 2
+        local Inrange = inrange(CursorPos - TargetGP,-TargetS,TargetS)
+        
+        return Inrange
+    }
+    ######################################
+    ###################################### cursor target
+    ######################################
+    function string cursorTarget(TargetList:string) {
+        local CursorPos = Q["cursor", vector2]
+        
+        if(Q["cursorTarget/end", number]) {
+            local CursorTarget = Q["cursorTarget", string]
+            if(CursorTarget) {
+                if(globalInrange(CursorTarget, CursorPos)) {
+                    return CursorTarget
+                }
+                else {
+                    Q["cursorTarget/end", number] = 0
+                }
+            }
+        }
+        else {
+            Q["cursorDown", string] = ""
+            local CursorTargets = Q[TargetList, array]
+            local Return = ""
+            local Real = 0
+            while(1) {
+                Real++
+                local Target = CursorTargets[Real, string]
+                if(Target) {
+                    if(globalInrange(Target, CursorPos)) {
+                        
+                        local CursorDown = Q["cursorDown", string]
+                        Q["cursorDown", string] = CursorDown + (CursorDown ? "///" : "") + Target
+                        
+                        Return = Target
+                        local Targets = Q[Target + "/cursorTargets", array]
+                        if(Targets:count()) {
+                            CursorTargets = Targets
+                            Real = 0
+                        }
+                        else {
+                            Q["cursorTarget/end", number] = 1
+                            Q["cursorTarget", string] = Target
+                            return Target
+                        }
+                    }
+                }
+                else {
+                    local CursorDown = Q["cursorDown", string]
+                    Q["cursorTarget/end", number] = 0
+                    Q["cursorTarget", string] = Return
+                    return Return
+                }
+            }
+        }
+    }
+    function string cursorTarget() {
+        cursorTarget("cursorTargets")
+    }
+    ###############################################################################################################
+    ###############################################################################################################  
+    ###############################################################################################################
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    if(entity():getName() == "Q002LIB") {
+        
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+}

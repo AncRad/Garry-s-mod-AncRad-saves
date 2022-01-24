@@ -1,0 +1,15 @@
+@name Ragdoll_Body_applyTorque
+@inputs 
+@outputs 
+@persist 
+@trigger 
+
+interval(50)
+
+Body_id = entity():isWeldedTo():bone(1)
+
+            local NeedA = ang(-90,0,-90) #toWorldAng(vec(),ang(0,15,180),vec(),Body_id:angles())
+            local AngAcc = toLocalAng(vec(),NeedA,vec(),Body_id:angles())
+            local QuatAcc = conj(quat(AngAcc))
+            local VecAcc = -rotationVector(QuatAcc)
+            Body_id:applyTorque((VecAcc*5-Body_id:angVelVector()*0.5)*Body_id:mass()*5*1)

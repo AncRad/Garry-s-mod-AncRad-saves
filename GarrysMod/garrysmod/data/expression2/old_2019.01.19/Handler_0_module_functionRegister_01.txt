@@ -1,0 +1,21 @@
+@name Handler_0_module_functionRegister_01
+
+###################################################
+############### this code is MODULE ###############
+###################################################
+
+@persist [FunctionRegister]:table
+
+if(changed(0)) {
+    
+    function mFR_function_registration(Function_name:string) {
+        if(FunctionRegister:exists(Function_name)) {
+            print("[HmFR] ERROR! func \"" + Function_name + "\" already registered")
+            return
+        }
+        FunctionRegister:pushString(Function_name)
+    }
+}
+else {
+    print("ОШИБКА! Повторный вызов модуля Handler_0_module_functionRegister_01")
+}

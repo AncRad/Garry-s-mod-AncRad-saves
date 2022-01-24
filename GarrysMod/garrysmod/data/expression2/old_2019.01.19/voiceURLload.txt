@@ -1,0 +1,23 @@
+@name voiceURLload
+@inputs 
+@outputs 
+@persist 
+@trigger 
+
+
+local Text    = "ALLAH"
+local Lang    = array("ru-RU","en-US")[2, string]
+local Emotion = array("neutral","good","evil")[randint(1,3), string]
+local Voice = array("zahar","ermil","jane","oksana","alyss","omazh")[randint(1,6), string]
+local Speed = 1
+
+#local URL = "https://tts.voicetech.yandex.net/generate?"+"key=22fe10e2-aa2f-4a58-a934-54f2c1c4d908"+"&text="+httpUrlEncode(Text)+"&fornat=wav"+"&lang="+Lang+"&emotion="+Emotion+"&speaker="+Voice+"&robot=1"
+#soundURLload("", URL, 3, 0, owner())
+
+local URL = "http://tts.voicetech.yandex.net/tts?format=mp3&quality=hi&platform=web&application=translate&lang="+Lang+"&speaker=" + Voice + "&emotion=" + Emotion + "&text="+httpUrlEncode(Text)
+#local URL = "https://tts.voicetech.yandex.net/generate?key=22fe10e2-aa2f-4a58-a934-54f2c1c4d908&text=%D0%9F%D1%80%D0%B8%D0%B2%D0%B5%D1%82&fornat=wav&lang=ru-RU&emotion=neutral&speaker=omazh&robot=1"
+soundURLload("govno",URL,3,0,owner())
+#[
+soundURLload("govno", "http://tts.voicetech.yandex.net/tts?format=mp3&quality=hi&platform=web&application=translate&lang=ru_RU&speaker=" + Voice + "&speed=" + Speed + "&emotion=" + Emotion + "&text="+httpUrlEncode(Text),3,0,owner())
+
+

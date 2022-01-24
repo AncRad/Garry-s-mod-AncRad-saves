@@ -1,0 +1,13 @@
+@name test_include_exit
+@inputs 
+@outputs 
+@persist 
+@trigger 
+
+print("befor exit")
+for(C = 1,1) {
+    
+    #your code
+    break
+    print("after_exit")
+}

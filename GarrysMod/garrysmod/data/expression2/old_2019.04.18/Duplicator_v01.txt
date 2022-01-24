@@ -1,0 +1,168 @@
+@name Duplicator_v01
+
+#- 
+@persist [Keyword_type Keyword_model Keyword_color Keyword_alpha Keyword_material Keyword_position Keyword_angles]:number
+@persist [Default_type Default_model Default_material]:string [Default_color Default_position]:vector [Default_alpha]:number [Default_angles]:angle
+@persist [Accuracy_position Accuracy_angles]:number
+@persist [Keywords KeywordsFast]:table [Keyword_counter]:number
+#- 
+@persist [DATA]:table Find_a:array
+#- 
+@persist [E O]:entity
+
+
+
+@outputs Debug:string
+
+
+if(changed(0)) {
+    
+    setName("generic")
+    
+    Keyword_type     = 1
+    Keyword_model    = 2
+    Keyword_color    = 3
+    Keyword_alpha    = 4
+    Keyword_material = 5
+    Keyword_position = 6
+    Keyword_angles   = 7
+    
+    Default_type     = ""
+    Default_model    = ""
+    Default_color    = vec(255)
+    Default_alpha    = 255
+    Default_material = ""
+    Default_position = vec()
+    Default_angles   = ang()
+    
+    Accuracy_position = 4
+    Accuracy_angles = 3
+    
+    
+    "1/2/3/4//sdfsdf"
+    #[
+    models/props_junk/cardboard_box001a.mdl
+    models/props_junk/cardboard_box002b.mdl
+    models/props_junk/cardboard_box002a_gib01.mdl
+    models/props_junk/cardboard_box002a.mdl
+    models/props_junk/cardboard_box001b.mdl
+    models/props_junk/cardboard_box001a_gib01.mdl
+    
+    
+    ]#
+    
+    
+    
+    E = entity()
+    
+    local ScanRadius = 52.5 * 5
+    local ScanPos = E:pos()
+    findClearWhiteList()
+    findClearBlackList()
+    findIncludeClass("prop*")
+    #findIncludeClass("wire*")
+    local Find_c = findInSphere(ScanPos,ScanRadius)
+    #local Find_c = findClipToPlayerProps(O)
+    Find_a = findToArray()
+    
+    timer("", 1)
+    exit()
+}
+
+if(clk("")) {
+        timer("", 100)
+    
+    
+    while(Find_a:count() & perf()) {
+        local Ent = Find_a:removeEntity(1)
+        
+        local Ent_model = Ent:model()
+        local Ent_type = Ent:type()
+        local Ent_material = Ent:getMaterial()
+        
+        if(!KeywordsFast:exists(Ent_model)) {
+            local Model_r = array()
+            local Ex = Ent_model:replace(".mdl",""):explode("/")
+            foreach(C, Word:string = Ex) {
+                if(!Keywords:exists(Word)) {
+                    Keyword_counter++
+                    local Key = Keyword_counter+""
+                    Keywords[Word, string] = Key
+                    Model_r:pushString(Key)
+                }
+            }
+            KeywordsFast[Ent_model, string] = Model_r:concat("/")
+        }
+        Ent_model = KeywordsFast[Ent_model, string]
+        if(!KeywordsFast:exists(Ent_type)) {
+            local Type_r = array()
+            local Ex = Ent_type:explode("_")
+            foreach(C, Word:string = Ex) {
+                if(!Keywords:exists(Word)) {
+                    Keyword_counter++
+                    local Key = Keyword_counter+""
+                    Keywords[Word, string] = Key
+                    Type_r:pushString(Key)
+                }
+            }
+            KeywordsFast[Ent_type, string] = Type_r:concat("_")
+        }
+        Ent_type = KeywordsFast[Ent_type, string]
+        
+        local Table = table(
+             1 = Ent_type
+            ,2 = Ent_model
+        )
+        if(Ent_material) {
+            if(!KeywordsFast:exists(Ent_material)) {
+                local Material_r = array()
+                local Ex = Ent_material:explode("/")
+                foreach(C, Word:string = Ex) {
+                    if(!Keywords:exists(Word)) {
+                        Keyword_counter++
+                        local Key = Keyword_counter+""
+                        Keywords[Word, string] = Key
+                        Material_r:pushString(Key)
+                    }
+                }
+                KeywordsFast[Ent_material, string] = Material_r:concat("/")
+            }
+            Ent_material = Table[5, string] = KeywordsFast[Ent_material, string]
+        }
+        DATA:pushTable(Table)
+    }
+    
+    
+    if(!Find_a:count()) {
+        DATA:pushTable(Keywords)
+        print(vonEncode(DATA):length())
+        printTable(DATA[DATA:count(), table])
+        stopAllTimers()
+    }
+    
+    exit()
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,57 @@
+@name rangerHull example
+
+@inputs 
+@outputs 
+@persist [E O]:entity
+
+@trigger 
+
+
+
+if(changed(0)) {
+    
+    
+    E = entity()
+    O = owner()
+    
+    holoCreate(1, E:toWorld(vec(5,0,0)), vec(0.1), E:angles(), vec(255,0,0), "hq_sphere")
+    holoParent(1, E)
+    holoCreate(2, E:toWorld(vec(205,0,0)), vec(0.1), E:angles(), vec(0,255,0), "hq_sphere")
+    holoParent(2, E)
+    
+    
+    holoCreate(3, E:toWorld(vec(205,0,0)), vec(0.5), E:angles(), vec(255), "models/editor/axis_helper.mdl")
+    holoParent(3, E)
+    holoCreate(4, E:toWorld(vec(205,0,0)), vec(0.5), E:angles(), vec(255), "cube") holoMaterial(4, "models/wireframe")
+    holoParent(4, 3)
+    
+    
+    holoCreate(5, E:toWorld(vec(105,0,0)), vec(100/6,0.05,0.05), E:angles(), vec(255), "cube")
+    holoParent(5, E)
+}
+
+
+
+interval(50)
+
+Hull = vec(3,3,9)
+
+R = rangerOffsetHull(E:toWorld(vec(5,0,0)), E:toWorld(vec(205,0,0)), Hull)
+holoPos(3, R:pos())
+holoScale(4, Hull/12)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

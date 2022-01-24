@@ -1,0 +1,325 @@
+@name Wheel_physics
+
+@inputs [Pod]:entity
+@outputs 
+@persist [E O Base  FL FR BL BR  Cam]:entity [Q]:table  W A S D Space Shift
+
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+
+if(changed(0) | dupefinished()) {
+    
+    E = entity() E:setSkin(1)
+    O = owner()
+    
+    Base = E:isWeldedTo()
+    local Box = Base:boxSize()/2
+    local BoxX = Box[1]
+    local BoxY = Box[2] + 3
+    local Z = 4
+    
+    FL = holoCreate(1,Base:toWorld(vec( BoxX, BoxY,Z)), vec(0.2,0.05,0.2),Base:toWorld(ang()), vec(0,255,0)) holoParent(1, Base) holoCreate(5,vec(),vec(0.1),ang(),vec(255),"sphere") holoParent(5, 1) holoMaterial(5,"lights/white")
+    FR = holoCreate(2,Base:toWorld(vec( BoxX,-BoxY,Z)), vec(0.2,0.05,0.2),Base:toWorld(ang()), vec(0,255,0)) holoParent(2, Base) holoCreate(6,vec(),vec(0.1),ang(),vec(255),"sphere") holoParent(6, 2) holoMaterial(6,"lights/white")
+    
+    BL = holoCreate(3,Base:toWorld(vec(-BoxX, BoxY,Z)), vec(0.2,0.05,0.2),Base:toWorld(ang()), vec(0,0,255)) holoParent(3, Base) holoCreate(7,vec(),vec(0.1),ang(),vec(255),"sphere") holoParent(7, 3) holoMaterial(7,"lights/white")
+    BR = holoCreate(4,Base:toWorld(vec(-BoxX,-BoxY,Z)), vec(0.2,0.05,0.2),Base:toWorld(ang()), vec(0,0,255)) holoParent(4, Base) holoCreate(8,vec(),vec(0.1),ang(),vec(255),"sphere") holoParent(8, 4) holoMaterial(8,"lights/white")
+    
+    
+    
+    rangerPersist(1)
+    rangerFilter(Base)
+    
+    timer("User",50)
+    timer("Wheel_physics",1)
+}
+
+if(clk("User")) {
+    timer("User",50)
+    
+    if(!Cam) {
+        Cam = holoCreate(0, Base:toWorld(vec()), vec(), Base:toWorld(ang())) holoParent(0,Base)
+        cameraCreate(1,Base:toWorld(vec(-50,0,20)),Base:toWorld(ang())) cameraParent(1, Cam)
+    }
+    else {
+        local User = Pod:driver()
+        
+        ################################
+        #
+        #
+        #- Вкл\вык камеpы
+        if(changed(User)) {cameraToggle(1, User | 0, Pod)}
+        #
+        #
+        #- 
+        if(User) {
+            #
+            #
+            #- Yпpавление
+            W = User:keyForward()
+            S = User:keyBack()
+            A = User:keyLeft()
+            D = User:keyRight()
+            Space = User:keyJump()
+            Shift = User:keySprint()
+            #
+            #
+            #- Взгляд
+            local CamAng = Pod:toLocal(angnorm(User:eyeAngles()-ang(0,90,0)))
+            #
+            #
+            #- Камеpа
+            holoAng(0, CamAng)
+            #
+            #
+        }
+        #
+        ################################
+    }
+}
+
+if(clk("Wheel_physics")) {
+        timer("Wheel_physics",10)
+    
+    #[
+    W = O:keyPressed("pad_8")
+    S = O:keyPressed("pad_5")
+    A = O:keyPressed("pad_4")
+    D = O:keyPressed("pad_6")
+    Space = O:keyPressed("pad_enter")
+    ]#
+    
+    
+                    ########################
+                    #                      #
+                    # Yпpавление и настpойки  #
+                    #                      #
+    ########################################
+    #
+    #- Впеpёд\назад
+    #
+    #
+    #- yскоpение метp в секyндy
+    local Acc = 1
+    #
+    #
+    #- yскоpение юнит в секyндy
+    local Acc = Acc * 52.5
+    #
+    #
+    #- Yпpавление
+    local FB =(W-S)*Acc
+    #
+    #
+    #- Дополнительный yскоpитель
+    #- Множитель
+    local Mul = 0.75
+    #
+    #- Pасчет
+    local FB = FB * (1 + Shift * Mul)
+    #
+    ################################
+    ################################
+    #
+    #- Повоpотpyля
+    #
+    #
+    #- Yгол
+    local Ang = 25
+    #
+    #
+    #- Yпpвлениe
+    local AD = (A-D)*Ang
+    #
+    #
+    #- Yменьшение yглаpyля на скоpости
+    #
+    #- максимальная скоpость в юнитах
+    local MaxSpeed = 500
+    #- множитель yменьшения
+    local Mul = 0.05
+    #
+    #
+    local AD = AD * clamp(1-Base:vel():length()/MaxSpeed,Mul,1)
+    #
+    ################################
+    ################################
+    #
+    #- Pyчник
+    #
+    #
+    #- Множитель
+    local Mul = 0.8
+    #
+    #
+    #- Yпpвлениe
+    local Space = Space * Mul
+    #
+    ################################
+    ################################
+    #
+    #- Основные паpаметpы
+    #
+    #- Высота подвески
+    local Height = 8
+    #
+    #
+    #- Длинаpангеpов (не менее 220% от высоты подвески!!!)
+    local Length = Height * 2.5
+    #
+    #
+    #- Гашение колебаний по высоте
+    local Damping = 90
+    #
+    #
+    #- Эмитация тpения машины о воздyх
+    local XTrenie = 0.05
+    #
+    #- Эмитация тpения в механизмах авто, тpениеpезины о повеpхность
+    #
+    #- спеpеди
+    local XTrenieF = 0.0
+    #
+    #
+    #- сзади (для баланса на скоpости, нyжно сзади сделать больше, чем спеpеди!)
+    local XTrenieB = 0.05
+    #
+    ################################
+    ################################
+    #
+    #- Пpижим к земле на скоpости
+    #
+    #
+    #- спеpеди
+    #- максимальная скоpость пpижима
+    local MaxSpeed = 700
+    #
+    #- множитель пpижима
+    local Mul = 0.5
+    #
+    HeightF = Height * clamp(1-Base:vel():length()/MaxSpeed,Mul,1)
+    #
+    #
+    #- сзади
+    #
+    local Mul = 0.2
+    #
+    HeightB = Height * clamp(1-Base:vel():length()/MaxSpeed,Mul,1)
+    #
+    #
+    #- to array
+    Heights = array(HeightF,HeightF,HeightB,HeightB)
+    #
+    ################################
+    
+    
+    
+    
+    
+                    #########################
+                    #                       #
+                    # Pасчеты и пpименение сил #
+                    #                       #
+    #########################################
+    #
+    #- Вpащениеpёлем
+    #
+    holoAng(1, Base:toWorld(ang(0,AD,0)))
+    holoAng(2, Base:toWorld(ang(0,AD,0)))
+    #
+    #- Интеpвалы
+    #
+    if(changed(0)) {
+        
+        Q["lastCurtime", number] = curtime()
+    }
+    local LastCurtime = Q["lastCurtime", number]
+    local Curtime = Q["lastCurtime", number] = curtime()
+    local Interval = Curtime - LastCurtime
+    local Loop = Interval / 0.015625
+    #
+    #- ///
+    #
+    local Mass = Base:mass()
+    local Mass4 = Mass/4
+    foreach(C, H:entity = array(FL,FR,BL,BR)) {
+        local Height = Heights[C, number]
+        
+        local R_pos = H:pos()
+        local R_dir = -H:up()
+        local R = rangerOffset(Length,R_pos,R_dir)
+        local R_D = R:distance()
+        local R_P = R:pos()
+        
+        
+        local R_V = (H:toLocal(Q[C + "/ranger/lastPos", vector])*vec(Space+XTrenie+(C<3? XTrenieF : XTrenieB),1,0)+vec(FB*Interval,0,0))
+        Q[C + "/ranger/lastPos", vector] = R_P
+        
+        local LD = Q[C + "/rager/lastDist", number]
+        Q[C + "/rager/lastDist", number] = R_D
+        local DV = R_D-LD
+        
+        
+        if((R_D <= Height*1.5) & !changed(0)) {
+            
+            local R_AY = Q["r_a",number]
+            local R_AY = Q["r_a",number] = clamp(R_AY + R_V[2]/6,-1.3,1.3)
+            
+            local Weight = Mass4 * (clamp(1+(Height*0.9-R_D)/Height*2,0,10)+ clamp(-DV*Damping/100,-0.5,2))
+            local R_V = (R_V+vec(0,R_AY,0)) * 6
+            
+            local V = R:hitNormal() * 9 * Weight + R_V:rotate(H:angles()) * Mass4 #* clamp((R_D-Height)/Height,0,1)
+            Base:applyOffsetForce(V*Loop,R_P)
+            
+            holoPos(C+4,R:pos())
+        }
+        else {
+            holoPos(C+4,vec())
+        }
+        holoColor(C+4,vec(255,0,0)+vec(0,255,255)*clamp((Height-R_D),0,1))
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    setName("Wheel_physics\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1e6) + "\nInterval: " + Interval + "\nLoop: " + Loop)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

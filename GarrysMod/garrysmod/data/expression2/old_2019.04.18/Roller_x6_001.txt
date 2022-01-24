@@ -1,0 +1,152 @@
+@name Roller_x6_001
+
+@inputs [Pod]:entity
+@outputs Debug:string
+
+#- modules
+@persist [LOW_curtime HIGH_curtime]
+#- 
+@persist [E O]:entity
+
+#- base
+@persist [Base]:entity
+@persist [Move_xy_adaptation]:vector
+#- spheres
+@persist [Spheres]:array
+@persist [Spheres_radius Spheres_circumference]:number
+#- user
+@persist [Move_xy]:vector [Move_yaw LR_mode]:number
+
+@trigger 
+
+@model models/bull/gates/processor.mdl
+
+
+
+if(changed(0)) {
+    #- const
+    E = entity() E:setSkin(1)
+    O = owner()
+    Base = E:isWeldedTo()
+    #ifdef entity:getConstraints()
+        foreach(C, Ent:entity = Base:getConstraints()) {
+            if(Ent:model() == "models/sprops/geometry/sphere_42.mdl") {
+                Spheres:pushEntity(Ent)
+                if(changed(0)) {
+                    Spheres_radius = Ent:boxSize()[1]/2
+                    Spheres_circumference = 2 * _PI * Spheres_radius
+                    #ifdef entity:setPhysProp(string, number)
+                        Ent:setPhysProp("jeeptire",1)
+                    #endif
+                }
+            }
+        }
+    #else
+        printColor(vec(255,60,0),"[Roller x6] ", vec(255),"Админ МYДАК, а ТЫ шли на хуй его!")
+        exit()
+    #endif
+    
+    #- modules
+    timer("LOW", 1) LOW_curtime = curtime()
+    timer("HIGH", 1) HIGH_curtime = curtime()
+    exit()
+}
+
+setName("Roller_x6_001\nOPS: " + ops() + "\nCPU: " + round(cpuUsage()*1e6))
+
+if(clk("HIGH")) {
+        timer("HIGH", 15)
+    
+    Debug="##########"
+    Debug+="\n"+"Base:angVel()[2] = " + round(Base:angVel()[2])
+    Debug+="\n"+"VEl = " + round(Base:vel():length())
+    
+    local HIGH_lastCurtime = HIGH_curtime
+    HIGH_curtime = curtime()
+    local Interval = HIGH_curtime - HIGH_lastCurtime
+    
+    local Base_vXY = Base:velL()
+    local Base_vXY_L = Base_vXY:length()
+    
+    
+    
+    Move_xy_adaptation = clamp(Move_xy_adaptation + Base_vXY:setZ(0)/4,-25,25)
+    
+    local Sign = sign(Base:up()[3])
+    
+    local Vec = toWorld(Move_xy-(Base_vXY+Move_xy_adaptation)*Sign,ang(),vec(),Base:toWorld(ang(0,90,0)))*3
+    local Yaw = (Move_yaw-Base:angVel()[2]*Sign)/4*clamp(1+Base_vXY_L/1000,1,3)
+    foreach(C, Sphere:entity = Spheres) {
+        local DIF = Sphere:massCenter()-Base:massCenter()
+        local AccN_vv = toLocal(Vec + DIF * -Yaw,ang(),vec(),Sphere:angles())
+        local AccR_vv = Sphere:angVelVector()
+        local Acc_vv = AccN_vv-AccR_vv
+        
+        Sphere:applyTorque(Acc_vv*Sphere:mass()*Interval*Spheres_circumference)
+    }
+    
+    
+    
+    
+    exit()
+}
+
+
+if(clk("LOW")) {
+        timer("LOW", 50)
+    
+    local User = Pod:driver()
+    local Key_W = User:keyForward() | O:keyPressed("pad_8")
+    local Key_A = User:keyLeft() | O:keyPressed("pad_4")
+    local Key_S = User:keyBack() | O:keyPressed("pad_5")
+    local Key_D = User:keyRight() | O:keyPressed("pad_6")
+    local Key_Shift = User:keySprint() | O:keyPressed("pad_0")
+    local Key_L = User:keyAttack1() | O:keyPressed("pad_7")
+    local Key_R = User:keyAttack2() | O:keyPressed("pad_9")
+    local Key_LR = angnorm(Pod:toLocal(User:eyeAngles())-ang(0,90,0))[2]
+    local Key_LR = clamp((abs(Key_LR) > 5 & User & LR_mode ? clamp(Key_LR / 45,-1,1) : 0) + Key_L-Key_R,-1,1)
+    Move_xy = vec(Key_W-Key_S,Key_A-Key_D,0):normalized()*(!Key_Shift ? 1500 : 750)*clamp(Base:vel():length()/750,1,2)
+    Move_yaw = Key_LR*100
+    
+    local Key_LR_mode = User:keyWalk()
+    if(changed(Key_LR_mode) & Key_LR_mode) {
+        LR_mode = !LR_mode
+    }
+    
+    exit()
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

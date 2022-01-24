@@ -1,0 +1,155 @@
+@name Pylon
+
+@inputs 
+@outputs 
+@persist [E O  Pylon]:entity [Q]:table [G]:gtable
+
+@trigger 
+@model models/bull/gates/processor.mdl
+
+
+
+#include "AddHolo"
+if(changed(0)) {
+    
+    E = entity() E:setSkin(1)
+    O = owner()
+    
+    G = gTable(O:steamID() + "pylon")
+    Pylon = G["pylon", entity]
+    
+    
+    Q["entitySpawnMode", number] = 0
+    Q["workRadius", number] = 52.5 * 1.3
+    
+    
+    
+    timer("", 50)
+}
+
+if(clk("")) {
+        timer("", 50)
+    
+    if(Pylon) {
+        if(changed(Pylon)) {
+            local Pylon_r = Q["workRadius", number]
+            addHolo("radius1", vec(), vec(-Pylon_r), ang(), vec(255), "hq_sphere", "models/wireframe", "")
+            addHoloINTO(Pylon)
+            #addHoloClip(ang( 90,0,0), -1)
+            addHoloClip(ang(-90,0,0), -1)
+            addHoloAlpha(10)
+            addHolo("radius2", vec(), vec(Pylon_r), ang(), vec(255), "hq_sphere", "models/wireframe", "")
+            addHoloINTO(Pylon)
+            addHoloClip(ang( 90,0,0), -1)
+            addHoloClip(ang(-90,0,0), -1)
+            addHoloAlpha(10)
+            
+            #ifdef entitySpawn(string,vector,angle,number)
+                Q["canSpawn", number] = 1
+            #else
+                Q["canSpawn", number] = 0
+            #endif
+            if(!Q["canSpawn", number]) {
+                #ifdef entity:giveWeapon(string)
+                    Q["canSpawn", number] = 1
+                #else
+                    Q["canSpawn", number] = 0
+                #endif
+            }
+            #ifdef entity:setArmor(number)
+                Q["canSetArmor", number] = 1
+            #endif
+        }
+        
+        local CanSetArmor = Q["canSetArmor", number]
+        local CanSpawn = Q["canSpawn", number]
+        local Battery_a = Q["item_battery/array", array]
+        local CanHelp = CanSpawn | Battery_a:count() | CanSetArmor
+        if(CanHelp) {
+            if(findCanQuery()) {
+                local Pylon_p = Pylon:pos()
+                local Pylon_r = Q["workRadius", number]
+                findClearWhiteList()
+                findClearBlackList()
+                findIncludeClass("player")
+                if(findInSphere(Pylon_p, Pylon_r)) {
+                    foreach(C, Player_e:entity = findToArray()) {
+                        local Player_a = Player_e:armor()
+                        local Player_max_a = 100
+                        if(Player_a <= Player_max_a) {
+                            if(CanSetArmor) {
+                                
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    else {
+        if(propCanCreate()) {
+            Pylon = G["pylon", entity] = propSpawn("models/sprops/cylinders/size_4/cylinder_9x24.mdl", E:pos() + vec(0,0,17), ang(), 1)
+        }
+    }
+    setName("Pylon\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1e6))
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

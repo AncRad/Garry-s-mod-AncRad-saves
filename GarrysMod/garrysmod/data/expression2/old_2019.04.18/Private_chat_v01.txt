@@ -1,0 +1,108 @@
+@name Private_chat_v01
+
+@inputs 
+@outputs 
+
+@persist [E O]:entity
+
+@persist [Channel]:gtable
+#@persist []:table
+
+@persist [Print_lastIndex Interval]:number
+@persist 
+
+@trigger none
+
+
+
+if(changed(0)) {
+    
+    setName("Пpиватный чат")
+    
+    O = owner()
+    
+    local Channel_name = "228"
+    Channel = gTable("Private_chat_v01#"+Channel_name)
+    Print_lastIndex = Channel["massages", table]:count()
+    if(!Channel["players", table][O:steamID(), entity]) {
+        if(!Channel["massages", table]:count()) {Channel["massages", table] = table()}
+        if(!Channel["players" , table]:count()) {Channel["players" , table] = table()}
+        Channel["players", table][O:steamID(), entity] = O
+        Channel["massages", table]:pushTable(table(
+             "author" = O
+            ,"time" = curtime()
+            ,"said" = "Я здесья!"
+        ))
+    }
+    
+    
+    Interval = 250
+    timer("print", 1)
+    runOnChat(1)
+    exit()
+}
+
+if(chatClk()) {
+    local Player = lastSpoke()
+    if(Channel["players", table]:exists(Player:steamID())) {
+        
+        if(Player == O) {
+            local LS = O:lastSaid()
+            if(LS:left(1) != " ") {
+                hideChat(1)
+                Channel["massages", table]:pushTable(table(
+                     "author" = O
+                    ,"time" = curtime()
+                    ,"said" = LS
+                ))
+                timer("print", 1)
+            }
+        }
+        else {
+            timer("print", 1)
+        }
+    }
+    exit()
+}
+
+
+if(clk("print")) {
+        timer("print", Interval)
+    
+    if(Print_lastIndex < Channel["massages", table]:count() & playerCanPrint()) {
+        
+        local Print = array()
+        while(Print_lastIndex < Channel["massages", table]:count()) {
+            Print_lastIndex++
+            local Massage = Channel["massages", table][Print_lastIndex, table]
+            local Author = Massage["author", entity]
+            local Said = Massage["said", string]
+            
+            Print = Print:add(array((Print:count() ? "\n" : ""),vec(255),"[",vec(255,60,0),"PC",vec(255),"] ",Author:name(),": ",vec(255),Said))
+        }
+        printColor(Print)
+    }
+    
+    exit()
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#alpha_001

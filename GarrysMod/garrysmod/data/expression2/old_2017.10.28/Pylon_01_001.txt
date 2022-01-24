@@ -1,0 +1,395 @@
+@name Pylon 01 001
+
+@inputs 
+@outputs 
+@persist [E O Pylon User]:entity [Q]:table [GT]:gtable
+
+@model models/bull/gates/processor.mdl
+
+
+
+#include "AddHolo"
+#include "PBA001"
+if(changed(0)) {
+    E = entity() E:setSkin(1)
+    O = owner()
+    
+    GT = gTable("Pylon 01 001")
+    #gTable("Pylon 01 001"):clear()
+    
+    #Предустановки
+    Q["entitySpawnMode", number] = 0
+    Q["workRadius", number] = 52.5 * 2
+    
+    
+    
+    
+    
+    
+    function addPrint(Print_a:array) {
+        if(!Q["function/addPrint/disable", number]) {
+            local Print_i = Q["printQueueCountr", number] = Q["printQueueCountr", number] + 1
+            
+            Q[Print_i + "/print_a", array] = array(
+                vec(255, 70,  0), "[Pylon]",
+                vec(255,255,255)
+            ):add(Print_a)
+            
+            Q["printsQueue", array] = Q["printsQueue", array]:add(array(Print_i))
+        }
+    }
+    function addPrintError(Print_a:array) {
+        addPrint(array(
+            vec(255, 50, 50), "[error]",
+            vec(255,255,255)
+        ):add(Print_a))
+    }
+    
+    
+    
+    
+    timer("chatInterface", 1)
+    timer("spawn", 150)
+}
+
+
+
+if(clk("spawn")) {
+        timer("spawn", 150)
+    
+    if(changed(0)) {
+        Q["step", number] = 1
+    }
+    
+    local Step = Q["step", number]
+    switch(Step) {
+        case 1,
+            #ifdef propSpawn(string, vector, angle, number)
+                if(propCanCreate()) {
+                    Pylon = propSpawn("models/sprops/cylinders/size_4/cylinder_9x24.mdl", E:pos() + vec(20,0,12), ang(), 1)
+                    
+                    if(Pylon) {
+                        runOnLast(1)
+                        Step = Q["step", number] = Step + 1
+                    }
+                }
+            #else
+                addPrintError(array(
+                    vec(255,255,255), "Отсутствует функция ",
+                    vec(160,160,240), "\"propSpawn(string, vector, angle, number)\""
+                ))
+                stoptimer("spawn")
+                #Pylon = E
+                #Step = Q["step", number] = Step + 1
+            #endif
+        break
+        case 2,
+            
+            Step = Q["step", number] = Step + 1
+        break
+        case 3,
+            
+            timer("pylon", 1)
+            stoptimer("spawn")
+        break
+    }
+}
+
+
+
+if(clk("pylon")) {
+        timer("pylon", 100)
+    
+    if(changed(0)) {
+        
+        O:setHealth(1) O:setArmor(0)
+        
+        
+        GT["classes", array] = array("health", "suit", "ammo", "altammo", "weapon", "other")
+        foreach(C, Class:string = GT["classes", array]) {
+            switch(Class) {
+                case "health",
+                    GT["health/types"  , array] = array("item_healthkit", "item_healthvial")
+                    
+                    GT["item_healthkit/heal", number] = 25
+                    GT["item_healthkit/class", string] = Class
+                    #GT["item_healthkit/entities", array] = array()
+                    
+                    GT["item_healthvial/heal", number] = 10
+                    GT["item_healthvial/class", string] = Class
+                    #GT["item_healthkit/entities", array] = array()
+                break
+                case "suit",
+                    GT["suit/types"   , array] = array("item_battery")
+                break
+                case "ammo",
+                    GT["ammo/types"   , array] = array("item_rpg_round")
+                break
+                case "altammo",
+                    #GT["altammo/types", array] = array("")
+                break
+                case "weapon",
+                    #GT["weapon/types" , array] = array("")
+                break
+                case "other",
+                    #GT["other/types"  , array] = array("")
+                break
+            }
+        }
+        
+        
+        local R = Q["workRadius", number]
+        addHolo("radius", vec(), vec(R,R,-3), ang(), vec(255), "hq_cylinder", "models/wireframe", "")
+        addHoloINTO(Pylon)
+        addHoloClip(ang( 90,0,0), -1)
+        addHoloClip(ang(-90,0,0), -1)
+        addHolo("radius", vec(), vec(R,R,3), ang(), vec(255), "hq_cylinder", "models/wireframe", "")
+        addHoloINTO(Pylon)
+        addHoloClip(ang( 90,0,0), -1)
+        addHoloClip(ang(-90,0,0), -1)
+        
+        function entity give(Class:string) {
+            local Entity_t = ""
+            foreach(C, Type:string = GT[Class + "/types", array]) {
+                if(GT[Type + "/entities", array]:count()) {
+                    Entity_t = Type
+                    break
+                }
+            }
+            #local Entity_t = GT[Class + "/types", array][1, string]
+            local Entity_e = noentity()
+            
+            if(GT["entitySpawnMode", number]) {
+                #ifdef entitySpawn(string,vector,angle,number)
+                    Entity_e = entitySpawn(Entity_t, Pylon:toWorld(vec(0,0,10)), Pylon:toWorld(ang()), 0)
+                #else
+                    GT["entitySpawnMode", number] = 0
+                #endif
+            }
+            if(!Entity_e) {
+                if(GT[Entity_t + "/entities", array]:count()) {
+                    
+                    while(perf(5000) & !Entity_e) {
+                        Entity_e = GT[Entity_t + "/entities", array][1, entity]
+                        GT[Entity_t + "/entities", array]:remove(1)
+                        GT["entities", number] = GT["entities", number] - 1
+                        GT[Class + "/entities/count", number] = GT[Class + "/entities/count", number] - 1
+                    } 
+                }
+            }
+            
+            if(Entity_e) {
+                Pylon:soundPlay("1", 1, "buttons/button4.wav") soundPitch("1", 255)
+                Entity_e:propFreeze(0)
+                Entity_e:propNotSolid(0)
+                Entity_e:propDraw(1)
+            }
+            return Entity_e
+        }
+    }
+    
+    
+    
+    local Pylon_p = Pylon:pos()
+    local WorkRadius = Q["workRadius", number]
+    
+    
+    if(findCanQuery()) {
+        local Step = Q["setp", number] = !Q["setp", number]
+        
+        if(Step) {
+            findClearBlackList()
+            findClearWhiteList()
+            Q["heal", number] = 0
+            Q["suit", number] = 0
+            findIncludeClass("player")
+            findInSphere(Pylon_p, WorkRadius)
+            foreach(C, Player_e:entity = findToArray()) {
+                local Player_h = Player_e:health()
+                local Player_hm = Player_e:maxHealth()
+                local Player_s = Player_e:armor()
+                local Player_sm = 100
+                
+                if(Player_h < Player_hm) {
+                    Q["heal", number] = 1
+                    if(Player_e:keyUse() & Player_e:aimEntity() == Pylon | 1) {
+                        local Item = give("health")
+                        if(Item ) {
+                            Item:setPos(Pylon:toWorld(vec(0,0,25)))
+                            Item:setVel((Player_e:pos() - Pylon:pos()):setZ(0):rotate(ang(-45,0,0)))
+                        }
+                    }
+                }
+                if(Player_s < Player_sm) {
+                    Q["suit", number] = 1
+                    if(Player_e:keyUse() & Player_e:aimEntity() == Pylon | 1) {
+                        local Item = give("suit")
+                        if(Item) {
+                            Item:setPos(Pylon:toWorld(vec(0,0,25))) 
+                            Item:setVel((Player_e:pos() - Pylon:pos()):setZ(0):rotate(ang(-45,0,0)))
+                        }
+                    }
+                }
+            }
+        }
+        else {
+            findClearBlackList()
+            findClearWhiteList()
+            local Heal = Q["heal", number]
+            local Suit = Q["suit", number]
+            foreach(C, Class:string = GT["classes", array]) {
+                if(Heal) {
+                    if(Class == "health") {
+                        continue
+                    }
+                }
+                if(Suit) {
+                    if(Class == "suit") {
+                        continue
+                    }
+                }
+                foreach(C, Type:string = GT[Class + "/types", array]) {
+                    findIncludeClass(Type)
+                    findExcludeEntities(GT[Type + "/entities", array])
+                }
+            }
+            findInSphere(Pylon_p, WorkRadius)
+            local Find = findToArray()
+            local FindCount = Find:count()
+            for(C = 1, min(FindCount,10)) {
+                local Ent = Find[C, entity]
+                local Type = Ent:type()
+                local Class = GT[Type + "/class", string]
+                
+                #Ent:setMaterial("lights/white")
+                #Ent:setColor(vec(255))
+                Ent:propDraw(0)
+                Ent:propFreeze(1)
+                Ent:propNotSolid(1)
+                Ent:setPos(vec())
+                #print(Ent)
+                
+                
+                GT[Type + "/entities", array] = GT[Type + "/entities", array]:add(array(Ent))
+                
+                GT["entities", number] = GT["entities", number] + 1
+                GT[Class + "/entities/count", number] = GT[Class + "/entities/count", number] + 1
+            }
+        }
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    #[
+    
+    local ESM = GT["entitySpawnMode", number]
+    #ifdef entitySpawn(string,vector,angle,number)
+        
+    #else
+        GT["entitySpawnMode", number] = 0
+    #endif
+    
+    
+    findIncludeClass("player")
+    findInSphere(Pylon_p, 52.5 * 2)
+    local Player_e = find()
+    if(Player_e) {
+        local Player_h = Player_e:health()
+        local Player_mh = Player_e:maxHealth()
+        if(Player_h < Player_mh & changed(Player_h)) {
+            
+            local Entity_e = give("health", (Player_mh - Player_h > 10 ? 1 : 2))
+            Entity_e:setVel((Player_e:pos() - Entity_e:pos()):setZ(0):rotate(ang(-45,0,0)))
+        }
+        else {
+            local Player_s = Player_e:armor()
+            local Player_ms = 100
+            if(Player_s < Player_ms & changed(Player_s)) {
+                
+                local Entity_e = give("suit", 1)
+                Entity_e:setVel((Player_e:pos() - Entity_e:pos()):setZ(0):rotate(ang(-45,0,0)))
+            }
+        }
+    }
+    ]#
+}
+
+
+
+
+if(last()) {
+    
+    if(Pylon) {
+        Pylon:remove()
+    }
+}
+
+setName("Pylon 01 001\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage() * 1e6))
+
+
+
+
+
+
+
+
+
+
+
+
+
+if(clk("chatInterface")) {
+        timer("chatInterface", 350)
+    
+    local Queue = Q["printsQueue", array]
+    local Count = Queue:count()
+    if(Count) {
+        local Print = array()
+        while(Count) {
+            Count--
+            local Print_i = Queue[1, number]
+            
+            local Print_a = Q[Print_i + "/print_a", array]
+            if(Print:count()) {
+                Print_a = array("\n"):add(Print_a)
+            }
+            Print = Print:add(Print_a)
+            
+            Queue:remove(1)
+        }
+        
+        printColor(Print)
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

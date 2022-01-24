@@ -1,0 +1,661 @@
+@name blade_door_test_02
+
+@inputs [Base Wheel]:entity [Door_wheel Door_welderWheel Door_welderDoor]:wirelink
+@outputs Debug:string
+@persist [E Door]:entity
+@persist [Cre_a Hol_a Pos_a]:array
+@persist [A]:number [User]:entity [Ang Dist]:number
+
+setName("blade_door_test_02\nOPS: " + ops())
+
+if(changed(0)) {
+    holoCreate(0,Wheel:pos(),vec(1),Wheel:angles(),vec(255),"models/props_borealis/door_wheel001a.mdl")
+    holoParent(0,Wheel)
+    Wheel:setAlpha(0)
+    Wheel:setMass(40)
+    
+    E = entity()
+    Door = E:isWeldedTo()
+    local Array_cyl = array()
+    local Array_cre = array()
+    foreach(C, Ent:entity = Door:children()) {
+        local Ent_m = Ent:model()
+        
+        if(Ent_m == "models/sprops/misc/fittings/cred_3_1_5_tall.mdl" & Door:up():dot(Ent:up()) < 0.05) {
+            Array_cre:pushEntity(Ent)
+        }
+        elseif(Ent_m == "models/sprops/cylinders/size_1/cylinder_1_5x30.mdl" | Ent_m == "models/sprops/cylinders/size_1/cylinder_1_5x18.mdl") {
+            Array_cyl:pushEntity(Ent)
+        }
+    }
+    local HoloID = 0
+    while(Array_cre:count()) {
+        local Cre = Array_cre:removeEntity(1)
+        local C = 0
+        foreach(C, Cyl:entity = Array_cyl) {
+            local LP = Cre:toLocal(Cyl:pos())
+            if(LP[3] > 0 & vec2(LP):length() < 1) {
+                Array_cyl:remove(C)
+                while(!!holoEntity(HoloID)) {HoloID++}
+                holoCreate(HoloID,Cre:toWorld(LP),vec(1),Cre:toWorld(ang()),Cyl:getColor(),Cyl:model())
+                holoMaterial(HoloID, Cyl:getMaterial())
+                holoParent(HoloID, Cre)
+                Cyl:setAlpha(0)
+                Cyl:propNotSolid(1)
+                Cre_a:pushEntity(Cre)
+                Hol_a:pushNumber(HoloID)
+                Pos_a:pushVector(LP)
+                break
+            }
+        }
+    }
+    #[
+    foreach(C, Ent_e:entity = Door:getConstraints()) {
+        if(Ent_e:model() == "models/props_borealis/door_wheel001a.mdl") {
+            Wheel = Ent_e
+            holoCreate(0,Wheel:pos(),vec(1),Wheel:angles(),vec(255),"models/props_borealis/door_wheel001a.mdl")
+            holoParent(0,Wheel)
+            Wheel:setAlpha(0)
+            Wheel:setMass(40)
+            break
+        }
+    }
+    ]#
+    Door_wheel:entity():propNotSolid(1)
+    Door_welderWheel:entity():propNotSolid(1)
+    Door_welderDoor:entity():propNotSolid(1)
+    
+    
+    runOnUse(1, Wheel)
+    
+    timer("", 1)
+    exit()
+}
+
+
+if(clk("")) {
+    
+    if(User) {
+        if(User:keyUse()) {
+            local EYE = User:eye()
+            local For = Wheel:forward()
+            local Pos1 = Wheel:massCenter()
+            local Pos2 = User:shootPos()
+            local Pos = Pos2 + EYE*abs(For:dot(Pos2-Pos1)/EYE:dot(For))
+            local Rad = Pos1:distance(Pos)
+            local RealAng = Wheel:toLocal(Pos):rotate(-90,0,0):setZ(0):toAngle()[2]
+            if(!Ang) {
+                Ang = RealAng
+                Dist = Door:toLocal(User:pos()):setX(0):length()
+                Door_wheel["A: Go", number] = 0
+                Door_welderWheel["Activate", number] = 1
+                #Wheel:soundPlay("",5,"ambient/levels/outland/ol11_welding_loop.wav") soundPitch("",0)
+            }
+            
+            local Add = angnorm(RealAng-Ang)/360/1.5*min(Rad/6,1)^3
+            if(abs(Add) >= 0.01 | 1) {
+                #Add*=min(1-abs(Add/0.04),1)
+                A = clamp(A + Add,0,1)
+                Ang = RealAng
+            }
+            
+            if(changed(A)) {
+                holoAng(0, Wheel:toWorld(ang(0,0,A*360*1.5)))
+                foreach(C, Cre:entity = Cre_a) {holoPos(Hol_a[C, number], Cre:toWorld(Pos_a[C, vector]+vec(0,0,A*5)))}
+                if(abs(acos(Base:forward():dot(Door:right()))) < 2) {
+                    Door_welderDoor["Activate", number] = A > 0.1 #!Door_welderDoor["Welded", number]
+                }
+            }
+            
+            
+            local RealDist = Door:toLocal(User:pos()):setX(0):length()
+            local Dif = Dist-RealDist
+            Door_wheel["A: Go", number] = abs(Dif) >= 3 ? sign(Dif) : 0
+            Door_wheel["C: SpeedMod", number] = 1000
+            
+            Debug="=============="
+            Debug+="\n"+"" + round(acos(Base:forward():dot(Door:right())))
+            Debug+="\n"+"" + round(Dif)
+            
+            timer("", 50)
+        }
+        else {
+            User = noentity()
+            Ang = 0
+            Door_wheel["A: Go", number] = 0
+            Door_welderWheel["Activate", number] = 0
+            stoptimer("")
+            soundStop("")
+        }
+    }
+    
+    
+    exit()
+}
+
+if(!User & useEntClk() == Wheel) {
+    User = Wheel:inUseBy()
+    timer("", 50)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+#[
+"ambient/materials/cartrap_rope"+select(0,"1","2","3")+".wav"
+"ambient/materials/clang1.wav"
+"ambient/materials/creak5.wav"
+"ambient/materials/creaking.wav"
+"ambient/materials/door_hit1.wav"
+
+"ambient/materials/icegrind1.wav"
+"ambient/materials/metal_big_impact_scrape1.wav"
+"ambient/materials/metal_groan.wav"
+"ambient/materials/metal_rattle"+select(0,"","1","2","3","4")+".wav"
+"ambient/materials/metal_stress"+select(0,"1","2","3","4","5")+".wav"
+"ambient/materials/rustypipes"+select(0,"1","2","3")+".wav"
+"ambient/materials/shipgroan4"+select(0,"1","2","3","4")+".wav"
+"ambient/materials/shuffle1"+select(0,"1","6","7","8")+".wav"
+"ambient/materials/squeeker2.wav"
+
+"ambient/materials/squeekyfloor"+select(0,"1","2")+".wav"
+
+"ambient/levels/caves/ol04_gearengage.wav"
+
+"ambient/levels/caves/rumble"+select(0,"1","2","3")+".wav"
+
+"ambient/levels/labs/coinslot1.wav"
+
+"ambient/levels/labs/electric_explosion3.wav"
+
+#ydar
+"ambient/levels/labs/machine_stop1.wav"
+"ambient/levels/outland/ol04fanspinlong0"+select(0,"1","2","3","4")+".wav"
+#
+
+"ambient/levels/launch/interiorturbulance.wav" #tresk
+"ambient/levels/launch/rhumble01.wav" #gul 30cek
+
+#metal
+"ambient/levels/outland/ol03_bincreak0"+select(0,"1","2","3","4","5","6")+".wav"
+"ambient/levels/outland/ol03_binsqueak0"+select(0,"1","2","3")+"_"+select(0,"long","med","short")+".wav"
+"ambient/levels/outland/ol03_lift_creak0"+select(0,"1","2","3","4","5","6","7")+".wav"
+"ambient/levels/outland/ol03_lift_start.wav"
+"ambient/levels/outland/ol03gatefall_pt01.wav"
+
+#motor
+"ambient/levels/outland/ol03_railride.wav"
+
+#luk
+"ambient/levels/outland/ol04_gearengage_lever.wav"
+"doors/door_metal_thin_close2.wav"
+"doors/door_screen_move1.wav"
+
+#crush
+"ambient/levels/outland/ol06bridgebreak_pt0"+select(0,"1","2")+".wav"
+"ambient/levels/outland/ol0sled01.wav"
+"ambient/levels/outland/ol12_lodgeexplode.wav"
+#big crush
+"ambient/levels/outland/ol06_girdersbreak.wav"
+"ambient/levels/outland/ol12_baseexplosion.wav"
+"ambient/levels/outland/ol12_sawmill_destroy.wav"
+"impacts/explosion2.mp3"
+
+#mechanism
+"ambient/levels/outland/ol07advisor_podopen.wav"
+"ambient/levels/outland/ol07advisorpod_reveal.wav"
+"ambient/levels/outland/ol09_biggundestroy.wav" #big
+"ambient/levels/outland/ol09_gungrate_open.wav"
+"ambient/levels/outland/ol10a_dogliftgate.wav"
+"ambient/levels/outland/ol11_blastdoor_close.wav"
+"ambient/levels/outland/ol11_blastdoorlatch.wav"
+"ambient/levels/outland/ol11_overheaddoor_open.wav"
+"ambient/levels/outland/ol11_welding_loop.wav"
+"ambient/levels/outland/ol11blastdoor_open.wav"
+"ambient/levels/outland/ol11silodoor_end_cl.wav"
+"ambient/levels/outland/ol11silodoor_end_op.wav"
+"ambient/levels/outland/ol11silodoor_loop_cl.wav"
+"ambient/levels/outland/ol11silodoor_loop_op.wav"
+"ambient/levels/outland/ol11silodoor_start_cl.wav"
+"ambient/levels/outland/ol11silodoor_start_op.wav"
+"ambient/levels/outland/ol12a_overhead_slider_open.wav"
+
+"ambient/levels/outland/ol12a_launchswitch_open.wav"
+"ambient/levels/outland/ol12a_launchswitch_push.wav"
+
+"ambient/levels/outland/ol12a_slidergate_close.wav"
+"ambient/levels/outland/ol12a_slidergate_open.wav"
+"ambient/levels/outland/ol12chainlinkopen.wav"
+
+
+#krik
+"ambient/voices/m_scream1.wav"
+
+###loop
+"doors/drawbridge_move1.wav"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

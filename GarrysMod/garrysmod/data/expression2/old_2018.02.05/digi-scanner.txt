@@ -1,0 +1,250 @@
+#
+# Created by scaled
+#
+
+@name digi-scanner-5
+@inputs Digi:wirelink
+@outputs FPS
+
+# Constants
+@persist [DIGI_RESOLUTION DIGI_OFFSET]:vector2
+@persist RANGER_DISTANCE RANGER_DEFECT
+@persist LIGHT_POS:vector
+@persist AO_DISTANCE AO_RANGE AO_COUNT AO_MULTIPLIER AO_RADIUS
+@persist RENDER_RESOLUTION_Y RENDER_COUNTER_OFFSET RENDER_PIXEL_COUNT RENDER_Y_OFFSET RENDER_FOV_COT
+@persist [COLOR_WORLD COLOR_SKY]:vector
+@persist RENDER_MODE_ONE_FRAME RENDER_MODE_REALTIME
+@persist SETTINGS_VERY_LOW SETTINGS_LOW SETTINGS_STANDART SETTINGS_MEDIUM SETTINGS_HIGH SETTINGS_VERY_HIGH
+@persist TEXTURES:table
+
+# Persist
+@persist Counter Frames RenderMode RenderStartTime
+@persist Settings
+
+# Functuins
+if (first()) {
+    function configure() {
+        DIGI_RESOLUTION = vec2(256)
+        
+        RENDER_RESOLUTION_Y = int(DIGI_RESOLUTION[2] / 2)
+        #RENDER_RESOLUTION_Y = DIGI_RESOLUTION[2]
+        RENDER_Y_OFFSET = int((DIGI_RESOLUTION[2] - RENDER_RESOLUTION_Y) / 2)
+        RENDER_COUNTER_OFFSET = RENDER_Y_OFFSET * DIGI_RESOLUTION[1]
+        RENDER_PIXEL_COUNT = DIGI_RESOLUTION[1] * RENDER_RESOLUTION_Y
+        
+        #RENDER_FOV_COT = cot(75 / 2)
+        RENDER_FOV_COT = 1
+        
+        DIGI_OFFSET = DIGI_RESOLUTION / 2 * vec2(1, -1)
+        
+        RANGER_DISTANCE = 100000
+        RANGER_DEFECT = 0.01
+        
+        LIGHT_POS = entity():pos() + vec(1000, 1000, 750)
+        #LIGHT_POS = entity():pos() + vec(200, 200, 20)
+        #LIGHT_POS = entity():toWorld(vec(-20, 20, 20))
+        
+        COLOR_WORLD = vec(0, 180, 80)
+        COLOR_SKY = vec(80, 180, 255)
+        
+        AO_DISTANCE = 900
+        AO_MULTIPLIER = 0.25
+        
+        RENDER_MODE_ONE_FRAME = 0
+        RENDER_MODE_REALTIME = 1
+        
+        RenderMode = RENDER_MODE_ONE_FRAME
+        
+        SETTINGS_VERY_LOW = 0
+        SETTINGS_LOW = 1
+        SETTINGS_STANDART = 2
+        SETTINGS_MEDIUM = 3
+        SETTINGS_HIGH = 4
+        SETTINGS_VERY_HIGH = 5
+        
+        # Graphics settings
+        Settings = SETTINGS_STANDART
+        
+        
+        if (Settings >= SETTINGS_HIGH) {
+            AO_COUNT = 10
+            AO_RADIUS = 5
+        }
+        elseif (Settings == SETTINGS_MEDIUM) {
+            AO_COUNT = 8
+            AO_RADIUS = 3
+        }
+        elseif (Settings == SETTINGS_STANDART) {
+            AO_COUNT = 5
+            AO_RADIUS = 2
+        }
+        AO_RANGE = 0.4
+        
+        AO_RANGE /= AO_RADIUS
+        
+        #TEXTURES["default", vector] = vec(255)
+        TEXTURES["default", vector] = COLOR_SKY
+        
+        TEXTURES["metal", vector] = vec(128)
+        TEXTURES["concrete", vector] = vec(200)
+        TEXTURES["wood", vector] = vec(255, 223, 127)
+        TEXTURES["flesh", vector] = vec(255, 200, 150)
+        TEXTURES["computer", vector] = vec(127, 63, 0)
+        
+        TEXTURES["grass", vector] = vec(0, 180, 80)
+        TEXTURES["dirt", vector] = vec(0, 180, 80) * 0.8
+        TEXTURES["sand", vector] = vec(127, 127, 63)
+        
+        TEXTURES["glass", vector] = vec(100, 100, 150)
+        TEXTURES["tile", vector] = vec(150, 60, 60)
+        TEXTURES["plastic", vector] = vec(60, 60, 150)
+        TEXTURES["grate", vector] = vec(200)
+        
+        TEXTURES["slosh", vector] = vec(100, 100, 255)
+        TEXTURES["vent", vector] = vec(100)
+        
+        RenderStartTime = systime()
+    }
+    
+    function initScreen(){
+        Digi[1048574] = 0
+        Digi[1048569] = 3
+        Digi[1048575] = 1
+        Digi[1048573] = DIGI_RESOLUTION[2]
+        Digi[1048572] = DIGI_RESOLUTION[1]
+    }
+    
+    function drawPixel(X, Y, Color:vector) {
+        Digi[X + Y * DIGI_RESOLUTION[2]] = rgb2digi(Color, 3)
+    }
+    
+    function createLight() {
+        holoCreate(1, LIGHT_POS)
+    }
+}
+
+# First
+if ((first() | changed(Digi)) & Digi) {
+    runOnTick(1)
+    runOnKeys(owner(), 1)
+    
+    configure()
+    initScreen()
+    createLight()
+}
+
+if (RenderMode == RENDER_MODE_REALTIME) {
+    timer("FPS counter", 1000)
+    if (clk("FPS counter")) {
+        FPS = Frames
+        Frames = 0
+    }
+}
+
+if (keyClk()) {
+    if (keyClkPressed() == "b") {
+        reset()
+    }
+}
+
+# Main loop
+if (tickClk()) {
+    while (perf()) {
+        local X = Counter % DIGI_RESOLUTION[1]
+        local Y = int(Counter / DIGI_RESOLUTION[1]) + RENDER_Y_OFFSET
+        
+        # Main ranger
+        local Direction = entity():toWorldAxis(vec(vec2(Y, -X) - DIGI_OFFSET, RENDER_RESOLUTION_Y * RENDER_FOV_COT))
+        rangerHitWater(1)
+        local RangerMain = rangerOffset(RANGER_DISTANCE, entity():toWorld(vec(0, 0, 10)), Direction)
+        
+        local Water = 0
+        local WaterDerth = 0
+        if (RangerMain:matType() == "slosh") {
+            Water = 1
+            local WaterPos = RangerMain:position()
+            RangerMain = rangerOffset(RANGER_DISTANCE, entity():toWorld(vec(0, 0, 10)), Direction)
+            WaterDerth = WaterPos:distance(RangerMain:position())
+        }
+        
+        
+        if (RangerMain:hit()) {
+            # Color
+            #[local Color = RangerMain:entity():getColor()]#
+            if (!TEXTURES:exists(RangerMain:matType())) {
+                print(RangerMain:matType())
+                runOnTick(0)
+                exit()
+            }
+            local Color = TEXTURES[RangerMain:matType(), vector]
+            
+            # Light ranger
+            local IsLighted = 1
+            if (Settings >= SETTINGS_LOW) {
+                local RangerLight = rangerOffset(LIGHT_POS, RangerMain:position())
+                IsLighted = RangerMain:position():distance(RangerLight:position()) < RANGER_DEFECT
+            }
+            
+            # Abient occulution
+            local AOColor = 1
+            if (Settings >= SETTINGS_STANDART) {
+                if (!IsLighted) {
+                    local AONormal = RangerMain:hitNormal()
+                    local AONormal2 = (Direction - AONormal:dot(Direction) * AONormal):normalized()
+                    local AONormal3 = AONormal:cross(AONormal2)
+                    
+                    for (I = 1, AO_RADIUS) {
+                        local Angle2 = I * 90 / AO_RADIUS
+                        for (J = 1, AO_COUNT) {
+                            local Angle = J * 360 / AO_COUNT
+                            
+                            local RangerAO = rangerOffset(AO_DISTANCE, RangerMain:position(), AONormal + AO_RANGE * (AONormal2 * sin(Angle) * I + AONormal3 * cos(Angle) * I))
+                            #[local RangerAO = rangerOffset(AO_DISTANCE, RangerMain:position(),
+                                AONormal * cos(Angle2)
+                                + AONormal2 * sin(Angle) * sin(Angle2) * I
+                                + AONormal3 * cos(Angle) * sin(Angle2) * I
+                            )]#
+                            AOColor += max(0, RangerAO:distance() / AO_DISTANCE) ^ AO_MULTIPLIER
+                        }
+                    }
+                    AOColor /= AO_COUNT * AO_RADIUS
+                }
+            }
+            
+            local Dot = 0
+            if (IsLighted) {
+                Dot = max((LIGHT_POS - RangerMain:position()):normalized():dot(RangerMain:hitNormal()), 0)
+            }
+            local Color2 = Color * (
+                0.7 * Dot
+                + 0.3 * AOColor
+            )
+            
+            if (Water) {
+                Color2 = mix(Color2, TEXTURES["slosh", vector], min(1, 100 / (WaterDerth + 200)))
+            }
+            
+            Digi[Counter + RENDER_COUNTER_OFFSET] = rgb2digi(Color2, 3)
+        }
+        else {
+            Digi[Counter + RENDER_COUNTER_OFFSET] = rgb2digi(COLOR_SKY, 3)
+        }
+        
+        # If fill ended
+        if (Counter >= RENDER_PIXEL_COUNT) {
+            if (RenderMode == RENDER_MODE_REALTIME) {
+                Counter = 0
+                Frames++
+            }
+            elseif (RenderMode == RENDER_MODE_ONE_FRAME) {
+                print("Render took " + int((systime() - RenderStartTime) * 1000) / 1000 + "seconds.")
+                
+                runOnTick(0)
+                break
+            }
+        }
+        else {
+            Counter++
+        }
+    }
+}

@@ -1,0 +1,80 @@
+@name prop_vehicle_prisoner_pod
+
+@inputs 
+@outputs 
+@persist [O Pod]:entity
+
+@trigger 
+
+
+
+if(changed(0)) {
+    
+    O = owner()
+    
+    
+    timer("", 1)
+}
+
+if(clk("")) {
+        timer("", 50)
+    
+    
+    local IV = O:inVehicle()
+    if(changed(IV)) {
+        findIncludeClass("prop_vehicle_prisoner_pod")
+        findInSphere(O:pos(), 10)
+        
+        Pod = find()
+    }
+    
+    if(IV & Pod) {
+        rangerFilter(Pod)
+        local E = rangerOffsetHull(30, Pod:boxCenterW(), -Pod:up(), vec(10)):entity()
+        if(changed(E)) {
+            E:propFreeze(0)
+        }
+        
+        local V = vec(O:keyPressed("W")-O:keyPressed("S"),O:keyPressed("A")-O:keyPressed("D"),0)
+        local V = V:rotate(angnorm(O:eyeAngles())):setZ(O:keyPressed("Space")-O:keyPressed("lalt")) - E:vel() / 150 * O:keyPressed("lshift")
+        E:applyForce(V * E:mass() * 9 * 5)
+        
+        
+        local A = -E:angVel() / 100
+        E:applyAngForce(A * E:mass() * 9)
+        #[
+        Pod:setAlpha(255)
+        Pod:setColor(vec(255))
+        Pod:propDraw(1)
+        Pod:propFreeze(0)
+        Pod:propNotSolid(0)
+        Pod:constraintBreak()
+        ]#
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

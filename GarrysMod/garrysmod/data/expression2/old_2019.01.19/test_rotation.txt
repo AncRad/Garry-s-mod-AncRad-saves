@@ -1,0 +1,123 @@
+@name test_rotation
+
+@inputs [Wheel]:entity
+@outputs TargetVel
+@persist [RT]:entity Count Step AngOffset
+
+@trigger none
+
+
+
+if(changed(0)) {
+    
+    local E = entity()
+    E:propFreeze(1)
+    E:unConstrain()
+    E:noCollideAll(1)
+    
+    timer("",1)
+    
+    RT = holoCreate(0,Wheel:boxCenterW(),vec(),Wheel:toWorld(ang(0,90,0))) holoParent(0,Wheel)
+    
+    Count = 66
+    for(Step = 1, Count) {
+        holoCreate(Step,vec(),vec(1)/6,ang(),vec(255),"hq_sphere")
+        holoParent(Step,E)
+    }
+}
+
+
+
+if(clk("")) {
+        timer("", 1)
+    
+    local Players = players()
+    
+    local Step1 = Step
+    
+    Step = Step%Count+1
+    
+    local Step2 =  Step%Count+1
+    
+    holoVisible(Step1,Players,1)
+    holoVisible(Step2,Players,0)
+    
+    
+    if(Step == 1) {
+        AngOffset = -RT:angles()[3]
+    }
+    
+    
+    holoPos(Step, RT:pos() + vec(20,0,0):rotate(AngOffset+RT:angles()[3],0,0))
+    
+    TargetVel+=100/66.6
+    local A = TargetVel - Wheel:angVel()[1]
+    Wheel:applyAngForce(ang(Wheel:mass()*A,0,0))
+    
+    setName("TargetVel: " + TargetVel + "\nRealVel: " + Wheel:angVel()[1])
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

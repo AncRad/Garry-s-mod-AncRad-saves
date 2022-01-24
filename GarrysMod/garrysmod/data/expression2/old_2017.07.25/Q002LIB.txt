@@ -1,0 +1,849 @@
+@name Q002LIB
+
+
+
+if(changed(0)) {
+    
+    if(entity():getName() == "Q002LIB") {
+        #include "old 28.10.2017/25.07.2017/EGPS"
+        Q = Project = table()
+        
+        hint("Q002LIB", 4)
+    }
+    
+    
+    
+    Q["fontSize", number] = 15
+    Q["indent"  , number] = 2
+    
+    
+    
+        
+    ###############################################################################################################
+    ###############################################################################################################  ACT
+    ###############################################################################################################
+    function number addAct(Act_n:string, Tag:string) {
+        if(!Q[Act_n + "/lock", number]) {
+            local Act_i = Q["act", number] = Q["act", number] + 1
+            
+            Q[Act_i + "/act/name", string] = Act_n
+            Q[Act_i + "/act/tag", string] = Tag
+            
+            Q["acts", array] = Q["acts", array]:add(array(Act_i))
+            return Act_i
+        }
+    }
+    function number addAct(Act_n:string) {
+        return addAct(Act_n, "")
+    }
+                #Q[Act_i + "/cursorPos", vector2] = EGP["cursor", vector2]
+    ###############################################################################################################
+    ###############################################################################################################  CURSOR
+    ###############################################################################################################
+    function cursorPos(Player:entity) {
+        ###########################################################################################
+        ############################################################################################
+        local Eye        = Player:eye()                                                           ###
+        local EyeAngles  = Player:eyeAngles()                                                      ###
+        if(changed(Eye) | changed(EyeAngles)) {                                                     ##
+            local EyeA       = EyeAngles:forward()                                                  ##
+            local EgpScrSize = egpScrSize(Player)                                                   ##
+                                                                                                    ##
+            local Holo = holoEntity(0)                                                              ##
+            if(!Holo) {holoCreate(0,vec(),vec())}                                                   ##
+            holoAng(0, EyeAngles)                                                                   ##
+                                                                                                    ##
+            local Cos = Eye[1] * EyeA[1] + Eye[2] * EyeA[2] + Eye[3] * EyeA[3]                      ##
+            local CursorV = (Holo:toLocal(Eye / Cos) / vec(1, -1.332, -0.75) + vec(0, 1, 1)) / 2    ##
+                                                                                                    ##
+            local Cursor = Q["cursor", vector2] = vec2(CursorV[2], CursorV[3]) * EgpScrSize        ###
+        }                                                                                         ###
+        ############################################################################################
+        ###########################################################################################
+    }
+    ######################################
+    ###################################### global inrange
+    ######################################
+    function number globalInrange(Name:string, CursorPos:vector2) {
+        local TargetGP = egpGetGlobalPos(Name)
+        local TargetS  = egpGetSize(Name) / 2
+        local Inrange = inrange(CursorPos - TargetGP,-TargetS,TargetS)
+        
+        return Inrange
+    }
+    ######################################
+    ###################################### cursor target
+    ######################################
+    function string cursorTarget(TargetList:string) {
+        local CursorPos = Q["cursor", vector2]
+        
+        if(Q["cursorTarget/end", number]) {
+            local CursorTarget = Q["cursorTarget", string]
+            if(CursorTarget) {
+                if(globalInrange(CursorTarget, CursorPos)) {
+                    return CursorTarget
+                }
+                else {
+                    Q["cursorTarget/end", number] = 0
+                }
+            }
+        }
+        else {
+            Q["cursorDown", string] = ""
+            local CursorTargets = Q[TargetList, array]
+            local Return = ""
+            local Real = 0
+            while(1) {
+                Real++
+                local Target = CursorTargets[Real, string]
+                if(Target) {
+                    if(globalInrange(Target, CursorPos)) {
+                        
+                        local CursorDown = Q["cursorDown", string]
+                        Q["cursorDown", string] = CursorDown + (CursorDown ? "///" : "") + Target
+                        
+                        Return = Target
+                        local Targets = Q[Target + "/cursorTargets", array]
+                        if(Targets:count()) {
+                            CursorTargets = Targets
+                            Real = 0
+                        }
+                        else {
+                            Q["cursorTarget/end", number] = 1
+                            Q["cursorTarget", string] = Target
+                            return Target
+                        }
+                    }
+                }
+                else {
+                    local CursorDown = Q["cursorDown", string]
+                    Q["cursorTarget/end", number] = 0
+                    Q["cursorTarget", string] = Return
+                    return Return
+                }
+            }
+        }
+    }
+    function string cursorTarget() {
+        cursorTarget("cursorTargets")
+    }
+    ###############################################################################################################
+    ###############################################################################################################  SELECT STRING IN DATA (SSD)
+    ###############################################################################################################
+    ######################################
+    ###################################### create
+    ######################################
+    function create_SSD() {
+        local FontSize = Q["fontSize", number]
+        local Indent   = Q["indent"  , number]
+        
+        local Base_n = "ssd/base"
+        local Base_s = v(400, 800)
+        local Base_p = egpScrSize(owner()) * v(0.5,0.5) #v(9999)
+        egpAddBox(Base_n, Base_p, Base_s, "")
+        egpSetColor(10)
+        
+        local ScrollBase_n = "ssd/scrollBase"
+        local ScrollBase_s = v(10,Base_s[2])
+        local ScrollBase_p = (Base_s-ScrollBase_s)/2
+        egpAddBox(ScrollBase_n, ScrollBase_p, ScrollBase_s, "")
+        egpSetParent(Base_n)
+        egpSetColor(30)
+        local Scroll_n = "ssd/scroll"
+        local Scroll_s = v(ScrollBase_s[1],ScrollBase_s[2]*1)
+        local Scroll_p = v(0,(Scroll_s[2]-ScrollBase_s[2])/2)
+        egpAddBox(Scroll_n, Scroll_p, Scroll_s, "")
+        egpSetParent(ScrollBase_n)
+        egpSetColor(60)
+        
+        local List_n = "ssd/list"
+        local List_s = v(Base_s[1]-Scroll_s[1]-Indent,Base_s[2])
+        local List_p = -(List_s+v(Scroll_s[1],0))/2
+        egpAddTextLayout(List_n, List_n, List_p, List_s)
+        egpSetParent(Base_n)
+        egpSetSize(FontSize)
+        local ListSelect_n = "ssd/listSelect"
+        local ListSelect_s = List_s
+        local ListSelect_p = v()
+        egpAddTextLayout(ListSelect_n, "\n"+ListSelect_n, ListSelect_p, ListSelect_s)
+        egpSetParent(List_n)
+        egpSetSize(FontSize)
+        egpSetColor(0,150,255)
+        
+        
+        Q["ssd/list"      , array ] = array()
+        Q["ssd/scroll"    , number] = 0
+        Q["ssd/strings"   , number] = floor(Base_s[2]/FontSize)
+        Q["ssd/maxStrings", number] = 8
+        Q["ssd/selected"    , number] = 0
+        Q["ssd/ending"    , number] = 0
+        
+        Q["cursorTargets", array] = Q["cursorTargets", array]:add(array(Base_n)) 
+        Q[Base_n + "/cursorTargets", array] = array(ScrollBase_n)
+    }
+    ######################################
+    ###################################### listing
+    ######################################
+    function listing_SSD() {
+        local List_a  = Q["ssd/list"    , array ]
+        local Scroll  = Q["ssd/scroll"  , number]
+        local Strings = Q["ssd/strings" , number]
+        local Select  = Q["ssd/selected", string]
+        local List_c  = List_a:count()
+        
+        local WText = ""
+        local BText = ""
+        local String_i = 0
+        ###
+        local Start = 1 + floor(Scroll * max(List_c - Strings,0))
+        local List_v = List_a:concat("\n", Start)
+        WText = List_v
+        ###
+        #[
+        if(List_c) {
+            local C = floor(Scroll * max(List_c - Strings,0))
+            while(String_i < Strings & String_i < List_c) {
+                String_i++
+                C++
+                
+                local Text = List_a[C, string]
+                Q["ssd/string/" + String_i, string] = Text
+                if(Select == Text) {
+                    WText += "\n"
+                    BText += Text + "\n"
+                }
+                else {
+                    WText += Text + "\n"
+                    BText += "\n"
+                }
+            }
+        }
+        else {
+            WText = "Список пуст."
+            BText = ""
+            String_i = 0
+        }
+        ]#
+        
+        local ScrollBase_n = "ssd/scrollBase"
+        local ScrollBase_s = egpGetSize(ScrollBase_n)
+        local Scroll_n = "ssd/scroll"
+        local Scroll_s = clamp(ScrollBase_s[2]*max(Strings/List_c,0) ,4,ScrollBase_s[2])
+        local Scroll_p = v(0,(ScrollBase_s[2]-Scroll_s)*(Scroll-0.5))
+        egpSetSize(Scroll_n, v(ScrollBase_s[1],Scroll_s))
+        egpSetPos(Scroll_n, Scroll_p)
+        local L_n = "ssd/list"
+        local LS_n = "ssd/listSelect"
+        egpSetText(L_n , WText)
+        egpSetText(LS_n, BText)
+        Q["ssd/ending", number] = String_i
+    }
+    ######################################
+    ###################################### call
+    ######################################
+    function call_SSD(Obj_n:string, List:array) {
+        local Count = List:count()
+        if(Count) {
+            
+            local FontSize = Q["fontSize", number]
+            local Indent   = Q["indent"  , number]
+            
+            local Obj_iBase_n = Obj_n + "Base"
+            local Obj_iBase_s = egpGetSize(Obj_iBase_n)
+            local Obj_iBase_P = egpGetGlobalPos(Obj_iBase_n)
+            
+            local MaxStrings = Q["ssd/maxStrings", number]
+            
+            local Base_n = "ssd"
+            local Base_s = v(FontSize*min(Count,MaxStrings), Obj_iBase_s[2])
+            local Base_p = Obj_iBase_P-v(0,(Obj_iBase_s[1]+Base_s[1])/2)
+            egpSetSize(Base_n, Base_s)
+            egpSetPos(Base_n, Base_p)
+            
+            local S_n = "ssd/scroll"
+            local S_s = v(10, Base_s[2])
+            local S_p = (Base_s-S_s)/2
+            egpSetSize(S_n, S_s)
+            egpSetPos(S_n, S_p)
+            
+            local L_n = "ssd/list"
+            local L_s = v(Base_s[1]-S_s[1]-Indent,Base_s[2])
+            local L_p = -(L_s+v(S_s[1],0))/2
+            egpSetSize(L_n, L_s)
+            egpSetPos(L_n, L_p)
+            local LS_n = "ssd/listSelect"
+            local LS_s = L_s
+            local LS_p = v()
+            egpSetSize(LS_n, LS_s)
+            egpSetPos(LS_n, LS_p)
+            
+            
+            Q["ssd/list"   , array ] = List
+            Q["ssd/scroll" , number] = 0
+            Q["ssd/strings", number] = floor(Base_s[2]/FontSize)
+            Q["ssd/obj"    , string] = Obj_n
+            Q["ssd/ending" , number] = 0
+            listing_SSD()
+        }
+    }
+    ######################################
+    ###################################### close
+    ######################################
+    function close_SSD() {
+        local Base_n = "ssd"
+        egpSetPos(Base_n, v(9999))
+    }
+    ######################################
+    ###################################### select
+    ######################################
+    function select_SSD() {
+        local Obj_n = Q["ssd/obj", string]
+        local Text = Q["ssd/selectText" , string]
+        egpSetText(Obj_n, Text)
+        close_SSD()
+    }
+    ###############################################################################################################
+    ###############################################################################################################  OBJECT LIST
+    ###############################################################################################################
+    ######################################
+    ###################################### create
+    ######################################
+    function create_objectList() {
+        local FontSize = Q["fontSize", number]
+        local Indent   = Q["indent"  , number]
+        
+        local Base_n = "objectList/base"
+        local Base_s = v(300,240)
+        local Base_p = v(Base_s[1]/2+5, 954)
+        egpAddBox(Base_n, Base_p, Base_s, "")
+        egpSetColor(0)
+        
+        local ScrollBase_n = "objectList/scrollBase"
+        local ScrollBase_s = v(20,Base_s[2])
+        local ScrollBase_p = v((Base_s[1]-ScrollBase_s[1])/2,0)
+        egpAddBox(ScrollBase_n, ScrollBase_p, ScrollBase_s, "")
+        egpSetParent(Base_n)
+        egpSetColor(20)
+        local Scroll_n = "objectList/scroll"
+        local Scroll_s = v(ScrollBase_s[1],ScrollBase_s[2]*1.0)
+        local Scroll_p = v(0,(Scroll_s[2]-ScrollBase_s[2])/2)
+        egpAddBox(Scroll_n, Scroll_p, Scroll_s, "")
+        egpSetParent(ScrollBase_n)
+        egpSetColor(60)
+        
+        local List_n = "objectList/list"
+        local List_s = Base_s - v(Scroll_s[1],0) - v(Indent,0)
+        local List_p = (Base_s-List_s)*v(-0.5,0.5)-List_s/2+v(Indent,0)
+        egpAddTextLayout(List_n, List_n, List_p, List_s)
+        egpSetParent(Base_n)
+        egpSetSize(FontSize)
+        egpSetColor(255)
+        #egpSetFont("arial")
+        local SelectList_n = "objectList/listSelect"
+        egpAddTextLayout(SelectList_n, "\n"+SelectList_n, v(), List_s)
+        egpSetParent(List_n)
+        egpSetSize(FontSize)
+        egpSetColor(0,150,255)
+        #egpSetFont("arial")
+        
+        
+        Q["objectList/strings"     , number] = floor(List_s[2]/FontSize)
+        Q["objectList/scroll"      , number] = 0 #0.5+Scroll_p[2]/(ScrollBase_s[2]-Scroll_s[2])/4
+        Q["objectList/scrollOffset", number] = 0
+        Q["objectList/ending"      , number] = 0
+        Q["cursorTargets", array] = Q["cursorTargets", array]:add(array(Base_n))
+        Q[Base_n + "/cursorTargets", array] = array(ScrollBase_n)
+    }
+    ######################################
+    ###################################### listing
+    ######################################
+    function listing_objectList() {
+        local WText = ""
+        local BText = ""
+        local String = 0
+        
+        local Groups_a = Project["groupList", array]
+        local Groups_c = Groups_a:count()
+        
+        if(Groups_c) {
+            local Strings = Q["objectList/strings", number]
+            local Scroll = Q["objectList/scroll", number]
+            
+            local Group_a = array()
+            local Group_c = 0
+            local Group_n = 0
+            local Obj_n   = 0
+            local Length  = 0
+            
+            foreach(C, CGroup_i:number = Groups_a) {
+                
+                local Folded = Project[CGroup_i + "/group/folded", number]
+                if(Folded) {
+                    Length++
+                }
+                else {
+                    local Group_a = Project[CGroup_i + "/group/objects", array]
+                    local Group_c = Group_a:count()
+                    
+                    Length+= Group_c + 1
+                }
+            }
+            
+            Offset = floor(Scroll * max(Length - Strings,0))
+            if(Offset) {
+                local Length2 = 0
+                foreach(C, CGroup_i:number = Groups_a) {
+                    
+                    local LastLength = Length2
+                    local Folded = Project[CGroup_i + "/group/folded", number]
+                    if(Folded) {
+                        Length2++
+                        Group_a = array()
+                        Group_c = 0
+                    }
+                    else {
+                        Group_a = Project[CGroup_i + "/group/objects", array]
+                        Group_c = Group_a:count()
+                        Length2+= Group_c + 1
+                    }
+                    if(Length2 >= Offset) {
+                        Group_n = C 
+                        Obj_n = Offset - LastLength - 1
+                        break
+                    }
+                }
+            }
+            local ScrollBase_n = "objectList/scrollBase"
+            local ScrollBase_s = egpGetSize(ScrollBase_n)
+            local Scroll_n = "objectList/scroll"
+            local Scroll_s = clamp(ScrollBase_s[2]/(Length/Strings) ,30,ScrollBase_s[2])
+            local Scroll_p = v(0,(ScrollBase_s[2]-Scroll_s)*(Scroll-0.5))
+            egpSetSize(Scroll_n, v(ScrollBase_s[1],Scroll_s))
+            egpSetPos(Scroll_n, Scroll_p)
+            
+            while(String < Strings) {
+                String++
+                if(Obj_n < Group_c) {
+                    Obj_n++
+                    local Obj_i = Group_a[Obj_n, number]
+                    local Obj_name = Project[Obj_i + "/obj/name", string]
+                    local Selected = Project[Obj_i + "/obj/selected", number]
+                    if(Selected) {
+                        WText+= "\n"
+                        BText+= Obj_name + "\n"
+                    }
+                    else {
+                        WText+= Obj_name + "\n"
+                        BText+= "\n"
+                    }
+                    Q["objectList/string/index/" + String, number] = Obj_i
+                    Q["objectList/string/type/"  + String, string] = "obj"
+                }
+                else {
+                    if(Group_n == Groups_c) {break}
+                    
+                    Group_n++
+                    Obj_n = 0
+                    
+                    local Group_i = Groups_a[Group_n, number]
+                    local Folded = Project[Group_i + "/group/folded", number]
+                    Group_a = Project[Group_i + "/group/objects", array]
+                    Group_c = Group_a:count()
+                        
+                    local Group_name = Project[Group_i + "/group/name", string]
+                    WText+= "     " + Group_name + " (" + Group_c + ")\n"
+                    BText+= "\n"
+                    
+                    Q["objectList/string/index/" + String, number] = Group_i
+                    Q["objectList/string/type/"  + String, string] = "group"
+                    if(Folded) {
+                        Group_a = array()
+                        Group_c = 0
+                    }
+                }
+            }
+        }
+        else {
+            WText = "Для начала работы с объектами\nдобавьте и заполните группу."
+            BText = ""
+        }
+        local List_n = "objectList/list"
+        local SelectList_n = "objectList/listSelect"
+        egpSetText(List_n, WText)
+        egpSetText(SelectList_n, BText)
+        Q["objectList/ending" , number] = String
+    }
+    ######################################
+    ###################################### sizing
+    ######################################
+    function setSize_objectList(NewSize:vector2) {
+        NewSize = clamp(NewSize,v(200,250),v(500,400))
+        
+        local FontSize = Q["fontSize", number]
+        local Indent   = Q["indent"  , number]
+        
+        local Base_n = "objectList/base"
+        local Base_s = NewSize
+        local Base_p = v(Base_s[1]/2+5, 660)
+        egpSetSize(Base_n, Base_s)
+        egpSetPos(Base_n, Base_p)
+        
+        local Scroll_n = "objectList/scroll"
+        local Scroll_s = v(20,Base_s[2]*0.3)
+        local Scroll_p = (Base_s-Scroll_s)*v(0.5,-0.5)
+        egpSetSize(Scroll_n, Scroll_s)
+        egpSetPos(Scroll_n, Scroll_p)
+        
+        local List_n = "objectList/list"
+        local List_s = Base_s - v(Scroll_s[1],0) - v(Indent,0)
+        local List_p = (Base_s-List_s)*v(-0.5,0.5)-List_s/2+v(Indent,0)
+        egpSetSize(List_n, List_s)
+        egpSetPos(List_n, List_p)
+        local SelectList_n = "objectList/listSelect"
+        egpSetSize(SelectList_n, List_s)
+        #egpSetPos(SelectList_n, v())
+        
+        
+        Q["objectList/strings"     , number] = floor(List_s[2]/FontSize)
+        #Q["objectList/scroll"      , number] = 0
+        #Q["objectList/scrollOffset", number] = 0
+        #Q["objectList/ending"      , number] = 0
+    }
+    ######################################
+    ###################################### group
+    ######################################
+    ###################
+    ################### add
+    ###################
+    function addGroup_objectList(Group_name:string) {
+        local Group_i = Project["objectList/group", number] = Project["objectList/group", number] + 1
+        
+        Project[Group_i    + "/group/name"   , string] = Group_name
+        Project[Group_name + "/group/id"     , number] = Group_i
+        Project[Group_i    + "/group/objects", array ] = array()
+        
+        Project["groupList", array] = Project["groupList", array]:add(array(Group_i))
+    }
+    ###################
+    ################### fold group
+    ###################
+    function foldGroup_objectList([Group_i Fold]:number) {
+        Project[Group_i + "/group/folded", number] = Fold
+    }
+    function foldGroup_objectList(Group_name:string, Fold:number) {
+        local Group_i = Project[Group_name + "/group/id", number]
+        Project[Group_i + "/group/folded", number] = Fold
+    }
+    ######################################
+    ###################################### object
+    ######################################
+    ###################
+    ################### add
+    ###################
+    function addObject_objectList([Obj_n Obj_type]:string,  Group_i:number) {
+        local Obj_i = Project["object", number] = Project["object", number] + 1
+        
+        Project[Obj_i + "/obj/name"    , string] = Obj_n
+        Project[Obj_n + "/obj/id"      , number] = Obj_i
+        Project[Obj_i + "/obj/type"    , string] = Obj_type
+        Project[Obj_i + "/obj/group"   , number] = Group_i
+        Project[Obj_i + "/obj/selected", number] = 0
+        
+        Project[Group_i + "/group/objects", array] = Project[Group_i + "/group/objects", array]:add(array(Obj_i))
+        #Project["objList", array] = Project["objList", array]:add(array(Obj_i))
+    }
+    function addObject_objectList([Obj_n Obj_type Group_name]:string) {
+        local Group_i = Project[Group_name + "/group/id", number]
+        addObject_objectList(Obj_n, Obj_type, Group_i)
+    }
+    ###############################################################################################################
+    ###############################################################################################################  ADD MENU
+    ###############################################################################################################
+    ######################################
+    ###################################### create
+    ######################################
+    function create_addMenu() {
+        
+        local FontSize = Q["fontSize", number]
+        local Indent   = Q["indent"  , number]
+        
+        local ObjectList_n = "objectList/base"
+        local ObjectList_s = egpGetSize(ObjectList_n)
+        local ObjectList_p = egpGetPos(ObjectList_n)
+        
+        local Base_n = "d"
+        local Base_s = v(100,ObjectList_s[2])
+        local Base_p = ObjectList_p + v((ObjectList_s[1]+Base_s[1])/2,0)
+        
+        
+        
+        
+        egpAddBox(Base_n, Base_p, Base_s, "")
+        egpSetColor(30)
+        
+    }
+    ###############################################################################################################
+    ###############################################################################################################  RSOURCE MENU
+    ###############################################################################################################
+    ######################################
+    ###################################### create
+    ######################################
+    
+    
+    ###############################################################################################################
+    ###############################################################################################################  OTHER
+    ###############################################################################################################
+    ######################################
+    ###################################### scroll
+    ######################################
+    function egpScroll(ScrollName:string, LocalPos:number) {
+        local ScrollBase_n = ScrollName + "Base"
+        local ScrollBase_s = egpGetSize(ScrollBase_n)
+        local Scroll_n = ScrollName
+        local Scroll_s = egpGetSize(Scroll_n)
+        local Clamp = (ScrollBase_s[2]-Scroll_s[2])/2
+        local Scroll_p = v(0,clamp(LocalPos,-Clamp,Clamp))
+        
+        egpSetPos(Scroll_n, Scroll_p)
+        Q[ScrollName, number] = 0.5+Scroll_p[2]/Clamp/2
+    }
+    ###############################################################################################################
+    ###############################################################################################################
+    ###############################################################################################################
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    if(entity():getName() == "Q002LIB") {
+        egpSelect(entity():isWeldedTo():wirelink())
+        egpClear()
+        
+        create_objectList()
+        listing_objectList()
+        
+        create_addMenu()
+        create_SSD()
+        listing_SSD()
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+}
+
+
+
+
+
+
+
+
+
+
+#[
+
+            local Group_i = 0
+            local GroupN = 0
+            local Group = array()
+            local Obj_n = 0
+            if(Offset) {
+                StringsCount = 0
+                foreach(C, CGroup_i:number = Groups_a) {
+                    local CGroup_a = Project[CGroup_i + "/group/objects", array]
+                    local Folded = Project[CGroup_i + "/group/folded", number]
+                    local Count = CGroup_a:count()
+                    
+                    local LastStringsCount = StringsCount
+                    StringsCount+= (Folded ? 1 : Count + 1)
+                    if(StringsCount>=Offset) {
+                        Group_n = CGroup_i
+                        Obj_n = C
+                        Group = CGroup_a
+                        Obj_n = Offset-LastStringsCount
+                        break
+                    }
+                }
+            }
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

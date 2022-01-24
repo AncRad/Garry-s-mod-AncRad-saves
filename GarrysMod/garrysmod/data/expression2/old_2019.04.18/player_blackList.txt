@@ -1,0 +1,14 @@
+@name player_blackList
+@inputs 
+@outputs 
+@persist 
+@trigger 
+
+
+table(
+    table(
+         "nick" = "chpon`k po golowam"
+        ,"steam" = "STEAM_0:1:450828083"
+        ,"http" = "https://steamcommunity.com/id/nwegko/"
+    )
+)

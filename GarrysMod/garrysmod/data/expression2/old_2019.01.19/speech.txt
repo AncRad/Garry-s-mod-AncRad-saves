@@ -1,0 +1,19 @@
+@name speech
+##User-Variables|Config##
+Lang="ru" #Language like a "en-us"
+IE="UTF-8" #Encoding - Standart "UTF-8"
+V=100 #Volume
+#########################
+
+O=owner()
+E=entity()
+LS=O:lastSaid()
+hideChat(1)
+
+runOnChat(1)
+#hideChat(1)  # Remove "#" at begin of the line to hide your input
+if(chatClk(owner())){
+soundURLpause(1)
+soundURLload(1,"http://translate.google.com/translate_tts?ie=utf8&q="+httpUrlEncode(LS)+"&tl="+Lang+"&client=tw-ob",V,0,O)
+
+}

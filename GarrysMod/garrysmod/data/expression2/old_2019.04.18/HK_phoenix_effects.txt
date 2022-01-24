@@ -1,0 +1,41 @@
+@name HK_phoenix_effects
+
+@inputs F1 F2 F3 [T1 T2 T3]:entity
+@outputs 
+@persist [E O]:entity
+
+@model models/bull/gates/processor.mdl
+
+
+
+if(changed(0)) {
+    
+    #include "effect_turbineFlames_v01"
+    ETF_interval = 75
+    
+    E = entity() E:setSkin(1)
+    O = owner()
+    
+    T1:effect_turbineFlames("flame1",vec(),ang(-180,0,0),9,100,vec(255,40,20),20)
+    T2:effect_turbineFlames("flame2",vec(),ang(-180,0,0),9,100,vec(255,40,20),20)
+    T3:effect_turbineFlames("flame3",vec(),ang(-180,0,0),9,100,vec(255,40,20),20)
+    
+    
+    timer("flames", 1)
+}
+
+if(clk("flames")) {
+        timer("flames", 50)
+    
+    
+    effect_turbineFlames("flame1", min(F1 / 1360 / 2.0,1) ^ 1.5)
+    effect_turbineFlames("flame2", min(F2 / 1360 / 2.0,1) ^ 1.5)
+    effect_turbineFlames("flame3", min(F3 /  518 / 2.0,1) ^ 1.5)
+}
+
+
+
+setName("HK_phoenix_effects\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage() * 1e6) + "\n")
+
+
+effect_turbineFlames()

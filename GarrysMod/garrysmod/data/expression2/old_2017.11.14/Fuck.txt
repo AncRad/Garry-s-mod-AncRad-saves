@@ -1,0 +1,102 @@
+@name Fuck
+@inputs 
+@outputs 
+@persist [E O]:entity B:array Ch I
+@trigger 
+interval(100)
+if(first())
+    {
+        Ch = 0
+        O = owner()
+        E = entity()
+       # H = holoCreate(0,E:toWorld(vec(0,0,0)),vec(1),E:toWorld(ang(0,0,0)),vec(255),"models/player/shi/megadrive_npc.mdl")
+      #  holoAnim(0,1)
+      #  holoBoneScale(0,28,vec(0))
+        #------ right
+        # 13 - plecho
+        # 14 - lokit
+        # 15 - kist
+        # 17 18 - big palec
+        # 19 20 21 - bezim palec
+        # 22 23 24 - fuck
+        # 28 29 30 - mezinec
+        # 25 26 27 - ukaz     
+        
+        
+        #------ lefr
+        # 32 - plecho
+        # 33 - lokit
+        # 34 - kist
+        # 36 37 - big palec
+        # 38 39 40 - bezim palec
+        # 41 42 43 - fuck
+        # 44 45 46 - mezinec
+        # 47 48 49 - ukaz
+        
+
+        
+      
+    }
+    if(O:weapon():type() == "weapon_crowbar")
+        {
+            O:weapon():setAlpha(0)
+            if(O:keyAttack2() & Ch == 0)
+                {
+                    
+        O:playerSetBoneAng(32,ang(0,-45,-50)) 
+        O:playerSetBoneAng(33,ang(-20,-20,0))      
+        O:playerSetBoneAng(34,ang(-20,-20,-80))
+              
+        O:playerSetBoneAng(38,ang(0,-40,0))      
+        O:playerSetBoneAng(39,ang(0,-40,0))      
+        O:playerSetBoneAng(40,ang(0,-40,0))
+        
+        O:playerSetBoneAng(41,ang(0,30,0))      
+        O:playerSetBoneAng(42,ang(0,40,0))      
+        O:playerSetBoneAng(43,ang(0,40,0))
+        
+        O:playerSetBoneAng(44,ang(0,-40,0))      
+        O:playerSetBoneAng(45,ang(0,-40,0))      
+        O:playerSetBoneAng(46,ang(0,-40,0)) 
+        
+        O:playerSetBoneAng(47,ang(0,-60,0))      
+        O:playerSetBoneAng(48,ang(0,-40,0))      
+        O:playerSetBoneAng(49,ang(0,-40,0))
+        
+        
+        O:playerSetBoneAng(13,ang(-60,50,-50)) 
+        O:playerSetBoneAng(14,ang(-30,-40,0))      
+        O:playerSetBoneAng(15,ang(20,-50,80))
+              
+        O:playerSetBoneAng(17,ang(30,-30,-30))      
+              
+        O:playerSetBoneAng(19,ang(0,-30,0))
+
+              
+        O:playerSetBoneAng(22,ang(0,60,0))    
+        O:playerSetBoneAng(23,ang(0,60,0))      
+        O:playerSetBoneAng(24,ang(0,40,0)) 
+             
+        O:playerSetBoneAng(25,ang(0,-40,0)) 
+        
+     
+        O:playerSetBoneAng(28,ang(0,-50,0))
+                    Ch = 1
+                }
+            if(!O:keyAttack2() & Ch == 1)
+                {
+                    I = 12
+                    while(I < 49)
+                        {
+                            I++
+                            if(I == 35)
+                                {
+                                    I++
+                                }else{O:playerSetBoneAng(I,ang(0)) }         
+                        }
+                    Ch = 0
+                }
+            
+        }
+#I++
+ #O:playerSetBoneAng(15,ang(0+I,-70,80))

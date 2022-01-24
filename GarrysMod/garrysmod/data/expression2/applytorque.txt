@@ -1,0 +1,132 @@
+@name applyTorque
+@inputs E2:entity
+@outputs 
+@persist E1:entity
+@model models/sprops/cuboids/height06/size_1/cube_6x6x6.mdl
+
+
+if(changed(0)) {
+    function holoClip([ID Index]:number, LocalPos:vector, LocalAng:angle, Offset:number) {
+        holoClipEnabled(ID, Index, 1)
+        holoClip(ID, Index, LocalPos + vec(Offset,0,0):rotate(LocalAng), vec(1,0,0):rotate(LocalAng), 0)
+    }
+    function addQuat(N:number, P:vector, Q:quaternion) {
+        if(!holoEntity(N)) {
+            holoCreate(N,P,vec(1.5),Q:toAngle(),vec(255), "models/editor/axis_helper.mdl")
+            holoClip(N,1,vec(),ang(0,90,0),-0.7)
+            holoClip(N,2,vec(),ang(0,0,0),-0.7)
+            holoClip(N,3,vec(),ang(-90,0,0),-0.7)
+        }
+        holoPos(N, P)
+        holoAng(N, Q:toAngle())
+    }
+    addQuat(1,vec(),quat())
+    holoParent(1, E1)
+    addQuat(2,vec(),quat())
+    holoParent(2, E2)
+    
+    E1 = entity()
+    #E1:propFreeze(0)
+    E1:propGravity(0)
+    E2:propFreeze(0)
+    E2:propGravity(0)
+}
+
+
+
+interval(1)
+E1:applyForce(-E1:vel()*E1:mass())
+E2:applyForce(((E1:pos()+(vec(0,50,0))-E2:pos())*15 - E2:vel()*1.8)*E2:mass())
+
+####///YES\\\####
+#NeedA = E1:toWorld(ang(0,0,0))
+#Q = conj(quat(E2:toLocal(NeedA)))
+NeedA = toWorldAng(vec(),ang(0,0,0),vec(),E1:angles())
+AngAcc = toLocalAng(vec(),NeedA,vec(),E2:angles())
+QuatAcc = conj(quat(AngAcc))
+VecAcc = -rotationVector(QuatAcc)
+E2:applyTorque((VecAcc*5-E2:angVelVector()*1))
+####\\\YES///####
+
+
+
+#[ ## OK!!!!
+interval(1)
+E1:applyForce(-E1:vel()*E1:mass())
+E2:applyForce(((E1:toWorld(vec(50,0,0))-E2:pos())*25 - E2:vel()*1.8)*E2:mass())
+
+NeedA = E1:toWorld(ang(0,180,0))
+Q = conj(quat(E2:toLocal(NeedA)))
+V = -rotationVector(Q)
+E2:applyTorque(V*20-E2:angVelVector()*3)
+]#
+
+
+
+#[
+Q_need = quat(E1:angles())
+Q_real = quat(E2:angles())
+Q = Q_need+conj(Q_real)
+E2:applyTorque(rotationVector(Q)*10-E2:angVelVector()*2)
+]#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

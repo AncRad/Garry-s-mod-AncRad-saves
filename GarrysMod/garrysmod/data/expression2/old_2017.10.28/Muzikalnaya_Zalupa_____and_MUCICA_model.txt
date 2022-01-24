@@ -1,0 +1,169 @@
+@name Muzikalnaya Zalupa
+@persist E:entity [SongInfo Request]:string Show Replace ReplaceId Hour Min Sec On Tick T FFT
+@persist [URLTable ArtistTable SongNameTable TimeTable]:table [SongInfoArrayS SongInfoArray]:array
+@model models/holograms/hq_cylinder.mdl
+
+if(first()){
+
+    #soundURLPurge()
+    runOnKeys(owner(),1)
+    runOnHTTP(1)
+
+    E=entity()
+    FFT=1
+    
+    entity():propDraw(0)
+    
+    holoCreate(0 ,  entity():toWorld(vec()), vec(0.8,0.8,0.6), ang(0),vec(200,0,0) , "hq_cylinder") holoParent(0, entity())
+    holoCreate(1,  holoEntity(0):toWorld(vec(0,0,-4.1)), vec(0.8,0.8,0.080), ang(0), vec(40), "hq_cylinder")
+    holoCreate(2,  holoEntity(0):toWorld(vec(0,0,3.6)), vec(0.7,0.7,0.020), ang(0), vec(40), "hq_cylinder")
+    holoCreate(3,  holoEntity(0):toWorld(vec(0,0,3.7)), vec(0.4,0.4,0.020), ang(0), vec(255), "hq_cylinder")
+    holoCreate(4,  holoEntity(0):toWorld(vec(0,0,4)), vec(0.2,0.015,0.2), ang(0,185,-90), vec(223,182,212), "models/sprops/misc/alphanum/alphanum_p.mdl")
+    
+    #ifdef entity:soundFFT(string)
+        if( FFT ) {
+            for(I=5, 40){
+                holoCreate(I,  holoEntity(0):toWorld(vec(    sin(360 * I / 36) * 36 / 8 , cos(360 * I / 36) * 36 / 8 ,4)), vec(0.065,0.01,0.1))   
+                holoAng(I, ang(0,  180 - 360 * I / 36, 0))
+                holoColor(I ,  vec(20))
+                holoMaterial(I, "lights/white")
+            } 
+        }
+    #endif
+
+    
+    for(I = 1,  40){
+        holoParent(I, 0)
+    }
+    holoColor(0,  hsv2rgb( randint(30, 360), 1 , 1  ))
+
+
+    
+    dPanel("Menu",vec2(scrW()/2-150,scrH()/2+170),vec2(300,330))
+    dShowCloseButton("Menu",0)
+    dShow("Menu",0)
+    dTextBox("String","Menu",vec2(5,28),210)
+    dButton("Find","Menu",vec2(216,28),vec2(79,20))
+    dSlider("Volume","Menu", vec2(8,290),300,0,100)
+    dSetNval("Volume",100)
+    dButton("Play","Menu",vec2(5,49),vec2(290,20))
+    dListBox("Song list","Menu",vec2(5,70),vec2(290,225))
+    
+    setName("Bube")
+}
+timer("timer",1000)
+
+if(changed(owner():keyPressed("T")) & owner():keyPressed("T")){
+    Show=!Show
+    dShow("Menu",Show)
+    enableMouse(Show)
+}
+if(dClk("Find")){
+    SongInfoArrayS:clear()
+    SongInfoArray:clear()
+    httpRequest("http://music-pesni.ru/mp3-music/"+httpUrlEncode(dSval("String")))
+}
+if(httpClk() & !Replace){
+    local Data=httpData()
+    URLTable=Data:gmatch("/play/[0-9a-zA-Z+%%]*")
+    ArtistTable=Data:gmatch("class%=\"author\"%>%<span class%=\"b%-link%_%_inner\" onclick%=\"getText%_author%(this%)%;scroll%(0%,0%)%; return false\"%>(.-)%<")
+    SongNameTable=Data:gmatch("class%=\"song\"%>%<span class%=\"b%-link%_%_inner\" onclick%=\"getText%_author%(this%)%;scroll%(0%,0%)%; return false\"%>(.-)%<")
+    TimeTable=Data:gmatch("duration%-real\"%>([0-9%:]*)%<")
+    
+    if(URLTable[1,array][1,string]:find("play")){
+        for(I=1,URLTable:count()){SongInfoArrayS:pushString(I+". ["+TimeTable[I,array][1,string]+"] "+ArtistTable[I,array][1,string]+" - "+SongNameTable[I,array][1,string])}
+    }else{
+        SongInfoArray:setString(1,"Mi ne nashli pesnyu!")
+    }
+    Replace=1
+}
+if(Replace){
+    timer("replace",1)
+    if(clk("replace")){
+        ReplaceId++
+        SongInfoArrayS:setString(ReplaceId,SongInfoArrayS:string(ReplaceId):replace("&quot;","\""):replace("&amp;","&"))
+        local Exp=SongInfoArrayS:string(ReplaceId):explode("&#")
+        for(I=1,Exp:count()){
+            if(SongInfoArrayS:string(ReplaceId):find("&#")){
+                local S=Exp:string(I):left(Exp:string(I):find(";")-1)
+                SongInfoArray:setString(ReplaceId,SongInfoArray:string(ReplaceId)+Exp:string(I):replace(S+";",toUnicodeChar(S:toNumber())))
+            }else{
+                SongInfoArray:setString(ReplaceId,SongInfoArray:string(ReplaceId)+Exp:string(I))
+            }
+        }
+    }
+    if(ReplaceId==URLTable:count()){
+        stoptimer("replace")
+        Replace=0
+        ReplaceId=0
+        dArray("Song list",SongInfoArray)
+    }
+}
+if(dClk("Play")){
+    Id=dSval("Song list"):explode("."):string(1):toNumber()
+    On=0
+    soundURLPurge()
+    for(I=1,4){soundURLload(I:toString(),"https://music-pesni.ru"+URLTable[Id,array][1,string],dNval("Volume")/100,1,E)}
+    SongInfo=SongInfoArray:string(Id):sub(SongInfoArray:string(Id):find("]")+2)
+    local T=TimeTable[Id,array][1,string]:explode(":")
+    Hour=(T:count()==2)? 0 : T:string(1):toNumber()
+    Min=T:string((T:count()==2)? 1 : 2):toNumber()
+    Sec=T:string((T:count()==2)? 2 : 3):toNumber()
+    timer("play",4000)
+}
+if(clk("play")){
+    On=1
+    for(I=1,4){
+        soundURLplay(I:toString())
+        soundURLvolume(I:toString(),dNval("Volume")/100)
+    }
+}
+if(On){
+    timer("time",1000)
+    timer("tick",100)
+    if(clk("tick")){
+        if(changed(dNval("Volume"))){
+            for(I=1,4){soundURLvolume(I:toString(),dNval("Volume")/100)}
+        } 
+    }
+    if(clk("time")){
+        Sec--
+        setName("Bube"+SongInfo+"\nTime: "+Hour+":"+((Min>9)? Min:toString() : "0"+Min)+":"+((Sec>9)? Sec:toString() : "0"+Sec)+"\nVolume "+round(dNval("Volume"))+"/100")
+        if(Sec<1){
+            Sec=60
+            Min-=1
+            if(Min<0){
+                Min=59
+                Hour-=1
+            }
+        }
+        if(Hour<0){On=0}
+    }
+}else{
+    stoptimer("tick")
+    setName("Muzikalnaya Zalupa")
+}
+
+if(!entity():isPlayerHolding()) {
+    entity():propFreeze(1)
+    entity():setPos(owner():toWorld(vec(0,0,120)))
+    entity():setAng(ang())
+}
+
+#ifdef entity:soundFFT(string)
+    local FFT = entity():soundFFT(1 + "")
+    if(FFT:count() > 0){
+        timer("fft", 50)
+        for(I = 1, 40){
+             holoScale(I+4, vec(0.065,0.01,FFT[I, number]/60%0.9 ))
+             holoColor(I+4,  hsv2rgb( 360 / 40 * I ,  1 , 1))
+        }    
+    } else{
+        for(I = 1, 40){
+             holoScale(I+4, vec(0.065,0.01,0.1))
+             holoColor(I+4,  vec(0))
+        }
+    }
+#endif
+
+

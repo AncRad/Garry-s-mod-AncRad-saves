@@ -1,0 +1,63 @@
+@name library_IO_v001
+
+@persist [PrintList]:array [PrintTimer PrintLastTime]:number [PrintColorList]:table
+
+if(!changed(0) & changed(0)) {
+    printColor("[",vec(255,50,0),entity():getName():explode("\n")[1, string],vec(255),"] ","Повторный вызов библиотеки \"",vec(),"library_IO_v001",vec(255),"\"")
+}
+
+PrintColorList = table(
+     ""   = vec(  0,  0,  0)
+    ,"wh" = vec(255,255,255)
+    ,"or" = vec(255, 50,  0)
+)
+function array       lIO_pC([C T]:string) {return array(PrintColorList[C,vector],T)}
+function array array:lIO_pC([C T]:string) {return This:add(array(PrintColorList[C,vector],T))}
+function array       lIO_pC([R G B]:number, T:string) {return array(vec(R,G,B),T)}
+function array array:lIO_pC([R G B]:number, T:string) {return This:add(array(vec(R,G,B),T))}
+function array       lIO_pC(    RGB:vector, T:string) {return array(RGB,T)}
+function array array:lIO_pC(    RGB:vector, T:string) {return This:add(array(RGB,T))}
+function array:lIO_addPrint() {
+    PrintList = PrintList:add(array(PrintList:exists(1) ? "\n" : "",vec(255),"[",vec(255,50,0),"BGM-71E",vec(255),"] "):add(This))
+    if(!PrintTimer) {PrintTimer=1 timer("print", 1)}
+}
+function lIO_addPrint(This:array) {
+    PrintList = PrintList:add(array(PrintList:exists(1) ? "\n" : "",vec(255),"[",vec(255,50,0),"BGM-71E",vec(255),"] "):add(This))
+    if(!PrintTimer) {PrintTimer=1 timer("print", 1)}
+}
+function lIO_addPrint(T:string) {
+    PrintList = PrintList:add(array(PrintList:exists(1) ? "\n" : "",vec(255),"[",vec(255,50,0),"BGM-71E",vec(255),"] " + T))
+    if(!PrintTimer) {PrintTimer=1 timer("print", 1)}
+}
+function number library_IO_v001() {
+    if(clk("print")) {
+        if(curtime() - PrintLastTime > 0.25) {
+            printColor(PrintList)
+            PrintList:clear()
+            PrintTimer=0
+        }
+        else {
+            timer("print", clamp(250 - (curtime()-PrintLastTime)*1000,1,250))
+            PrintTimer=1
+        }
+        exit()
+    }
+    return 1
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

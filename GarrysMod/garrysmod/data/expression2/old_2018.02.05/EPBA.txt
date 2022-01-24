@@ -1,0 +1,355 @@
+@name EPBA
+
+@persist [E O]:entity [Q]:table
+
+@persist Step    [FontSize] [SCR SCR_h]:vector2
+
+@persist [CursorPos]:vector2 [Act_list]:table
+
+
+
+if(changed(0)) {
+    
+    #include "EGPS"
+    
+    
+    
+    
+    
+    timer("", 1)
+}
+
+
+if(clk("")) {
+        timer("", 50)
+    
+    
+    if(Step == 0) {
+        
+        E = entity()
+        O = owner()
+        
+        egpSelect(E:isWeldedTo():wirelink())
+        egpClear()
+        
+        SCR = egpScrSize(O)
+        SCR_h = SCR/2
+        FontSize = 15
+        
+        local LP_n = "leftPanel"
+        local LP_s = v(300,4+FontSize * 22)
+        local LP_p = SCR_h * v(0.5,1.65)
+        egpAddBox(LP_n, LP_s, LP_p)
+        egpSetColor()
+        egpClickMode()
+        
+        local LP_PL_n = LP_n + "_playerLine"
+        local LP_PL_s = v(LP_s[1],FontSize)
+        local LP_PL_p = v(0,(LP_PL_s[2]-LP_s[2])/2)
+        egpAddBox(LP_PL_n, LP_PL_s, LP_PL_p)
+        egpSetColor(15)
+        egpSetParent(LP_n)
+        egpClickMode()
+        local LP_PL_T_n = LP_PL_n + "_text"
+        local LP_PL_T_p = v(1-LP_PL_s[1]/2,0)
+        egpAddText(LP_PL_T_n, "Player", LP_PL_T_p)
+        egpSetSize(FontSize)
+        egpSetAlign(0,1)
+        egpSetColor(200)
+        egpSetParent(LP_PL_n)
+        EGPS[LP_PL_n + "/table", table] = EGPS[LP_PL_n + "/table", table]:add(table(
+            "acts" = table(
+                table(
+                    "act_type" = "playersList"
+                ),
+                table(
+                    "act_type" = "selectFromList",
+                    "element_name" = LP_PL_n,
+                    
+                    "listName" = "playersList/names"
+                )
+            )
+        ))
+        
+        
+        local LP_BLM_n = LP_n + "_boneListMode"
+        local LP_BLM_s = v(LP_s[1],FontSize)
+        local LP_BLM_p = v(0,(LP_BLM_s[2]*3+4-LP_s[2])/2)
+        egpAddBox(LP_BLM_n, LP_BLM_s, LP_BLM_p)
+        egpSetColor(15)
+        egpSetParent(LP_n)
+        egpClickMode()
+        local LP_BLM_T_n = LP_BLM_n + "_text"
+        local LP_BLM_T_p = v(1-LP_BLM_s[1]/2,0)
+        egpAddText(LP_BLM_T_n, "Bone list mode", LP_BLM_T_p)
+        egpSetSize(FontSize)
+        egpSetAlign(0,1)
+        egpSetColor(200)
+        egpSetParent(LP_BLM_n)
+        
+        
+        local LP_BL_n = LP_n + "_boneList"
+        local LP_BL_s = v(LP_s[1],LP_s[2]-LP_BLM_s[2]*2-4.2)
+        local LP_BL_p = v(0,(LP_s[2]-LP_BL_s[2])/2)
+        egpAddBox(LP_BL_n, LP_BL_s, LP_BL_p)
+        egpSetColor(15)
+        egpSetParent(LP_n)
+        egpClickMode()
+        
+        
+        #
+        Step++
+    }
+    elseif(Step == 1) {
+        
+        #
+        Step++
+    }
+    else {
+        
+        if(changed(0)) {
+            
+            egpAddText("target", "123213213213", SCR) egpSetSize(FontSize) egpSetAlign(2,2)
+            egpAddCircle("cursor", v(2), v())
+            egpAddBox("cursorBox", v(), v(), 1) egpSetColor(255,50,50,100) egpSetSize(1)
+        }
+        
+        
+        local Key_clickLeft = O:keyPressed("mouse_left")
+        local Key_click = changed(Key_clickLeft) & Key_clickLeft
+        local Target = EGPS["cursor_target", string]
+        
+        local Key_cursor = O:keyPressed("C") | Key_click
+        if(changed(Key_cursor) | Key_cursor) {
+            CursorPos = O:egpGetCursorPos_FOV90(ang()) * SCR #print(CursorPos)
+            
+            
+            if(changed(CursorPos) | Key_click) {
+                egpSetPos("cursor", CursorPos)
+                
+                Target = EGPS["cursor_target", string] = egpGetTarget(CursorPos, EGPS["cursor_targetThree", string])
+                if(changed(Target)) {
+                    egpSetText("target", Target)
+                    
+                    if(Target) {
+                        egpSetSize("cursorBox", egpGetSize(Target))
+                        egpSetParent("cursorBox", Target)
+                    }
+                    else {
+                        egpSetSize("cursorBox", v())
+                    }
+                }
+            }
+            
+            
+            if(Key_click) {
+                local E_T = EGPS[Target + "/table", table]
+                if(E_T:exists("acts")) {
+                    
+                    Act_list = Act_list:add(E_T["acts", table])
+                }
+            }
+        }
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        local Act_count = Act_list:count()
+        if(Act_count) {
+            
+            local Clear = array()
+            for(C = 1, Act_count) {
+                
+                local Act_table = Act_list[C, table]
+                local Act_type = Act_table["act_type", string]
+                
+                
+                switch(Act_type) {
+                        #
+                        #- 
+                        #
+                    case "playersList",
+                        
+                        local Players_a = players()
+                        local Players_c = Players_a:count()
+                        
+                        if(changed(Players_c)) {
+                            local Player_n_a = array()
+                            local Player_e_a = array()
+                            foreach(C, Player_e:entity = Players_a) {
+                                if(Player_e != noentity()) {
+                                    local Player_n = Player_e:name()
+                                    Player_e_a:pushEntity(Player_e)
+                                    Player_n_a:pushString(Player_n)
+                                }
+                            }
+                            EGPS["playersList"      , array] = Player_e_a
+                            EGPS["playersList/names", array] = Player_n_a
+                        }
+                        
+                        Clear = array(C):add(Clear)
+                    break
+                        #
+                        #- 
+                        #
+                    case "selectFromList",
+                        
+                        
+                        local List_N = Act_table["listName", string]
+                        local List_a = EGPS[List_N, array]
+                        local List_c = List_a:count()
+                        
+                        if(!Act_table["startTime", number]) { # | changed(List_c)
+                            Act_table["startTime", number] = curtime()
+                            
+                            EGPS["cursor_targetThree", string] = "selectFromList"
+                            
+                            
+                            egpGroupOpen("selectFromList")
+                            
+                            local Max = 5
+                            local List_c_ = clamp(List_c,1,Max)
+                            
+                            
+                            local Element_n = Act_table["element_name", string]
+                            local Element_s = egpGetSize(Element_n)
+                            local Element_P = egpGetGlobalPos(Element_n)
+                            
+                            local SFL_n = "selectFromList"
+                            local SFL_s = Act_table["size", vector2] = v(Element_s[1],FontSize * List_c_)
+                            local SFL_s_f = SFL_s + v(2)
+                            local SFL_p = Act_table["pos", vector2]  = Element_P + v(0,(-Element_s[2]-SFL_s_f[2])/2)
+                            egpAddBox(SFL_n + "_fon",SFL_s_f,v())
+                            egpAddBox(SFL_n,SFL_s,SFL_p)
+                            egpSetColor(10)
+                            egpSetParent(SFL_n + "_fon", SFL_n)
+                            egpClickMode("selectFromList")
+                            
+                            
+                            local SFL_S_n = SFL_n + "_selector"
+                            local SFL_S_s = v(SFL_s[1],FontSize)
+                            local SFL_S_p = v(9e9)
+                            egpAddBox(SFL_S_n,SFL_S_s,SFL_S_p)
+                            egpSetColor(20,150)
+                            egpSetParent(SFL_n)
+                            
+                            
+                            local SFL_t_n = SFL_n + "_text"
+                            egpAddText(SFL_t_n, List_a:concat("\n",1,List_c_), SFL_s-v(1,0), v(1,0)-SFL_s/2)
+                            egpSetColor(220)
+                            egpSetSize(FontSize)
+                            egpSetParent(SFL_n)
+                            
+                            
+                            
+                            local SFL_SB_n = SFL_n + "_scrollBase"
+                            local SFL_SB_s = v(FontSize,SFL_s[2])
+                            local SFL_SB_p = v((SFL_s[1]-SFL_SB_s[1])/2,0)
+                            egpAddBox(SFL_SB_n,SFL_SB_s,SFL_SB_p)
+                            egpSetColor(20,150)
+                            egpSetParent(SFL_n)
+                            egpClickMode("selectFromList")
+                            local SFL_SB_S_n = SFL_SB_n + "_scroll"
+                            local SFL_SB_S_s = v(SFL_SB_s[1],SFL_SB_s[2]*Max/List_c)
+                            local SFL_SB_S_p = v(0,(SFL_SB_S_s[2]-SFL_SB_s[2])/2)
+                            egpAddBox(SFL_SB_S_n,SFL_SB_S_s,SFL_SB_S_p)
+                            egpSetColor(40,150)
+                            egpSetParent(SFL_SB_n)
+                            egpClickMode("selectFromList")
+                            
+                            if(Max > List_c) {
+                                egpSetSize(SFL_SB_n  , v())
+                                egpSetSize(SFL_SB_S_n, v())
+                            }
+                            
+                            egpGroupClose("selectFromList")
+                        }
+                        
+                        local Target_SFL = Target == "selectFromList"
+                        
+                        if(changed(Target_SFL) | Target_SFL) {
+                            local SFL_sy = Act_table["size", vector2][2]
+                            local SFL_Py = Act_table["pos", vector2][2]
+                            local Local_py = CursorPos[2]-SFL_Py
+                            local StringSelect = round((Local_py+SFL_sy)/FontSize)
+                            
+                            if(changed(StringSelect)) {
+                                egpSetPos("selectFromList_selector", v(0,StringSelect*FontSize-SFL_sy))
+                            }
+                            
+                            if(!Target_SFL) {
+                                egpSetPos("selectFromList_selector", v(9e9))
+                            }
+                        }
+                        
+                        
+                        
+                        if(Key_click & !Target) {
+                            
+                            egpGroupRemove("selectFromList")
+                            
+                            Clear = array(C):add(Clear)
+                            Act_table["startTime", number] = 0
+                            EGPS["cursor_targetThree", string] = ""
+                        }
+                    break
+                        #
+                        #- 
+                        #
+                    default,
+                        
+                        Clear = array(C):add(Clear)
+                    break
+                }
+                Act_list[C, table] = Act_table
+            }
+            foreach(C, I:number = Clear) {
+                Act_list:removeTable(I)
+            }
+        }
+        
+        setName("EGPS\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1e6))
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

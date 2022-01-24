@@ -1,0 +1,22 @@
+@name Switch bug
+I = 0
+
+function normal lol(){
+    I++
+    return randint( 1, 10 )
+}
+
+switch( lol() ){
+    case 1, break
+    case 2, break
+    case 3, break
+    case 4, break
+    case 5, break
+    case 6, break
+    case 7, break
+    case 8, break
+    case 9, break
+    case 10, break
+}
+
+print( I )

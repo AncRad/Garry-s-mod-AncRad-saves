@@ -1,0 +1,1056 @@
+@name Q001
+
+@inputs 
+@outputs Ddd OPS CursorDown:string Acts:array
+@persist [E O]:entity [Q Project]:table
+
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+
+
+if(changed(0)) {
+    
+    
+    
+    
+    E = entity() E:setSkin(1)
+    O = owner()
+    
+    
+    
+    
+    timer("create", 1)
+}
+
+
+if(clk("create")) {
+        timer("create", 50)
+    
+    
+    local FontSize = Q["fontSize", number] = 15
+    local Indent   = Q["indent"  , number] = 2
+    
+    local Step = Q["step", number] = Q["step", number] + 1
+    if(Step == 1) {
+        
+        #include "old 28.10.2017/25.07.2017/BBB"
+        
+        egpSelect(E:isWeldedTo():wirelink())
+        egpClear()
+        
+        local Text = ""
+        for(C = 1,50) {
+            Text = Text + "\n"
+            Q["\n" + C, string] = Text
+        }
+        
+        
+        
+        
+        local Base_n = "objectList/base"
+        local Base_s = v(300,300)
+        local Base_p = v(Base_s[1]/2, 660)
+        egpAddBox(Base_n, Base_p, Base_s, "")
+        egpSetColor(0)
+        #egpSetAlpha(0)
+        
+        local TitleBase_n = "objectList/titleBase"
+        local TitleBase_s = v(Base_s[1],20)
+        local TitleBase_p = v(0,(TitleBase_s[2]-Base_s[2])/2)
+        egpAddBox(TitleBase_n, TitleBase_p, TitleBase_s, "")
+        egpSetParent(Base_n)
+        egpSetColor(30)
+        
+        foreach(C, Name:string = array("callAddMenu")) { "objectList/titleBase/"
+            local F = C - 1
+            local TBButton = "objectList/titleBase/" + Name
+            local TBButton_s = v(TitleBase_s[2])
+            local TBButton_p = v(TBButton_s[1]-TitleBase_s[1],0)/2 + v((Indent+TBButton_s[1])*F,0)
+            egpAddBox(TBButton, TBButton_p, TBButton_s, "")
+            egpSetParent(TitleBase_n)
+            egpSetColor(60)
+            
+            Q[TitleBase_n + "/cursorTargets", array] = Q[TitleBase_n + "/cursorTargets", array]:add(array(TBButton))
+        }
+        
+        local ScrollBase_n = "objectList/scrollBase"
+        local ScrollBase_s = v(20,Base_s[2]-TitleBase_s[2]-Indent)
+        local ScrollBase_p = (Base_s-ScrollBase_s)/2
+        egpAddBox(ScrollBase_n, ScrollBase_p, ScrollBase_s, "")
+        egpSetParent(Base_n)
+        egpSetColor(30)
+        local Scroll_n = "objectList/scroll"
+        local Scroll_s = ScrollBase_s*v(1,0.3)
+        local Scroll_p = v(0,(Scroll_s[2]-ScrollBase_s[2])/2)
+        egpAddBox(Scroll_n, Scroll_p, Scroll_s, "")
+        egpSetParent(ScrollBase_n)
+        egpSetColor(60)
+        
+        local ListingBase_n = "objectList/listBase"
+        local ListingBase_s = Base_s - v(ScrollBase_s[1],TitleBase_s[2]) - v(Indent)
+        local ListingBase_p = (Base_s-ListingBase_s)*v(-0.5,0.5)
+        egpAddBox(ListingBase_n, ListingBase_p, ListingBase_s, "")
+        egpSetParent(Base_n)
+        egpSetColor(30)
+        
+        local List_n = "objectList/list"
+        local List_s = ListingBase_s - v(Indent,0)
+        local List_p = v(Indent,0) - List_s/2
+        egpAddTextLayout(List_n, "", List_p, List_s)
+        egpSetParent(ListingBase_n)
+        egpSetSize(FontSize)
+        egpSetColor(255)
+        local SelectList_n = "objectList/selecList"
+        egpAddTextLayout(SelectList_n, "", v(), List_s)
+        egpSetParent(List_n)
+        egpSetSize(FontSize)
+        egpSetColor(0,150,255)
+        
+        
+        Q["objectList/lines"       , number] = floor(ListingBase_s[2]/FontSize)
+        Q["objectList/scroll"      , number] = 0
+        Q["objectList/scrollOffset", number] = 0
+        
+        
+        Q["cursorTargets", array] = Q["cursorTargets", array]:add(array(Base_n))
+        Q[Base_n + "/cursorTargets", array] = array(TitleBase_n, Scroll_n, ListingBase_n)
+        
+    }
+    elseif(Step == 2) {
+        
+        local Base_n = "objectList/base"
+        local Base_s = egpGetSize(Base_n)
+        local Base_p = egpGetPos(Base_n)
+        
+        local MenuBase_n = "objectList/addMenu"
+        local MenuBase_s = v(Base_s[1],20*4+Indent*4)
+        local MenuBase_p = Base_p - v(0,(Base_s[2]+MenuBase_s[2])/2+Indent) * 100
+        egpAddBox(MenuBase_n, MenuBase_p, MenuBase_s, "")
+        egpSetColor(0)
+        local MenuTitleBase_n = "objectList/addMenu/titleBase"
+        local MenuTitleBase_s = v(MenuBase_s[1],20)
+        local MenuTitleBase_p = v(0,(MenuTitleBase_s[2]-MenuBase_s[2])/2)
+        egpAddBox(MenuTitleBase_n, MenuTitleBase_p, MenuTitleBase_s, "")
+        egpSetParent(MenuBase_n)
+        egpSetColor(30)
+        local MenuTitle_n = "objectList/addMenu/title"
+        local MenuTitle_t = "Добавить группу"
+        egpAddText(MenuTitle_n, MenuTitle_t, v())
+        egpSetParent(MenuTitleBase_n)
+        egpSetAlign(1,1)
+        egpSetSize(FontSize)
+        local MenuNameBase_n = "objectList/addMenu/nameBase"
+        local MenuNameBase_s = MenuTitleBase_s
+        local MenuNameBase_p = v(0,MenuNameBase_s[2]+Indent)
+        egpAddBox(MenuNameBase_n, MenuNameBase_p, MenuNameBase_s, "")
+        egpSetParent(MenuTitleBase_n)
+        egpSetColor(30)
+        local MenuName_n = "objectList/addMenu/name"
+        local MenuName_t = "noName"
+        egpAddText(MenuName_n, MenuName_t, v(Indent-MenuNameBase_s[1]/2,0))
+        egpSetParent(MenuNameBase_n)
+        egpSetAlign(0,1)
+        egpSetSize(FontSize)
+        local MenuColorBase_n = "objectList/addMenu/colorBase"
+        local MenuColorBase_s = MenuNameBase_s
+        local MenuColorBase_p = MenuNameBase_p
+        egpAddBox(MenuColorBase_n, MenuColorBase_p, MenuColorBase_s, "")
+        egpSetParent(MenuNameBase_n)
+        egpSetColor(30)
+        local MenuColorScrollBase_n = "objectList/addMenu/colorScrollBase"
+        local MenuColorScrollBase_s = v(MenuColorBase_s[1]-Indent*2,MenuColorBase_s[2]-Indent*2)
+        local MenuColorScrollBase_p = v()
+        egpAddBox(MenuColorScrollBase_n, MenuColorScrollBase_p, MenuColorScrollBase_s, "")
+        egpSetParent(MenuColorBase_n)
+        egpSetColor(0,255,255)
+        local MenuColorScroll_n = "objectList/addMenu/colorScroll"
+        local MenuColorScroll_s = v(5,MenuColorScrollBase_s[2])
+        local MenuColorScroll_p = v()
+        egpAddBox(MenuColorScroll_n, MenuColorScroll_p, MenuColorScroll_s, "")
+        egpSetParent(MenuColorScrollBase_n)
+        egpSetColor(0)
+        
+        local MenuCreateBase_n = "objectList/addMenu/createBase"
+        local MenuCreateBase_s = v(MenuNameBase_s[1]/2-Indent*1.5, MenuNameBase_s[2])
+        local MenuCreateBase_p = v(-MenuCreateBase_s[1]/2-Indent*1,MenuColorBase_p[2])
+        egpAddBox(MenuCreateBase_n, MenuCreateBase_p, MenuCreateBase_s, "")
+        egpSetParent(MenuColorScrollBase_n)
+        egpSetColor(30)
+        local MenuCreate_n = "objectList/addMenu/create"
+        local MenuCreate_t = "Создать"
+        egpAddText(MenuCreate_n, MenuCreate_t, v())
+        egpSetParent(MenuCreateBase_n)
+        egpSetAlign(1,1)
+        egpSetSize(FontSize)
+        local MenuCancelBase_n = "objectList/addMenu/cancelBase"
+        local MenuCancelBase_s = MenuCreateBase_s
+        local MenuCancelBase_p = v(-MenuCreateBase_p[1],MenuColorBase_p[2])
+        egpAddBox(MenuCancelBase_n, MenuCancelBase_p, MenuCancelBase_s, "")
+        egpSetParent(MenuColorScrollBase_n)
+        egpSetColor(30)
+        local MenuCancel_n = "objectList/addMenu/cancel"
+        local MenuCancel_t = "Отмена"
+        egpAddText(MenuCancel_n, MenuCancel_t, v())
+        egpSetParent(MenuCancelBase_n)
+        egpSetAlign(1,1)
+        egpSetSize(FontSize)
+        
+        Q["cursorTargets", array] = Q["cursorTargets", array]:add(array(MenuBase_n))
+        Q[MenuBase_n  + "/cursorTargets", array] = array(MenuNameBase_n,MenuColorScrollBase_n,MenuCreateBase_n,MenuCancelBase_n)
+        
+        function objectList_addMeny_cancel() {
+            
+            local Indent = Q["indent", number] = 2
+            
+            local MenuBase_n = "objectList/addMenu"
+            local MenuBase_p = v(9999)
+            egpSetPos(MenuBase_n, MenuBase_p)
+            
+            Q["objectList/titleBase/callAddMenu/lock", number] = 0
+            egpSetColor("objectList/titleBase/callAddMenu", 60)
+        }
+        
+    }
+    elseif(Step == 3) {
+        
+        local ChatList_n = "chatList"
+        local ChatList_s = v(400, FontSize * 8)
+        local ChatList_p = v(9999) #MenuBase_p - v(0,(MenuBase_s[2]+ChatList_s[2])/2+Indent)) * 100
+        egpAddBox(ChatList_n, ChatList_p, ChatList_s, "")
+        egpSetColor(0)
+        
+        local ChatListScrollBase_n = "chatList/scrollBase"
+        local ChatListScrollBase_s = v(20,ChatList_s[2])
+        local ChatListScrollBase_p = v((ChatList_s[1]-ChatListScrollBase_s[1])/2,0)
+        egpAddBox(ChatListScrollBase_n, ChatListScrollBase_p, ChatListScrollBase_s, "")
+        egpSetParent(ChatList_n)
+        egpSetColor(30)
+        local ChatListScroll_n = "chatList/scroll"
+        local ChatListScroll_s = v(20,ChatList_s[2]*1.0)
+        local ChatListScroll_p = v(0,(ChatListScrollBase_s[2]-ChatListScroll_s[2])/2)
+        egpAddBox(ChatListScroll_n, ChatListScroll_p, ChatListScroll_s, "")
+        egpSetParent(ChatListScrollBase_n)
+        egpSetColor(60)
+        
+        local ChatListBase_n = "chatList/base"
+        local ChatListBase_s = ChatList_s-v(ChatListScrollBase_s[1]+Indent,0)
+        local ChatListBase_p = v((ChatListBase_s[1]-ChatList_s[1])/2,0)
+        egpAddBox(ChatListBase_n, ChatListBase_p, ChatListBase_s, "")
+        egpSetParent(ChatList_n)
+        egpSetColor(30)
+        local ChatList_n = "chatList/list"
+        local ChatList_s = ChatListBase_s-v(Indent,0)
+        local ChatList_p = v(Indent,0)-ChatList_s/2
+        egpAddTextLayout(ChatList_n, "chatList/list", ChatList_p, ChatList_s)
+        egpSetParent(ChatListBase_n)
+        egpSetSize(FontSize)
+        egpSetColor(255)
+        local ChatListSelect_n = "chatList/listSelect"
+        local ChatListSelect_s = ChatList_s
+        local ChatListSelect_p = ChatList_p
+        egpAddTextLayout(ChatListSelect_n, "\nchatList/listSelect", ChatListSelect_p, ChatListSelect_s)
+        egpSetParent(ChatListBase_n)
+        egpSetSize(FontSize)
+        egpSetColor(0,150,255)
+        
+        Q["chatList/lines"       , number] = floor(ChatListBase_s[2]/FontSize)
+        Q["chatList/scroll"      , number] = 0
+        Q["chatList/scrollOffset", number] = 0
+        
+        
+        
+        
+        Q["cursorTargets", array] = Q["cursorTargets", array]:add(array(ChatList_n))
+        Q[ChatList_n + "/cursorTargets", array] = array(ChatListBase_n, ChatListScroll_n)
+        
+    }
+    elseif(Step == 4) {
+        
+        function objectList_AddGroup(Name:string, Color:vector) {
+            local GroupID = Project["objectList/group", number] = Project["objectList/group", number] + 1
+            
+            Project[GroupID + "/group/name"   , string] = Name
+            Project[Name    + "/group/id"     , number] = GroupID
+            Project[GroupID + "/group/color"  , vector] = Color
+            Project[GroupID + "/group/objects", array ] = array()
+            
+            Project["objectList/groups", array] = Project["objectList/groups", array]:add(array(GroupID))
+            
+            
+            local FontSize = Q["fontSize", number] = 15
+            
+            local List_n = "objectList/list"
+            local List_s = egpGetSize(List_n)
+            local GroupList_n = "objectList/group" + GroupID
+            egpAddTextLayout(GroupList_n, "", v(), List_s)
+            egpSetParent(List_n)
+            egpSetSize(FontSize)
+            egpSetColor(Color)
+            
+        }
+        function objectList_FoldGroup([GroupID Fold]:number) {
+            Project[GroupID + "/group/folded", number] = Fold
+        }
+        function objectList_FoldGroup(Name:string, Fold:number) {
+            local GroupID = Project[Name + "/group/id", number]
+            Project[GroupID + "/group/folded", number] = Fold
+        }
+        function objectList_AddObj([Name Type GroupName]:string) {
+            local GroupID = Project[GroupName +"/group/id", number]
+            local OBJ = Project["object", number] = Project["object", number] + 1
+            
+            
+            Project[OBJ  + "/obj/name"    , string] = Name
+            Project[Name + "/obj/id"      , number] = OBJ
+            Project[OBJ  + "/obj/type"    , string] = Type
+            Project[OBJ  + "/obj/group"   , number] = GroupID
+            Project[OBJ  + "/obj/selected", number] = 0
+            
+            Project[GroupID + "/group/objects", array] = Project[GroupID + "/group/objects", array]:add(array(OBJ))
+        }
+        
+        
+        function objectList() {
+            
+            local FontSize = Q["fontSize", number] = 15
+            
+            
+            local StringsCount = 0
+            local Groups = Project["objectList/groups", array]
+            local GroupsCounts = array()
+            local GroupsCount  = Groups:count()
+            foreach(C, GroupID:number = Groups) {
+                local CGroup = Project[GroupID + "/group/objects", array]
+                local Folded = Project[GroupID + "/group/folded", number]
+                
+                StringsCount+= (Folded ? 1 : CGroup:count() + 1)
+                
+                Q["objectList/group/text/" + GroupID, string] = ""
+                egpSetText("objectList/group" + GroupID, "")
+            }
+            local Lines = Q["objectList/lines", number]
+            local Offset = Q["objectList/scroll", number]
+            local OFFSET = max(ceil(Offset*(StringsCount-Lines)),0)
+            
+            
+            local GroupID = 0
+            local GroupN = 0
+            local Group = array()
+            local ObjN = 0
+            if(OFFSET) {
+                StringsCount = 0
+                foreach(C, CGroupID:number = Groups) {
+                    local CGroup = Project[CGroupID + "/group/objects", array]
+                    local Folded = Project[CGroupID + "/group/folded", number]
+                    local Count = CGroup:count()
+                    
+                    local LastStringsCount = StringsCount
+                    StringsCount+= (Folded ? 1 : Count + 1)
+                    if(StringsCount>=OFFSET) {
+                        GroupID = CGroupID
+                        GroupN = C
+                        Group = CGroup
+                        ObjN = OFFSET-LastStringsCount
+                        break
+                    }
+                }
+            }
+            
+            local WhiteText = ""
+            local BlueText = ""
+            local String = 0
+            while(String < Lines) {
+                String++
+                
+                local Folded = Project[GroupID + "/group/folded", number]
+                local Obj = Group[ObjN, number]
+                if(!Folded & Obj) {
+                    ObjN++
+                    
+                    local ObjName = Project[Obj + "/obj/name", string]
+                    local ObjID = Project[ObjName + "/obj/id", number]
+                    if(Project[ObjID + "/obj/selected", number]) {
+                        WhiteText+= "\n"
+                        BlueText+= ObjName + "\n"
+                    }
+                    else {
+                        WhiteText+= ObjName + "\n"
+                        BlueText+= "\n"
+                    }
+                    
+                    
+                    
+                    Q["objectList/list/ID"   + String, number] = Project[ObjName + "/obj/id", number]
+                    Q["objectList/list/type" + String, string] = "object"
+                }
+                else {
+                    GroupN++
+                    ObjN = 1
+                    GroupID = Groups[GroupN, number]
+                    local GroupName = Project[GroupID + "/group/name", string]
+                    Group = Project[GroupID + "/group/objects", array]
+                    local Count = Group:count()
+                    
+                    local GroupList_n = "objectList/group" + GroupID
+                    local GroupList_t = Q["\n" + (String-1), string] + "   " + GroupName + " (" + Count + ")"
+                    egpSetText(GroupList_n, GroupList_t)
+                    
+                    Q["objectList/list/ID"   + String, number] = GroupID
+                    Q["objectList/list/type" + String, string] = "group"
+                    
+                    WhiteText+= "\n"
+                    BlueText+= "\n"
+                    
+                    if(!Count & (GroupN >= GroupsCount)) {break}
+                }
+            }
+            Q["objectList/listEnd", number] = String
+            
+            local List_n = "objectList/list"
+            local SelectList_n = "objectList/selecList"
+            egpSetText(List_n, WhiteText)
+            egpSetText(SelectList_n, BlueText)
+        }
+        
+        
+        function addAct(Act:string) {
+            if(!Q[Act + "/lock", number]) {
+                local ActID = Q["act", number] = Q["act", number] + 1
+                
+                
+                #Q[ActID + "/cursorPos", vector2] = Q["cursor", vector2]
+                Q[ActID + "/act", string] = Act
+                Q["acts", array] = Q["acts", array]:add(array(ActID))
+            }
+        }
+        
+        
+        function chatList() {
+            
+            local FontSize = Q["fontSize", number] = 15
+            
+            local ChatListBase_n = "chatList/base"
+            local ChatListBase_s = egpGetSize(ChatListBase_n)
+            local ChatList_n = "chatList/list"
+            local ChatListSelect_n = "chatList/listSelect"
+            
+            local Saids = Q["lastSaids", array]
+            local Count = Saids:count()
+            local Lines = Q["chatList/lines", number]
+            local Offset = Q["chatList/scroll", number]
+            local OFFSET = floor(Offset * max(Count - Lines,0))
+            local Select = Q["chatList/select", number]
+            
+            local WhiteText = ""
+            local BlueTest = ""
+            local String = 0
+            local C = 0
+            while(String <= Lines) {
+                C++
+                local Said = Saids[C, string]
+                
+                if(Said) {
+                    String++
+                    
+                    if(Select == String) {
+                        WhiteText+= "\n"
+                        BlueTest+= Said + "\n"
+                        Q["chatList/select/string", string] = Said
+                    }
+                    else {
+                        WhiteText+= Said + "\n"
+                        BlueTest+= "\n"
+                    }
+                }
+                else {
+                    break
+                }
+            }
+            Q["chatList/endString", number] = String
+            egpSetText(ChatList_n, WhiteText)
+            egpSetText(ChatListSelect_n, BlueTest)
+        }
+        
+        
+        function callChatList(Obj_n:string) {
+            local ObjBase_n = Obj_n + "Base"
+            
+            local FontSize = Q["fontSize", number]
+            local Indent   = Q["indent"  , number]
+            
+            local Obj_s = egpGetSize(ObjBase_n)
+            local Obj_p = egpGetGlobalPos(ObjBase_n)
+            
+            local ChatList_n = "chatList"
+            local ChatList_s = v(Obj_s[1],FontSize*8)
+            local ChatList_p = Obj_p - v(0,(ChatList_s[2]+Obj_s[2])/2+Indent)
+            egpSetSize(ChatList_n, ChatList_s)
+            egpSetPos(ChatList_n, ChatList_p)
+            
+            local ChatListScrollBase_n = "chatList/scrollBase"
+            local ChatListScrollBase_s = v(20,ChatList_s[2])
+            local ChatListScrollBase_p = v((ChatList_s[1]-ChatListScrollBase_s[1])/2,0)
+            egpSetSize(ChatListScrollBase_n, ChatListScrollBase_s)
+            egpSetPos(ChatListScrollBase_n, ChatListScrollBase_p)
+            local ChatListScroll_n = "chatList/scroll"
+            local ChatListScroll_s = v(20,ChatList_s[2]*0.3)
+            local ChatListScroll_p = v(0,(ChatListScrollBase_s[2]-ChatListScroll_s[2])/2)
+            egpSetSize(ChatListScroll_n, ChatListScroll_s)
+            egpSetPos(ChatListScroll_n, ChatListScroll_p)
+            
+            
+            local ChatListBase_n = "chatList/base"
+            local ChatListBase_s = ChatList_s-v(ChatListScrollBase_s[1]+Indent,0)
+            local ChatListBase_p = v((ChatListBase_s[1]-ChatList_s[1])/2,0)
+            egpSetSize(ChatListBase_n, ChatListBase_s)
+            egpSetPos(ChatListBase_n, ChatListBase_p)
+            local ChatList_n = "chatList/list"
+            local ChatList_s = ChatListBase_s-v(Indent,0)
+            local ChatList_p = v(Indent,0)-ChatList_s/2
+            egpSetSize(ChatList_n, ChatList_s)
+            egpSetPos(ChatList_n, ChatList_p)
+            local ChatListSelect_n = "chatList/listSelect"
+            local ChatListSelect_s = ChatList_s
+            local ChatListSelect_p = ChatList_p
+            egpSetSize(ChatListSelect_n, ChatListSelect_s)
+            egpSetPos(ChatListSelect_n, ChatListSelect_p)
+            
+            Q["chatList/lines"       , number] = floor(ChatListBase_s[2]/FontSize)
+            Q["chatList/scroll"      , number] = 1
+            Q["chatList/scrollOffset", number] = 0
+            
+            
+            addAct("chatList")
+            Q["chatList/enable", number] = 1
+            Q["chatList/obj", string] = Obj_n
+        }
+        function closeChatList() {
+            local ChatList_n = "chatList"
+            egpSetPos(ChatList_n, v(9999))
+            
+            
+            Q["chatList/enable", number] = 0
+            egpSetColor(Q["chatList/obj", string] + "Base", 30)
+        }
+        
+        #####
+        
+        
+        
+        
+    }
+    elseif(Step == 5) {
+        
+    }
+    elseif(Step == 6) {
+        stoptimer("create")
+        timer("", 1)
+    }
+}
+
+
+if(clk("")) {
+        timer("", 100)
+    
+    if(changed(0)) {
+        
+        runOnChat(1)
+        
+        function number globalInrange(Name:string, CursorPos:vector2) {
+            local TargetGP = egpGetGlobalPos(Name)
+            local TargetS  = egpGetSize(Name) / 2
+            local Inrange = inrange(CursorPos - TargetGP,-TargetS,TargetS)
+            
+            return Inrange
+        }
+        function string cursorTarget(TargetList:string, CursorPos:vector2) {
+            
+            if(Q["cursorTarget/end", number]) {
+                local CursorTarget = Q["cursorTarget", string]
+                if(CursorTarget) {
+                    if(globalInrange(CursorTarget, CursorPos)) {
+                        return CursorTarget
+                    }
+                    else {
+                        Q["cursorTarget/end", number] = 0
+                    }
+                }
+            }
+            else {
+                Q["cursorDown", string] = ""
+                local CursorTargets = Q[TargetList, array]
+                local Return = ""
+                local Real = 0
+                while(1) {
+                    Real++
+                    local Target = CursorTargets[Real, string]
+                    if(Target) {
+                        if(globalInrange(Target, CursorPos)) {
+                            
+                            local CursorDown = Q["cursorDown", string]
+                            Q["cursorDown", string] = CursorDown + (CursorDown ? "///" : "") + Target
+                            
+                            Return = Target
+                            local Targets = Q[Target + "/cursorTargets", array]
+                            if(Targets:count()) {
+                                CursorTargets = Targets
+                                Real = 0
+                            }
+                            else {
+                                Q["cursorTarget/end", number] = 1
+                                Q["cursorTarget", string] = Target
+                                return Target
+                            }
+                        }
+                    }
+                    else {
+                        local CursorDown = Q["cursorDown", string]
+                        Q["cursorTarget/end", number] = 0
+                        Q["cursorTarget", string] = Return
+                        return Return
+                    }
+                }
+            }
+        }
+        function string cursorTarget(CursorPos:vector2) {
+            cursorTarget("cursorTargets" , CursorPos)
+        }
+        
+        
+    }
+    
+    
+    if(O:keyPressed("C")) {
+        ###########################################################################################
+        ############################################################################################
+        local Eye        = O:eye()                                                                ###
+        local EyeAngles  = O:eyeAngles()                                                           ###
+        if(changed(Eye) | changed(EyeAngles)) {                                                     ##
+            local EyeA       = EyeAngles:forward()                                                  ##
+            local EgpScrSize = egpScrSize(O)                                                        ##
+                                                                                                    ##
+            local Holo = holoEntity(0)                                                              ##
+            if(!Holo) {holoCreate(0,vec(),vec())}                                                   ##
+            holoAng(0, EyeAngles)                                                                   ##
+                                                                                                    ##
+            local Cos = Eye[1] * EyeA[1] + Eye[2] * EyeA[2] + Eye[3] * EyeA[3]                      ##
+            local CursorV = (Holo:toLocal(Eye / Cos) / vec(1, -1.332, -0.75) + vec(0, 1, 1)) / 2    ##
+                                                                                                    ##
+            local Cursor = EGP["cursor", vector2] = vec2(CursorV[2], CursorV[3]) * EgpScrSize      ###
+        }                                                                                         ###
+        ############################################################################################
+        ###########################################################################################
+    }
+    
+    
+    local Cursor = EGP["cursor", vector2]
+    local CursorTarget = Q["cursorTarget", string]
+    if(changed(Cursor)) {
+        cursorTarget(Cursor)
+    }
+    
+    local KeyClick = O:keyPressed("E") | O:keyAttack1()
+    
+    if(changed(KeyClick) & KeyClick) {
+        addAct(CursorTarget)
+    }
+    
+    
+    
+    local Clear = array()
+    foreach(C, ActID:number = Q["acts", array]) {
+        
+        local NoRemove = 0
+        local Act = Q[ActID + "/act", string]
+        switch(Act) {
+            ########################################################################
+            ########################################################################  OBJECT LIST
+            ########################################################################
+            ########################
+            ########################  SCROLLING
+            ########################
+            case "objectList/scroll",
+                
+                local Scroll_n = "objectList/scroll"
+                if(KeyClick) {
+                    if(!Q["objectList/scroll/first", number]) {
+                        Q["objectList/scroll/first", number] = 1
+                        
+                        egpSetColor(Scroll_n, vec(0,150,255))
+                        
+                        Q["objectList/scroll/startPos", number] = egpGetPos(Scroll_n)[2]
+                        Q["objectList/scroll/startCursorPos", number] = Cursor[2]
+                    }
+                    
+                    local Dif = Cursor[2] - Q["objectList/scroll/startCursorPos", number]
+                    local StartPos = Q["objectList/scroll/startPos", number]
+                    
+                    local ScrollBase_n = "objectList/scrollBase"
+                    local ScrollBase_s = egpGetSize(ScrollBase_n)[2]/2
+                    
+                    local Scroll_n = "objectList/scroll"
+                    local Scroll_s = egpGetSize(Scroll_n)[2]/2
+                    local Clamp = ScrollBase_s-Scroll_s
+                    local Scroll_p = clamp(StartPos+Dif,-Clamp,Clamp)
+                    
+                    egpSetPos(Scroll_n, v(0,Scroll_p))
+                    Q["objectList/scroll", number] = 0.5+Scroll_p/Clamp/2
+                    
+                    objectList()
+                }
+                else {
+                    Q["objectList/scroll/first", number] = 0
+                    
+                    egpSetColor(Scroll_n, vec(60))
+                }
+                NoRemove = KeyClick
+            break
+            ########################
+            ########################  SELECT
+            ########################
+            case "objectList/listBase",
+                
+                local FontSize = Q["fontSize", number] = 15
+                local ListingBase_n = "objectList/listBase"
+                local ListingBase_s = egpGetSize(ListingBase_n)[2]/2
+                local LocalPos = (Cursor - egpGetGlobalPos(ListingBase_n))[2]+ListingBase_s
+                
+                local String = ceil(LocalPos/FontSize)
+                if(String < Q["objectList/listEnd", number]) {
+                    local ID   = Q["objectList/list/ID"   + String, number]
+                    local Type = Q["objectList/list/type" + String, string]
+                    
+                    if(Type == "group") {
+                        Project[ID + "/group/folded", number] = !Project[ID + "/group/folded", number]
+                    }
+                    else {
+                        local Select = Q["objectList/select", number]
+                        Project[Select + "/obj/selected", number] = 0
+                        Project[ID     + "/obj/selected", number] = 1
+                        Q["objectList/select", number] = ID
+                    }
+                    objectList()
+                }
+                NoRemove = 0
+            break
+            
+            ########################
+            ########################  CALL ADDMENU
+            ########################
+            case "objectList/titleBase/callAddMenu",
+                if(!Q["objectList/titleBase/callAddMenu/lock", number]) {
+                    Q["objectList/titleBase/callAddMenu/lock", number] = 1
+                    
+                    egpSetColor("objectList/titleBase/callAddMenu", 0,150,255)
+                }
+                
+                if(KeyClick) {
+                    
+                }
+                else {
+                    if(globalInrange("objectList/titleBase/callAddMenu", Cursor)) {
+                        local Indent = Q["indent", number] = 2
+                        
+                        local Base_n = "objectList/base"
+                        local Base_s = egpGetSize(Base_n)
+                        local Base_p = egpGetPos(Base_n)
+                        local MenuBase_n = "objectList/addMenu"
+                        local MenuBase_s = v(Base_s[1],20*4+Indent*4)
+                        local MenuBase_p = Base_p - v(0,(Base_s[2]+MenuBase_s[2])/2+Indent)
+                        egpSetPos(MenuBase_n, MenuBase_p)
+                        
+                    }
+                    else {
+                        objectList_addMeny_cancel()
+                    }
+                }
+                NoRemove = KeyClick
+            break
+            
+            ########################
+            ########################  
+            ########################
+            case "",
+                
+            break
+            
+            ########################
+            ########################  
+            ########################
+            case "",
+                
+            break
+            
+            
+            ####################################
+            ####################################  ADD MENU
+            ####################################
+            ########################
+            ########################  NAME
+            ########################
+            case "objectList/addMenu/nameBase",
+                if(!Q["objectList/addMenu/nameBase/lock", number]) {
+                    Q["objectList/addMenu/nameBase/lock", number] = 1
+                    
+                    egpSetColor("objectList/addMenu/nameBase", 0,150,255)
+                }
+                
+                if(KeyClick) {
+                    
+                }
+                else {
+                    if(globalInrange("objectList/addMenu/nameBase", Cursor)) {
+                        callChatList("objectList/addMenu/name")
+                    }
+                    else {
+                        egpSetColor("objectList/addMenu/nameBase", 30)
+                    }
+                    Q["objectList/addMenu/nameBase/lock", number] = 0
+                }
+                NoRemove = KeyClick
+            break
+            ########################
+            ########################  SCROLL
+            ########################
+            case "objectList/addMenu/colorScrollBase",
+                if(!Q["objectList/addMenu/colorScrollBase/lock", number]) {
+                    Q["objectList/addMenu/colorScrollBase/lock", number] = 1
+                    
+                }
+                
+                if(KeyClick) {
+                    
+                    
+                    local MenuColorScrollBase_n = "objectList/addMenu/colorScrollBase"
+                    local MenuColorScrollBase_s = egpGetSize(MenuColorScrollBase_n)
+                    local MenuColorScrollBase_p = egpGetGlobalPos(MenuColorScrollBase_n)
+                    local MenuColorScroll_n = "objectList/addMenu/colorScroll"
+                    local MenuColorScroll_s = egpGetSize(MenuColorScroll_n)
+                    
+                    local Clamp = (MenuColorScrollBase_s[1]-MenuColorScroll_s[1])/2
+                    local MenuColorScroll_p = v(clamp((Cursor-MenuColorScrollBase_p)[1],-Clamp,Clamp),0)
+                    
+                    local Color = Q["objectList/addMenu/colorScrollBase", vector] = hsv2rgb((0.5 + MenuColorScroll_p[1] / Clamp/2) * 360, 1, 1)
+                    
+                    egpSetPos(MenuColorScroll_n, MenuColorScroll_p)
+                    egpSetColor(MenuColorScrollBase_n, Color)
+                }
+                else {
+                    Q["objectList/addMenu/colorScrollBase/lock", number] = 0
+                }
+                NoRemove = KeyClick
+            break
+            
+            ########################
+            ########################  CREATE
+            ########################
+            case "objectList/addMenu/createBase",
+                if(!Q["objectList/addMenu/createBase/lock", number]) {
+                    Q["objectList/addMenu/createBase/lock", number] = 1
+                    
+                    egpSetColor("objectList/addMenu/create", 0,150,255)
+                }
+                
+                if(KeyClick) {
+                    
+                }
+                else {
+                    if(globalInrange("objectList/addMenu/createBase", Cursor)) {
+                        
+                        local MenuName_t = Q["objectList/addMenu/name", string]
+                        local MenuColorScrollBase_c = Q["objectList/addMenu/colorScrollBase", vector]
+                        objectList_AddGroup(MenuName_t, MenuColorScrollBase_c)
+                        objectList_addMeny_cancel()
+                        objectList()
+                    }
+                    Q["objectList/addMenu/createBase/lock", number] = 0
+                    egpSetColor("objectList/addMenu/create", 255)
+                }
+                NoRemove = KeyClick
+            break
+            ########################
+            ########################  CANCEL
+            ########################
+            case "objectList/addMenu/cancelBase",
+                if(!Q["objectList/addMenu/cancelBase/lock", number]) {
+                    Q["objectList/addMenu/cancelBase/lock", number] = 1
+                    
+                    egpSetColor("objectList/addMenu/cancel", 0,150,255)
+                }
+                
+                if(KeyClick) {
+                    
+                }
+                else {
+                    if(globalInrange("objectList/addMenu/cancelBase", Cursor)) {
+                        
+                        objectList_addMeny_cancel()
+                    }
+                    Q["objectList/addMenu/cancelBase/lock", number] = 0
+                    egpSetColor("objectList/addMenu/cancel", 255)
+                }
+                NoRemove = KeyClick
+            break
+            
+            
+            
+            ########################################################################
+            ########################################################################  CHAT LIST
+            ########################################################################
+            ########################
+            ########################  LISTING
+            ########################
+            case "chatList",
+                local LastSaids = Q["lastSaids", array]
+                local Count = LastSaids:count()
+                local Select = Q["chatList/select", number]
+                
+                if(changed(Cursor)) {
+                    local FontSize = Q["fontSize", number]
+                    local EndString = Q["chatList/endString", number]
+                    
+                    local ChatListBase_n = "chatList/base"
+                    local ChatListBase_s = egpGetSize(ChatListBase_n)[2]/2
+                    local ChatListBase_p = egpGetGlobalPos(ChatListBase_n)[2]
+                    
+                    Select = Q["chatList/select", number] = ceil((Cursor[2]-ChatListBase_p+ChatListBase_s)/FontSize)
+                }
+                
+                if(changed(Count) | changed(Select)) {
+                    chatList()
+                }
+                if(changed(KeyClick) & KeyClick) {
+                    if(!globalInrange("chatList", Cursor)) {
+                        closeChatList()
+                    }
+                }
+                
+                NoRemove = Q["chatList/enable", number]
+            break
+            ########################
+            ########################  
+            ########################
+            case "chatList/base",
+                closeChatList()
+                
+                local Said = Q["chatList/select/string", string]
+                local Obj_n = Q["chatList/obj", string]
+                Q[Obj_n, string] = Said
+                egpSetText(Obj_n, Said)
+            break
+            
+            ########################
+            ########################  SCROLL
+            ########################
+            case "chatList/scroll",
+                if(!Q["chatList/scroll/lock", number]) {
+                    Q["chatList/scroll/lock", number] = 1
+                    
+                    egpSetColor("chatList/scroll", 0,150,255)
+                }
+                
+                if(KeyClick) {
+                    Q["chatList/scroll", number]
+                    chatList()
+                }
+                else {
+                    
+                    Q["chatList/scroll/lock", number] = 0
+                    egpSetColor("chatList/scroll", 60)
+                }
+                NoRemove = KeyClick
+            break
+        }
+        if(!NoRemove) {Clear = array(C):add(Clear)}
+    }
+    foreach(C, I:number = Clear) {Q["acts", array]:remove(I)}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+if(chatClk(O)) {
+    local LS = O:lastSaid()
+    if(LS:left(1) == "!") {
+        hideChat(1)
+        
+        local LSL = LS:length()
+        local LS = LS:right(LSL-1)
+        
+        local InCase = 0
+        switch(LS) {
+            case "saidsClear",
+                Q["lastSaids", array]:clear()
+                InCase = 1
+            break
+        }
+        
+        if(!InCase & LS) {
+            Q["lastSaid", string] = LS
+            Q["lastSaids", array] = Q["lastSaids", array]:add(array(LS))
+            #print("commad #" + LS)
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Acts = Q["acts", array]
+CursorDown = Q["cursorDown", string]
+OPS = ops()

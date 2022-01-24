@@ -1,0 +1,118 @@
+@name Tank_01_version01_hodovaya
+
+@inputs [Base LW_e RW_e]:entity
+@inputs [Pod]:entity
+
+@outputs LV RV
+@persist [Q]:table Control:vector
+
+@trigger 
+
+
+
+if(changed(0)) {
+    
+    timer("user", 1)
+    timer("control", 1)
+}
+
+if(clk("user")) {
+    
+    
+    local User = Pod:driver()
+    
+    
+    if(User) {
+        
+        local Key_W = User:keyForward()
+        local Key_A = User:keyLeft()
+        local Key_S = User:keyBack()
+        local Key_D = User:keyRight()
+        Control = vec(Key_W-Key_S,Key_A-Key_D,0)
+    }
+    
+    if(changed(User) & !User) {
+        Control = vec()
+    }
+    
+    
+    timer("user", User ? 50 : 200)
+}
+
+
+if(clk("control")) {
+        timer("control", 50)
+    
+    if(changed(0)) {
+        
+        Q["control/lastCurtime", number] = curtime()
+    }
+    local LastCurtime = Q["control/lastCurtime", number]
+    local Curtime = Q["control/lastCurtime", number] = curtime()
+    local Interval = Curtime - LastCurtime
+    local Loop = Interval / 0.015625
+    
+    
+    
+     LV =  LW_e:angVel()[1] LV*=0.5+min(abs(LV/150),1)^5*0.5
+     RV = -RW_e:angVel()[1] RV*=0.5+min(abs(RV/150),1)^5*0.5
+    local SUB = (LV+RV)/2
+    
+    local WS = Control[1]*2000
+    local AD = Control[2]*3500 * clamp(1-SUB/2000,0.65,1)
+    
+    
+    local FL = (WS-AD)
+    #LW_e:applyAngForce(ang(FL*Loop*150,0,0))
+    local FR = (WS+AD)
+    #RW_e:applyAngForce(ang(-FR*Loop*150,0,0))
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName("Tank_01_version01_hodovaya\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1e6))
+if(dupefinished()) {reset()}

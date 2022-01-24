@@ -1,0 +1,35 @@
+@name Alpha_StringModule
+@inputs 
+@outputs 
+@persist 
+@trigger 
+
+@persist Strings_list:table
+@persist Strings_HoloId
+
+
+function addString([String_Name String_Text]:string, [String_FontSize String_FontThickness]:number, String_Ang:angle, String_Color4:vector4) {
+    
+    String_Text = String_Text:upper()
+    local Strings_firstChar_Entity = noentity()
+    local String_Table = table()
+    Strings_list[String_Text, table] = String_Table
+    
+    foreach(C, Char:string = String_Text:explode("")) {
+        while(holoEntity(Strings_HoloId)) {Strings_HoloId++}
+        
+        local Char_Entity = holoCreate(Strings_HoloId,Strings_firstChar_Entity:toWorld(vec( 0 , C * 10 , 0 )),vec(String_FontThickness,String_FontSize,String_FontSize),Strings_firstChar_Entity:toWorld(ang( 0 , 0 , 0 )), String_Color4, "models/sprops/misc/alphanum/alphanum_" + Char + ".mdl")
+        String_Table[Strings_HoloId, string] = Char
+        if(C == 1) {
+            Strings_LastStringID = Strings_HoloId
+            Strings_firstChar_Entity = Char_Entity
+        }
+    }
+}
+
+function addString_Parent([String_Name]:string) {
+    
+    if(Strings_list:exists(String_Name)) {return}
+    local String_Table = Strings_listString_Name, ]
+    foreach(
+}

@@ -1,0 +1,184 @@
+@name Ballistics_01_001
+
+@inputs 
+@outputs 
+
+#- data_project
+@persist [Ballistics_ProjectName]:string
+
+#- data_gate
+@persist Ballistics_started
+@persist [Ballistics_NoInclude]:number
+
+#- data_ballistics
+@persist [Ballistics_GT]:gtable
+@persist [Ballistics_BulletList]:table
+
+
+
+switch(clkName()) {
+    default,
+        
+        #- data_project
+        Ballistics_ProjectName = Ballistics_ProjectName ? Ballistics_ProjectName : ""
+        
+        #- data_gate
+        if(Ballistics_started) {reset()} Ballistics_started = 1
+        Ballistics_NoInclude = entity():name() == "Ballistics_01_001"
+        
+        
+        #- data_ballistics
+        Ballistics_GT = gTable("AncRad/Ballistics/" + Ballistics_ProjectName + "/" + owner():steamID())
+        Ballistics_GT:clear()
+        if(!Ballistics_GT["BulletList", table]:count()) {
+            Ballistics_GT["BulletList", table] = table()
+        }
+        Ballistics_BulletList = Ballistics_GT["BulletList", table]
+        
+        
+        timer("ballistics_simulationPreload", 1)
+        
+        
+        
+        #- 
+        function ballistics_AddBullet([Pos Vel]:vector, Mass:number) {
+            local Counter = Ballistics_GT["bulletCounter", number] + 1
+            Ballistics_GT["bulletCounter", number] = Counter
+            
+            holoCreate(Counter, Pos, vec(),ang(),vec4(),"tetra"):setTrails(5, 0, 1, "trails/laser", vec(255,30,0), 255)
+            
+            
+            Ballistics_BulletList:pushTable(table(
+                 "index" = Counter
+                ,"time_position" = curtime()
+                ,"position" = Pos
+                ,"velocity" = Vel
+                ,"mass" = Mass
+            ))
+        }
+    break
+    
+    
+    case "ballistics_simulationPreload",
+        #timer("ballistics_simulationPreload", 50)
+        timer("ballistics_simulation", 50)
+    break
+    case "ballistics_simulation",
+        timer("ballistics_simulation", 50)
+        
+        local O = owner()
+        local Fire1 = O:keyPressed("mouse_4")
+        if(Fire1) {
+            ballistics_AddBullet(owner():shootPos() + owner():eye() * 30 - vec(0,0,5), owner():eye():rotate(ang(randvec(vec(-0.2),vec(0.2)))) * 52.5 * 600, 0.01)
+        }
+        local Fire2 = O:keyPressed("mouse_5")
+        if(changed(Fire2) & Fire2) {
+            for(C = 1,8) {
+                ballistics_AddBullet(owner():shootPos() + owner():eye() * 30 - vec(0,0,5), owner():eye():rotate(ang(randvec(vec(-1),vec(1)))) * 52.5 * 300, 0.0035)
+            }
+        }
+        
+        local Curtime = curtime()
+        if(Ballistics_GT["simulation_curtime", number] != Curtime) {
+            Ballistics_GT["simulation_curtime", number] = Curtime
+            Ballistics_GT["simulation_continue", number] = 0
+        }
+        if(Ballistics_GT["simulation_continue", number]) {break}
+        
+        local Count = Ballistics_BulletList:count()
+        local Index = Ballistics_GT["simulation_index", number]
+        local Step = Ballistics_GT["simulation_step", number]
+        while(perf() & Count) {
+            ###   ###   ###
+            Step++
+            if(Step > Count) {
+                Step = 0
+                Ballistics_GT["simulation_continue", number] = 1
+                break
+            }
+            Index++
+            if(Index > Count) {Index = 1}
+            ###   ###   ###
+            local Bul_T = Ballistics_BulletList[Index, table]
+            local Bul_t = Bul_T["time_position", number]
+            local Bul_p = Bul_T["position", vector]
+            local Bul_v = Bul_T["velocity", vector]
+            local Bul_m = Bul_T["mass", number]
+            local Bul_i = Bul_T["index", number]
+            
+            local Interval = Curtime - Bul_t
+            
+            local Bul_v_new = Bul_v - (Bul_v * 0.2 + vec(0,0,600)) * Interval
+            local Bul_v_ave = Bul_v/2+Bul_v_new/2
+            
+            rangerFilter(owner())
+            local Ranger = rangerOffset(Bul_v_ave:length() * Interval, Bul_p, Bul_v_ave)
+            if(Ranger:hit()) {
+                local Mul = 1 + Ranger:hitNormal():dot(Bul_v_new:normalized())
+                Bul_v_new = -Bul_v_new:rotateAroundAxis(Ranger:hitNormal(),180):rotate(ang(randvec(vec(-5),vec(5)))) * Mul ^ 4 * 0.3
+                
+                local Energy = (Bul_v_ave:length()/52.5) ^ 2 * Bul_m
+                local Damage = 50 * Energy / 300 / 300 / Bul_m
+                entity():shootTo(Ranger:pos(),Bul_v_ave,0,Bul_v_ave:length()/52.5*Bul_m/5*0,Damage,"")
+                
+                if(Bul_v_new:length() < 52.5 * 10 | Ranger:hitSky()) {
+                    #ifdef entity:remove(number)
+                        holoEntity(Bul_i):remove(4)
+                    #else
+                        holoDelete(Bul_i)
+                    #endif
+                    Ballistics_BulletList:remove(Index)
+                    Count--
+                    Index--
+                    Step--
+                    continue
+                }
+            }
+            
+            Bul_p = Ranger:pos()
+            holoPos(Bul_i, Bul_p)
+            
+            Bul_T["position", vector] = Bul_p
+            Bul_T["velocity", vector] = Bul_v_new
+            Bul_T["time_position", number] = Curtime
+        }
+        Ballistics_GT["simulation_index", number] = Index
+        Ballistics_GT["simulation_step", number] = Step
+        
+        if(0) {
+            entity():setName(
+                "Ballistics_01_001"
+                + "\nOPS: " + ops()
+                + "\nCPU: " + floor(cpuUsage() * 1e6)
+                + "\nCount: " + Count
+                + "\nIndex: " + Index
+                + "\nStep: " + Step
+            )
+        }
+    break
+}
+
+
+entity():setName(
+    "Ballistics_01_001"
+    + "\nOPS: " + ops()
+    + "\nCPU: " + floor(cpuUsage() * 1e6)
+    + "\nBullCount: " + Ballistics_GT["BulletList", table]:count()
+)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

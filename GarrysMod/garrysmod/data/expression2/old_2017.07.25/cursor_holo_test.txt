@@ -1,0 +1,77 @@
+@name cursor holo test
+
+@inputs 
+@outputs A B CursorV:vector
+@persist [E O]:entity [Q]:table [W]:wirelink
+
+@trigger 
+
+
+if(changed(0)) {
+    
+    function number skalar( [V1 V2]:vector ) {
+        return V1[1] * V2[1] + V1[2] * V2[2] + V1[3] * V2[3]
+    }
+    function number cosVV( [V1 V2]:vector ) {
+        return (V1[1] * V2[1] + V1[2] * V2[2] + V1[3] * V2[3]) / V1:length() / V2:length()
+    }
+    function number proectVV( [V1 V2]:vector ) {
+        return skalar( V1 , V2 ) / V2:length()
+    }
+    
+    E = entity()
+    O = owner()
+    
+    
+    holoCreate(0, vec(), vec())
+    
+    
+    W = E:isWeldedTo():wirelink()
+    W:egpClear()
+    W:egpCircleOutline(1, vec2(), vec2( 5 ))
+    W:egpText(2, "=", egpScrSize(O) / 2)
+}
+
+timer("", 50)
+
+
+##
+Eye        = O:eye()
+EyeAngles  = O:eyeAngles()
+EyeA       = EyeAngles:forward()
+EgpScrSize = egpScrSize(O)
+
+holoAng(0, EyeAngles)  ##заменить на только вычисления
+
+Cos = Eye[1] * EyeA[1] + Eye[2] * EyeA[2] + Eye[3] * EyeA[3]
+CursorV = (holoEntity(0):toLocal( Eye / Cos ) / vec( 1 , -1.332 , -0.75 ) + vec( 0 , 1 , 1 )) / 2 ##перевести в *нормальный* вектор
+##
+
+Cursor = vec2( CursorV[2] , CursorV[3] ) * EgpScrSize
+
+
+
+W:egpPos(1, Cursor)
+W:egpSetText(2, floor(CursorV, 3) + "")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

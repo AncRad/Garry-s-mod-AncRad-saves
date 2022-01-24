@@ -1,0 +1,140 @@
+@name I-Ninja
+
+@inputs 
+@outputs Debug:string
+
+#- base
+@persist [E]:entity [Gate_name]:string
+@persist [Q]:table
+
+#- 
+@persist [O]:entity
+
+#- 
+@persist [Phys]:entity
+
+#- 
+@persist 
+
+
+@trigger none
+@model models/XQM/cylinderx2medium.mdl
+
+
+
+if(changed(0)) {
+    if(!isSinglePlayer()) {noDuplications()}
+    
+    #- base
+    E = entity()
+    E:setSkin(1)
+    Gate_name = E:getName():explode("\n"):string(1)
+    
+    #- 
+    O = owner()
+    
+    
+    
+    
+    
+    
+    
+    
+    timer("phys", 1)
+}
+
+
+if(clk("phys")) {
+        timer("phys", 50)
+    
+    if(changed(0)) {
+        
+        Phys = entity()
+        
+        function physSetAng(Ang:angle) {
+            Phys:setAng(toWorldAng(vec(),ang(-90,0,0),vec(),Ang))
+        }
+        function angle physGetAng() {
+            return angnorm(Phys:toWorld(ang(90,0,0)))
+        }
+        
+        
+        Q["lastCurtime", number] = curtime()
+    }
+    
+    local LastCurtime = Q["lastCurtime", number]
+    local Curtime = curtime()
+    Q["lastCurtime", number] = Curtime
+    local Interval = Curtime - LastCurtime
+    local Loop = Interval / 0.015625
+    
+    
+    
+    
+    
+    
+    
+    
+    local NeedAng = ang()
+    
+    local NeedAngVel = Phys:angles()
+    
+    local AF = NeedAngVel * 1 - Phys:angVel() / 3
+    local AF = AF * Phys:mass() * Loop
+    Phys:applyAngForce(AF)
+    
+    Phys:propGravity(0)
+    
+    Debug=""
+    Debug+=floor(physGetAng())
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName(Gate_name + "\nOPS: " + ops() + "\nCPU: " + int(cpuUsage()*1e6))
+if(dupefinished()) {reset()}

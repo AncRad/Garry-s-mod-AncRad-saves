@@ -1,0 +1,800 @@
+@name Tank_01_001_bashnya
+
+@inputs [Base_e Bash_e Gun_e]:entity
+@inputs [Pod]:entity
+@inputs [GunCam_e BaseCam_e FrontCamera_e  Radar_e]:entity
+
+@persist GunCamera_glow_radius GunCamera_glow_index
+@persist [GunCamera_entity GunCamera_rotor_entity]:entity GunCamera_index GunCamera_rotor_index
+
+
+@outputs [Debug]:string Fire
+
+@persist [O]:entity [Q]:table
+
+@persist [LocalEYE]:angle [LocalAngle]:angle
+
+@persist [Radar_rotorIndex]:number [Radar_rootEntity Radar_rotorEntity]:entity [Radar_glowList]:array Radar_rotorOffset
+@persist [Radar_ranger_entityFilter Radar_ranger_materialFilter]:array [Radar_ranger_materialFilterTable]:table Radar_real Radar_CoolTime
+@persist [Target_e]:entity [Target_p]:vector Target_luseTime
+
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+
+#include "AddHolo"
+
+
+
+if(changed(0)) {
+    if(!isSinglePlayer()) {
+        #noDuplications()
+    }
+    
+    
+    function number array:getIndex([Value Delimiter]:string) {
+        if(!Delimiter) {Delimiter = "\n#\n"}
+        local Concat = This:concat(Delimiter)
+        local Find = (Delimiter + Concat + Delimiter):find(Delimiter + Value + Delimiter)
+        
+        if(!Find) {return 0}
+        return Concat:left(Find):explode(Delimiter):count()
+    }
+    function number array:getIndex(Value:string) {
+        return This:getIndex(Value, "")
+    }
+    function number smooth(Value:number) {
+        return 0.5-sin(90 + clamp(Value,0,1) * 180)/2
+    }
+    function number smooth([Value IN TO]:number) {
+        local Min = (IN < TO ? IN : TO)
+        local Max = (TO > IN ? TO : IN)
+        Value = clamp(Value,Min,Max)
+        Value = clamp((Value-Min)/(Max-Min),0,1)
+        return 0.5-sin(90 + Value * 180)/2
+    }
+    
+    
+    ################
+    #
+    #- radar
+    #
+    function entity:addHolo_radar() {
+        
+        local Radar_color = vec(255)
+        local Radar_darkColor = vec(6)
+        
+        local Radar_material = "phoenix_storms/OfficeWindow_1-1"
+        local Radar_material_glow = "lights/white"
+        
+        local This_bs = This:boxSize()
+        local This_radius = This_bs[1]/2*0.95
+        local This_height = This_bs[3]/2*0.923
+        
+        local Radar_LocalPos = This:boxCenter() + vec(0,0,-This_height)
+        
+        #bones
+        addHolo("radar",Radar_LocalPos,vec(),ang(),vec(),"cube","","") addHolo_INTO(This)
+        addHolo("radarRotor",vec(),vec(),ang(),vec(),"cube","","radar")
+        #
+        #visual
+        local Radar_downCone_height = 3
+        local Radar_downCone_radius = 6
+        local Radar_downRadius = This_radius
+        local Radar_downHeight = Radar_downCone_height*(Radar_downCone_radius-Radar_downRadius)/Radar_downCone_radius
+        
+        addHolo("radar_down",vec(0,0,Radar_downHeight),vec(Radar_downRadius,Radar_downRadius,Radar_downHeight),ang(),Radar_color,"hq_tube_thin",Radar_material,"radar")
+        addHolo("",vec(),vec(Radar_downRadius,Radar_downRadius,Radar_downHeight)*0.98,ang(),vec(),"hq_tube_thin","","radar_down")
+        addHolo("radar_cone",vec(0,0,Radar_downCone_height),vec(Radar_downCone_radius,Radar_downCone_radius,Radar_downCone_height),ang(),Radar_color,"hq_cone",Radar_material,"radar")
+        addHolo_clip(vec(),ang(90,0,0),Radar_downCone_height-Radar_downHeight*2)
+        
+        local Radar_upHeight = Radar_downRadius * 0.1
+        local Radar_radius = Radar_downRadius*0.885
+        local Radar_innerRadius = Radar_radius * 0.6
+        local Radar_innerHeight = This_height-Radar_downHeight-Radar_upHeight
+        
+        addHolo("radar_up",vec(0,0,Radar_downHeight-Radar_upHeight),vec(Radar_radius,Radar_radius,Radar_upHeight),ang(),Radar_color,"hq_cylinder",Radar_material,"radar_down")
+        addHolo_parent("radarRotor")
+        addHolo("",vec(0,0,-Radar_upHeight*2-Radar_innerHeight*2),vec(Radar_radius,Radar_radius,Radar_upHeight),ang(),Radar_color,"hq_cylinder",Radar_material,"radar_up")
+        addHolo("radar_innerCylinder",vec(0,0,-Radar_innerHeight-Radar_upHeight),vec(Radar_innerRadius,Radar_innerRadius,Radar_innerHeight),ang(),Radar_color,"hq_cylinder",Radar_material,"radar_up")
+        addHolo("",vec(),vec(Radar_radius,Radar_radius,Radar_innerHeight),ang(),Radar_color,"hq_tube_thin","phoenix_storms/pack2/glass","radar_innerCylinder") addHolo_alpha(254)
+        addHolo_clip(vec(),ang(-90,0,0),0.01-Radar_innerHeight)
+        addHolo_clip(vec(),ang( 90,0,0),0.01-Radar_innerHeight)
+        addHolo("",vec(0,0, Radar_innerHeight*0.5-Radar_innerHeight),vec(Radar_radius*0.9,Radar_radius*0.9,Radar_innerHeight*0.5),ang(  0,0,0),Radar_darkColor*1.5,"hq_cone","","radar_innerCylinder")
+        addHolo("",vec(0,0,-Radar_innerHeight*0.5+Radar_innerHeight),vec(Radar_radius*0.9,Radar_radius*0.9,Radar_innerHeight*0.5),ang(180,0,0),Radar_darkColor*1.5,"hq_cone","","radar_innerCylinder")
+        local Radar_downHeight = Radar_innerHeight+Radar_upHeight*2-Radar_downHeight+0.5
+        addHolo("",vec(0,0,-Radar_downCone_height-Radar_downHeight),vec(Radar_downCone_radius,Radar_downCone_radius,Radar_downHeight),ang(),Radar_color,"hq_cylinder",Radar_material,"radar_cone")
+        local RadarLightCount = 8
+        RadarLightCount = round(RadarLightCount/2)*2
+        local A = 360/RadarLightCount/2
+        local Radar_prism_height =  Radar_innerRadius*sin(A)
+        local Radar_prism_length = -Radar_innerRadius*cos(A)+Radar_radius*0.9
+        for(C = 1,RadarLightCount) {
+            local Yaw = A * C * 2
+            addHolo("",vec(Radar_radius*0.9-Radar_prism_length/2,0,0):rotate(ang(0,Yaw,0)),vec(Radar_prism_height,Radar_innerHeight,Radar_prism_length/2),ang(0,90+Yaw,90),Radar_darkColor,"prism","","radar_innerCylinder")
+        }
+        RadarLightCount = RadarLightCount/2
+        for(C = 1,RadarLightCount) {
+            local Yaw = A * C * 2
+            addHolo("radar_glow" + C,vec(),vec(Radar_innerRadius*1.1,Radar_innerRadius*0.3,Radar_innerHeight),ang(0,Yaw+A,0),vec(255,30,30)*0,"hq_cylinder",Radar_material_glow,"radar_innerCylinder")
+        }
+        
+        Radar_rotorOffset = (Radar_upHeight+Radar_innerHeight)*2
+        AddHolo["radar/lightCount", number] = RadarLightCount
+        Q["radar/stepReal", number] = 0
+        This:setMaterial("models/wireframe") This:setAlpha(5)
+        #
+        ################
+    }
+    function number entity:ranger_check([StartPos EndPos]:vector) {
+        local Return = 0
+        
+        local MinHull = vec(1)
+        local MaxHull = vec(2)
+        
+        while(1) {
+            rangerFilter(Radar_ranger_entityFilter)
+            local Ranger = rangerOffsetHull(StartPos,EndPos,MinHull,MaxHull)
+            
+            if(Ranger:hitWorld()) {return 0}
+            local Ranger_e = Ranger:entity()
+            if(!Ranger_e) {return 0}
+            if(Ranger_e == This) {
+                return Return + 1
+            }
+            else {
+                local This2 = This:vehicle() ? This:vehicle() : This
+                if(Ranger_e) {
+                    if(invert(This2:getConstraints()):difference(invert(Ranger_e:getConstraints()):add(table(Ranger_e:toString()=1))):count() == 0) {
+                        return Return + 1
+                    }
+                }
+                
+                Return = 1
+                if(Ranger_e:getAlpha() < 200) {
+                    Radar_ranger_entityFilter:pushEntity(Ranger_e)
+                    continue
+                }
+                local Ranger_e_materail = Ranger_e:getMaterial()
+                if(Ranger_e_materail & Radar_ranger_materialFilterTable:exists(Ranger_e_materail)) {
+                    Radar_ranger_entityFilter:pushEntity(Ranger_e)
+                    continue
+                }
+                return 0
+            }
+            if(changed(0)) {
+                GT = gTable("Tank_01_001_bashnya")
+                GT["rangerData", ranger] = Ranger
+                printColor(vec(255,60,0), "[Tank_01] ", vec(220,255,255), "Непредвиденный результат рангера будет сохранен в таблицу ", vec(50,255,100), "\"Tank_01_001_bashnya\"")
+            }
+            return 0
+        }
+    }
+    Radar_ranger_materialFilter = array(
+        ""
+    )
+    Radar_ranger_materialFilterTable = invert(Radar_ranger_materialFilter)
+    #ifdef entity:getConstraints()
+        Radar_ranger_entityFilter = Radar_ranger_entityFilter:add(Base_e:getConstraints())
+    #else
+        
+    #endif
+    #
+    #- 
+    Q["radar/stepNeed", number] = 0
+    #
+    #-
+    #
+    ################
+    
+    ################
+    #
+    #- camera
+    #
+    if(1) {
+        local GunCamera_color = vec(255)
+        local GunCamera_innerColor = GunCamera_color * 0.5
+        local GunCamera_darkColor = vec(20)
+        local GunCamera_materialMetal = "phoenix_storms/OfficeWindow_1-1"
+        local GunCamera_materialGlass = "phoenix_storms/pack2/glass" local GunCamera_Glass = 1
+        local GunCamera_materialInner = ""
+        local Radar_material_glow = "lights/white"
+        
+        local GunCamera_radius = 1.5*0.985 * 1
+        
+        addHolo("gunCamera",vec(0,0,3),vec(),ang(-90,0,0),vec(),"cube","","") addHolo_INTO(GunCam_e)
+        addHolo("gunCameraRotor",vec(),vec(),ang(),vec(),"cube","","gunCamera")
+        
+        addHolo("",vec(0,0,0),vec(GunCamera_radius),ang(90,0,0),GunCamera_color,"hq_sphere",GunCamera_materialMetal,"gunCamera")
+        addHolo_clip(vec(),ang(90,0,0),-0.01)
+        
+        
+        addHolo("gunCamera_dome",vec(),vec(GunCamera_radius),ang(90,0,0),GunCamera_color,"hq_hdome_thin",GunCamera_materialMetal,"gunCamera")
+        local GunCamera_clip = GunCamera_radius * 0.65
+        addHolo_clip(vec(),ang(90,0,0),-GunCamera_clip-0.015)
+        addHolo("",vec(0,0,GunCamera_clip-0.05),vec(GunCamera_radius*cos(asin(GunCamera_clip/ GunCamera_radius     ))):setZ(0.05),ang(),GunCamera_innerColor,"hq_tube" + select(1,"_thin","","thick"),GunCamera_materialMetal,"gunCamera_dome")
+        addHolo("",vec(0,0,GunCamera_clip-0.05),vec(GunCamera_radius*cos(asin(GunCamera_clip/(GunCamera_radius*0.9)))):setZ(0.03),ang(),GunCamera_innerColor,"hq_tube" + select(1,"_thin","","thick"),GunCamera_materialMetal,"gunCamera_dome")
+        if(GunCamera_Glass) {
+            addHolo("",vec(),vec(GunCamera_radius),ang(),GunCamera_color,"hq_hdome_thin",GunCamera_materialGlass,"gunCamera_dome") addHolo_alpha(254)
+            addHolo_clip(vec(),ang(-90,0,0),GunCamera_clip+0.015)
+        }
+        
+        local GunCamera_innerRadius = GunCamera_radius * 0.89
+        addHolo("gunCamera_innerSphere",vec(),vec(GunCamera_innerRadius),ang(90,0,0),GunCamera_darkColor,"hq_hdome_thin",GunCamera_materialInner,"gunCameraRotor")
+        local GunCamera_innerClip = GunCamera_innerRadius * 0.75
+        addHolo_clip(vec(),ang(90,0,0),-GunCamera_innerClip-0.015)
+        addHolo("",vec(0,0,GunCamera_innerClip-0.05),vec(GunCamera_innerRadius*cos(asin(GunCamera_innerClip/GunCamera_innerRadius))):setZ(0.05),ang(),GunCamera_darkColor,"hq_tube" + select(2,"_thin","","thick"),GunCamera_materialInner,"gunCamera_innerSphere")
+        local GunCamera_innerDome_radius = GunCamera_innerRadius*cos(asin(GunCamera_innerClip/(GunCamera_innerRadius*0.9)))
+        addHolo("gunCamera_innerDome",vec(0,0,GunCamera_innerClip),vec(GunCamera_innerDome_radius),ang(180,0,0),GunCamera_darkColor,"hq_hdome" + select(1,"_thin","","thick"),GunCamera_materialInner,"gunCamera_innerSphere")
+        
+        Q["gunCamera_glow/radius", number] = GunCamera_innerDome_radius
+        addHolo("gunCamera_glow",vec(),vec(-GunCamera_innerDome_radius*0.91)*vec(1.02,1.02,1.0),ang(),vec(255,50,0),"icosphere3",Radar_material_glow,"gunCamera_innerDome")
+        addHolo_clip(vec(),ang(-90,0,0),0.015)
+        
+        if(GunCamera_Glass) {
+            local GunCamera_innerRadius = GunCamera_innerRadius * 0.89
+            addHolo("",vec(),vec(GunCamera_innerRadius),ang(),GunCamera_color,"icosphere3",GunCamera_materialGlass,"gunCamera_innerSphere") addHolo_alpha(254)
+        }
+        
+        addHolo_timer("eye")
+        addHolo_start()
+    }
+    function camera_create() {
+        if(!holoEntity(22800) | !holoEntity(22801)) {
+            holoCreate(22800,vec(),vec(0.3*0),ang()) holoModel(22800,"models/editor/axis_helper.mdl")
+            holoCreate(22801,vec(),vec(0.2*0),ang()) holoModel(22801,"models/editor/camera.mdl") holoParent(22801,22800)
+            cameraCreate(1,vec(),ang())
+            cameraParent(1,holoEntity(22801))
+        }
+    }
+    camera_create()
+    #
+    BaseCam_e:setMass(0.001)
+    #
+    
+    Q["cam/modeList",array] = array(
+        "thirdPerson",
+        "gunCam"#,
+        #"oko"
+    )
+    #
+    #- basnya
+    #
+    Q["bash/modeList",array] = array(
+        "stop",
+        "target"
+    )
+    #LocalAngle[2] = angnorm(toLocal(Bash_e:forward(),ang(),vec(),Base_e:angles()):toAngle()[2])
+    #LocalAngle[1] = angnorm(toLocal( Gun_e:forward(),ang(),vec(),Bash_e:angles()):toAngle()[2])
+    #
+    ################
+    
+    O = owner()
+    entity():setSkin(1)
+    
+    
+    timer("user", 1)
+    timer("phys", 1)
+    timer("radar", 1)
+    timer("camera", 1)
+}
+
+if(clk("user")) {
+    
+    local User = Pod:driver()
+    
+    if(changed(User)) {
+        cameraToggle(1,User|0,Pod)
+    }
+    
+    if(User) {
+        
+        ################
+        #
+        #- 
+        #
+        local Key_kam = User:keyPressed("mouse_4")-User:keyPressed("mouse_5")
+        if(changed(Key_kam) & Key_kam) {
+            local List_a = Q["cam/modeList",array]
+            local List_c = List_a:count()
+            local Index = List_a:getIndex(Q["camMode",string])
+            if(inrange(Index+Key_kam,1,List_c)) {
+                Q["camMode",string] = Q["cam/modeList",array][Index+Key_kam, string]
+            }
+        }
+        #
+        #- 
+        local CamMode = Q["camMode",string]
+        local CamMode_changed = changed(CamMode)
+        switch(CamMode) {
+            case "thirdPerson",
+                if(CamMode_changed) {
+                    cameraZoom(1,0)
+                    
+                    camera_create()
+                    
+                    holoParent(22800, BaseCam_e)
+                    holoPos(22800, BaseCam_e:pos())
+                    holoAng(22800, ang())
+                    holoPos(22801, BaseCam_e:pos())
+                    holoAng(22801, ang())
+                }
+                LocalEYE = angnorm(Pod:toLocal(User:eyeAngles())-ang(0,90,0))
+                if(changed(LocalEYE) | CamMode_changed) {
+                    local COS = cos(LocalEYE[1])^2
+                    holoPos(22801, holoEntity(22800):toWorld(vec(-180,0,45 * COS)))
+                    holoAng(22800, LocalEYE)
+                }
+            break
+                #
+                #
+                #
+            case "gunCam",
+                if(!GunCamera_rotor_entity) {
+                    Q["camMode",string] = Q["cam/modeList",array][1, string]
+                    break
+                }
+                if(CamMode_changed) {
+                    #ifdef entity:getFOV()
+                        cameraZoom(1, min(User:getFOV(),80))
+                    #endif
+                    
+                    camera_create()
+                    
+                    holoParent(22800, GunCamera_rotor_entity)
+                    holoPos(22800, GunCamera_rotor_entity:pos())
+                    holoAng(22800, GunCamera_rotor_entity:angles())
+                    holoPos(22801, holoEntity(22800):pos())
+                    holoAng(22801, holoEntity(22800):angles())
+                }
+            break
+                #
+                #
+                #
+            default,
+                Q["camMode",string] = Q["cam/modeList",array][1, string]
+            break
+        }
+        #
+        #- 
+        #
+        local Key_bash = User:keyPressed("1")-User:keyPressed("2")
+        if(changed(Key_bash) & Key_bash) {
+            local List_a = Q["bash/modeList",array]
+            local List_c = List_a:count()
+            local Index = List_a:getIndex(Q["bashMode",string])
+            if(inrange(Index+Key_bash,1,List_c)) {
+                Q["bashMode",string] = Q["bash/modeList",array][Index+Key_bash, string]
+            }
+        }
+        #
+        #- 
+        #
+        local Key_radar = User:keyPressed("R")
+        if(changed(Key_radar) & Key_radar) {
+            Q["radar/stepNeed", number] = !Q["radar/stepNeed", number]
+        }
+        #
+        ################
+    }
+    
+    timer("user", User ? 50 : 200)
+}
+
+
+
+
+if(clk("phys")) {
+        timer("phys", 25)
+    
+    if(changed(0)) {
+        Q["curtime", number] = curtime()
+    }
+    local LastCurtime = Q["curtime", number]
+    local Curtime = curtime() Q["curtime", number] = Curtime
+    local Interval = Curtime - LastCurtime
+    local Loop = Interval / 0.015625
+    
+    #Debug="=========DEBUG========="
+        
+    local BashMode = Q["bashMode",string]
+    switch(BashMode) {
+            #
+            #
+            #
+        case "stop",
+            #- bash
+            local Bash_m = Bash_e:mass() #+ (1100+324+974*2)
+            local Bashh_LY = angnorm(toLocal(Bash_e:forward(),ang(),vec(),Base_e:angles()):toAngle()[2])
+            Base_avY = Base_e:angVel()[2]
+            Bash_avP = Bash_e:angVel()[1] + clamp(Bashh_LY*50,-75,75)
+            local F = (Base_avY-Bash_avP)*5
+            Bash_e:applyAngForce(ang(Bash_m*Loop*F,0,0))
+            #= gun
+            local Gun_m = Gun_e:mass() + (324+974*2)
+            local Gun_LY = angnorm(toLocal(Gun_e:forward(),ang(),vec(),Bash_e:angles()):toAngle()[2])
+            Bash_avY = Bash_e:angVel()[2]
+            Gun_avY  = Gun_e:angVel()[2] + clamp(Gun_LY*30,-70,70)
+            local F = (Bash_avY-Gun_avY)*2
+            Gun_e:applyAngForce(ang(0,Gun_m*Loop*F,0))
+        break
+            #
+            #
+            #
+        case "target",
+            Debug=""
+            local Target_visible = 0
+            local LastLocalAngle = LocalAngle
+            if(Target_e) {
+                local Target_RealPos = Target_e:boxCenterW()
+                Target_visible = Target_e:ranger_check(Radar_rotorEntity:pos(),Target_RealPos)
+                if(Radar_real & Target_visible) {
+                    
+                    
+                    local DIF = Target_RealPos-Gun_e:boxCenterW()
+                    #  0 --- 850
+                    #300 --- 594
+                    #800 --- 264
+                    local Dist = DIF:length()/52.5
+                    local Vel = 0
+                    if(Dist < 300) {
+                        Vel = 850 - (850-594)*Dist/300
+                    }
+                    elseif(Dist < 800) {
+                        Vel = 594 - (594-264)*(Dist-300)/800
+                    }
+                    else {
+                        Vel = 264
+                        print("Dist: " + floor(Dist))
+                    }
+                    Vel*=0.78
+                    
+                    local Time = (DIF):length()/52.5/Vel
+                    local Time = (Target_p+(Target_e:vel()-Base_e:vel())*Time-Gun_e:boxCenterW()):length()/52.5/Vel
+                    Debug+="\nTime" + Time
+                    Target_p = Target_RealPos+vec(0,0,600*Time^2/2)
+                    Target_p = Target_p+(Target_e:vel()-Base_e:vel())*Time*(1+sin(curtime()*180*2)*0.15)
+                    
+                    Target_luseTime = curtime()
+                }
+                else {
+                    if(curtime() - Target_luseTime > 3 | (!Target_e:isAlive()&(Target_e:isPlayer()|Target_e:isNPC()))) {
+                        Target_e = noentity()
+                    }
+                }
+            }
+            elseif(Target_p) {
+                LocalAngle = ang()
+                Target_p = vec()
+            }
+            if(Target_p) {
+                LocalAngle = angnorm(toLocal(Target_p-Gun_e:boxCenterW(),ang(),vec(),Base_e:angles()):toAngle())
+            }
+            
+            local Acc_LocalAngle = angnorm(LocalAngle - LastLocalAngle)
+            
+            
+            #- bash
+            local Bash_m = Bash_e:mass() #+ (1100+324+974*2)
+            local Bashh_LY = angnorm(toLocal(Bash_e:forward(),ang(),vec(),Base_e:angles()):toAngle()[2]-LocalAngle[2]-Acc_LocalAngle[2]*2.2260077925261)
+            Base_avY = Base_e:angVel()[2]
+            Bash_avP = Bash_e:angVel()[1] + clamp(Bashh_LY*15,-150,150)
+            local F = (Base_avY-Bash_avP)*5
+            Bash_e:applyAngForce(ang(Bash_m*Loop*F,0,0))
+            #= gun
+            local Gun_m = Gun_e:mass() + (324+974*2+2)
+            local Gun_LY = angnorm(toLocal(Gun_e:forward(),ang(),vec(),Bash_e:angles()):toAngle()[2]+clamp(LocalAngle[1]+Acc_LocalAngle[1]*2.2260077925261,-74.9,5))
+            Bash_avR = Bash_e:angVel()[2]
+            Gun_avY  = Gun_e:angVel()[2] + clamp(Gun_LY*20,-70,70)
+            local F = (Bash_avR-Gun_avY)*4
+            Gun_e:applyAngForce(ang(0,Gun_m*Loop*F,0))
+            
+            Fire = Target_e & Target_visible & (abs(Gun_LY) + abs(Bashh_LY)) < 2.0
+            Debug+="\n" + Gun_LY
+            Debug+="\n" + Bashh_LY
+            
+            #[            LocalAngle[2] /Acc_LocalAngle[2]==angular delay compensation
+            test1      8.7222137451172  /3.9247436523438  ==2.2223652084661
+            test2      6.3013610839844  /2.8296203613281  ==2.2269280961163
+            test3      3.6380004882813  /1.6320495605469  ==2.2290992726117
+            test4      0.54124450683594 /0.24348449707031 ==2.2229115748575
+            test5      0.047576904296875/0.021347045898438==2.2287348105789
+            averaging (2.2223652084661+2.2269280961163+2.2290992726117+2.2229115748575+2.2287348105789)/5==2.2260077925261
+            ]#
+        break
+            #
+            #
+            #
+        default,
+            Q["bashMode",string] = Q["bash/modeList",array][2, string]
+        break
+    }
+}
+
+
+if(clk("radar")) {
+    
+    local Radar_RT = AddHolo["radar_innerCylinder/entity", entity]
+    if(Radar_RT) {
+            timer("radar", 100)
+        
+        if(changed(Radar_RT)) {
+            Radar_rootEntity = AddHolo["radar/entity", entity]
+            Radar_rotorIndex = AddHolo["radarRotor/index" , number]
+            Radar_rotorEntity = AddHolo["radarRotor/entity", entity]
+            Radar_glowList:clear()
+            for(C = 1, AddHolo["radar/lightCount", number]) {
+                Radar_glowList:pushNumber(AddHolo["radar_glow" + C + "/index", number])
+            }
+            Q["radar/curtime", number] = curtime()
+        }
+        local LastCurtime = Q["radar/curtime", number]
+        local Curtime = curtime()
+        Q["radar/curtime", number] = Curtime
+        local Interval = Curtime - LastCurtime
+        
+        
+        
+        #local RadarStatus = Q["radar/status", string]
+        local StepReal = Q["radar/stepReal", number]
+        local StepNeed = Q["radar/stepNeed", number]
+        
+        if(StepReal != StepNeed) {
+            local Need = StepNeed >= 1
+            Radar_real = Radar_real = clamp(Radar_real + (Need ? 1 : -1)*Interval/1.0 ,0,1)
+            
+            local Smooth = smooth(Radar_real)
+            holoPos(Radar_rotorIndex, Radar_rootEntity:toWorld(vec(0,0,Radar_rotorOffset*Smooth)))
+            local RadarLightColor = vec(255,30,30)*Smooth^2
+            foreach(C, Glow_i:number = Radar_glowList) {
+                holoColor(Glow_i, RadarLightColor)
+            }
+            
+            if(StepReal != StepNeed & Radar_real == Need) {
+                Q["radar/stepReal", number] = Q["radar/stepNeed", number]
+            }
+        }
+        
+        local Radar_real = Radar_real
+        if(Radar_real) {
+            local Smooth = smooth(Radar_real)
+            
+            holoAng(Radar_rotorIndex, Radar_rotorEntity:toWorld(ang(0,(360/30-Radar_e:angVel()[2])*Interval*Smooth,0)))
+            
+            if(Radar_real >= 0.8) {
+                
+                if(!Target_e & (Curtime>Radar_CoolTime) & findCanQuery()) {
+                    
+                    Radar_CoolTime = Curtime + 1/3
+                    
+                    findClearWhiteList()
+                    findClearBlackList()
+                    findExcludeEntities(Radar_ranger_entityFilter)
+                    findIncludeModel("models/props_c17/oildrum001.mdl")
+                    findIncludeModel("models/props_junk/watermelon01.mdl")
+                    findIncludeModel("models/props_c17/oildrum001_explosive.mdl")
+                    findIncludeModel("models/props_junk/glassjug01.mdl")
+                    findIncludeModel("models/props_phx/ww2bomb.mdl")
+                    findIncludeModel("models/props_phx/mk-82.mdl")
+                    #findIncludeModel("models/sprops/cuboids/height12/size_2/cube_24x48x12.mdl")
+                    #findIncludeClass("player")
+                    #findIncludeClass("npc")
+                    findIncludeClass("frag")
+                    findInSphere(Bash_e:pos(), 9e9)
+                    findSortByDistance(Bash_e:pos())
+                    
+                    foreach(C, Find_e:entity = findToArray()) {
+                        
+                        local Find_p = Find_e:boxCenterW()
+                        if(Find_e:ranger_check(Radar_rotorEntity:pos(),Find_p)) {
+                            Target_e = Find_e
+                            break
+                        }
+                    }
+                }
+            }
+        }
+    }
+    else {
+        if(changed(Radar_e) & Radar_e) {
+            Radar_e:addHolo_radar()
+            addHolo_timer("radar", 1)
+            addHolo_start()
+        }
+        else {
+            timer("radar", 500)
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+if(clk("eye")) {
+        timer("eye", 50)
+    
+    if(changed(0)) {
+        
+        GunCamera_glow_radius  = Q["gunCamera_glow/radius", number]
+        GunCamera_glow_index   = AddHolo["gunCamera_glow/index", number]
+        GunCamera_entity       = AddHolo["gunCamera/entity", entity]
+        GunCamera_index        = AddHolo["gunCamera/index", number]
+        GunCamera_rotor_entity = AddHolo["gunCameraRotor/entity", entity]
+        GunCamera_rotor_index  = AddHolo["gunCameraRotor/index", number]
+    }
+    
+    
+    
+    
+    #local Need_LA = clamp(angnorm(GunCamera_entity:toLocal(TsetPY:pos()):toAngle():setRoll(GunCamera_entity:toLocal(TsetR:pos()):toAngle()[1])) ,ang(-0,-0,-40),ang(0,0,40))
+    #local Need_LA = ang(0,0,clamp((toLocal(-GunCamera_entity:right():setZ(0),ang(),vec(),GunCamera_entity:angles())):toAngle()[1],-40,40)) #toLocal(vector localpos,angle localang,vector worldpos,angle worldang)
+    local Need_LAP = angnorm(GunCamera_entity:forward():toAngle())[1]
+    local Need_LAR = angnorm(GunCamera_entity:right():toAngle())[1]
+    local Need_LAP = clamp(Need_LAP*clamp((80-abs(Need_LAP))/20,0,1),-30,30)
+    local Need_LAR = clamp(Need_LAR*clamp((80-abs(Need_LAR))/20,0,1),-60,60)
+    
+    local Need_LA = -ang(Need_LAP,0,Need_LAR)*sign(GunCamera_entity:up()[3])
+    local Real_LA = Q["GunCamera_localAngle", angle]
+    if(!inrange(Need_LA-Real_LA,ang(-0.5),ang(0.5))) {
+        Real_LA = Q["GunCamera_localAngle", angle] = angnorm(Real_LA + clamp((Need_LA-Real_LA)/2,-5,5))
+        holoAng(GunCamera_rotor_index, GunCamera_entity:toWorld(Real_LA))
+    }
+    
+    #[
+    local XY_a = TsetXY:angles()
+    local XY = Q["gunCamera/XY", vector]
+          XY = Q["gunCamera/XY", vector] =  XY + clamp((vec(0.0 + clamp(rangerOffset(52.5*30,GunCamera_rotor_entity:toWorld(vec(3,0,0)),GunCamera_rotor_entity:forward()):distance()/52.5/30,0,1)^0.5) - XY)/2,-vec(0.3),vec(0.3)) #clamp(abs(vec(XY_a[1],XY_a[3],0))/45,0,1)*2
+    rangerFilter(TsetZ)
+    local Z = 0.5 #clamp((rangerOffset(50,TsetZ:pos(),vec(0,0,-1)):distance()-25)/25,0,1)
+    
+    if(changed(Z) | changed(XY)) {
+        local Mul = (0.016+0.004)
+        local Scale = GunCamera_glow_radius * (vec(0.9) + vec(Mul) * vec(Z+XY[1],Z+XY[2],Z))
+        holoScale(GunCamera_glow_index, -Scale/6)
+        
+    }
+    #holoColor(GunCamera_glow_index, hsv2rgb((curtime()*360*0.1) % 360, 1, 1))
+    ]#
+}
+
+if(clk("camera")) {
+        timer("camera", 50)
+    
+    if(changed(0)) {
+        if(!FrontCamera_e) {
+            print("[TANK01] ERROR: no exist FrontCamera_e!")
+        }
+        else {
+            local Color1      = vec(255)
+            local Color_inner = vec(50)
+            local Color_dark  = vec(20)
+            
+            local Mater1      = "phoenix_storms/OfficeWindow_1-1"
+            local Mater_glass = "phoenix_storms/pack2/glass"
+            local Mater_dark  = ""
+            
+            local Alpha_glass = 75*1
+            
+            
+            local Scale = 1
+            local Radius = 3*Scale
+            
+            local LocalPos = FrontCamera_e:boxCenter()+vec(0,0,Scale>1 ? 50 : 0)
+            local LocalAng = ang()
+            
+            
+            
+            local AClip = -45
+            local LClip = -Radius*0.35
+            
+            
+            addHolo("frontCamera",LocalPos,vec(),LocalAng,vec(),"","tetra","") addHolo_INTO(FrontCamera_e)
+            addHolo("frontCamera_rotor",vec(),vec(),ang(),vec(),"","tetra","frontCamera")
+            
+            
+            addHolo("frontCamera_hdome",vec(),vec(Radius),ang(90+AClip,0,0),Color1,"hq_hdome_thin",Mater1,"frontCamera")
+            addHolo_clip(vec(),ang(90,0,0),LClip)
+            local CutRadius = Radius*cos(asin(LClip/Radius))
+            addHolo("",vec(0,0,-LClip-0.02),vec(CutRadius,CutRadius,0.015),ang(),Color1,"hq_tube_thin",Mater1,"frontCamera_hdome")
+            local CutRadius = Radius*cos(asin(LClip/(Radius*0.9)))
+            addHolo("",vec(),vec(CutRadius,CutRadius,0.005),ang(),Color1,"hq_tube_thin",Mater1,AddHolo_lastName)
+            addHolo("",vec(),vec(Radius),ang(180,0,0),Color1,"hq_hdome_thin",Mater1,"frontCamera_hdome")
+            if(Alpha_glass) {
+                addHolo("",vec(),vec(Radius),ang(),Color1,"hq_hdome_thin",Mater_glass,"frontCamera_hdome") addHolo_alpha(Alpha_glass) addHolo_drawShadow()
+                addHolo_clip(vec(),ang(-90,0,0),-LClip)
+            }
+            
+            local Radius_inner = max(Radius*0.9*0.99,Radius*0.9-0.5)
+            local LClip = Radius_inner*0.96
+            addHolo("frontCamera_rotor",vec(),vec(Radius_inner),ang(90,0,0),Color1,"hq_sphere",Mater1,"frontCamera")
+            addHolo_clip(vec(),ang(90,0,0),-LClip)
+            local Camera1_radius = Radius_inner*cos(asin(LClip/Radius_inner))*1.015
+            addHolo("frontCamera_camera1",vec(LClip,0,0),vec(Camera1_radius),ang(-90,0,0),Color_dark,"hq_hdome",Mater_dark,"frontCamera_rotor")
+            addHolo("",vec(0,0,Camera1_radius*0.1),vec(Camera1_radius)*vec(1.25,1.25,1),ang(),Color_dark,"hq_hdome",Mater_dark,"frontCamera_camera1")
+            if(Alpha_glass) {
+                addHolo("",vec(),vec(Radius_inner),ang(90,0,0),Color1,"hq_sphere",Mater_glass,"frontCamera_rotor") addHolo_alpha(Alpha_glass) addHolo_drawShadow()
+                addHolo_clip(vec(),ang(-90,0,0),LClip)
+            }
+            local Camera1_radius2 = Camera1_radius * 0.55
+            local Camera1_innerCylinder_height = Camera1_radius2*0.5
+            addHolo("frontCamera_camera1_innerCylinder",vec(0,0,Camera1_radius-Camera1_innerCylinder_height),vec(Camera1_radius2,Camera1_radius2,Camera1_innerCylinder_height),ang(),Color_dark,"hq_tube",Mater_dark,"frontCamera_camera1")
+            if(Alpha_glass) {
+                addHolo("",vec(0,0,-Camera1_innerCylinder_height),vec(Camera1_radius2),ang(180,0,0),Color1,"hq_hdome",Mater_glass,"frontCamera_camera1_innerCylinder") addHolo_alpha(Alpha_glass*2) addHolo_drawShadow()
+                addHolo_clip(vec(),ang(-90,0,0),0.05)
+            }
+            addHolo("",vec(0,0,-Camera1_innerCylinder_height),vec(Camera1_radius2*0.75),ang(180,0,0),vec(),"cplane",Mater_dark,"frontCamera_camera1_innerCylinder")
+            #
+            #
+            #
+            FrontCamera_e:setMaterial("models/wireframe") FrontCamera_e:setAlpha(5)
+        }
+    }
+    
+    
+    
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName("Tank_01_001_bashnya\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1e6))
+if(dupefinished()) {reset()}

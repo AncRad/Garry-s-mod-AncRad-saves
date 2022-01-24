@@ -1,0 +1,44 @@
+@name addQuat
+@inputs E2:entity
+@outputs 
+@persist E1:entity
+@model models/sprops/rectangles/size_1/rect_3x3x3.mdl
+
+
+if(changed(0)) {
+    function holoClip([ID Index]:number, LocalPos:vector, LocalAng:angle, Offset:number) {
+        holoClipEnabled(ID, Index, 1)
+        holoClip(ID, Index, LocalPos + vec(Offset,0,0):rotate(LocalAng), vec(1,0,0):rotate(LocalAng), 0)
+    }
+    function addQuat(N:number, P:vector, Q:quaternion) {
+        if(!holoEntity(N)) {
+            holoCreate(N,P,vec(1.5),Q:toAngle(),vec(255), "models/editor/axis_helper.mdl")
+            holoClip(N,1,vec(),ang(0,90,0),-0.7)
+            holoClip(N,2,vec(),ang(0,0,0),-0.7)
+            holoClip(N,3,vec(),ang(-90,0,0),-0.7)
+        }
+        holoPos(N, P)
+        holoAng(N, Q:toAngle())
+    }
+}
+
+interval(50)
+
+E1 = entity()
+
+Quat1 = quat(E1)
+Quat2 = quat(E2)
+
+Quat3 = slerp(Quat1,Quat2,-0.5)
+#Quat3 = conj(Quat1)
+
+addQuat(1,E1:pos(),Quat1)
+addQuat(2,E2:pos(),Quat2)
+addQuat(3,(E1:pos()+E2:pos())/2,Quat3)
+
+
+
+
+
+
+

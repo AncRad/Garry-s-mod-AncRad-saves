@@ -1,0 +1,899 @@
+@name Turret_01_004_base
+
+@inputs 
+@persist Find:array
+
+#- SWEP
+@persist [SWEP_g]:gtable
+@persist [SWEP_user SWEP_user_crowbar SWEP_body]:entity [SWEP_status]:string SWEP_getLock
+@persist [SWEP_rt_i SWEP_base_i SWEP_user_rhand_i SWEP_user_chest_i]:number
+@persist [SWEP_rt_e SWEP_base_e SWEP_user_rhand_e SWEP_user_chest_e Turret_base_e Turret_gun2_e]:entity
+
+#- chat commands
+@persist [CChat]:table [Commands]:array
+
+#- find enemy
+@persist [RadarRotor_e Camera_e]:entity [AlphaProps]:array [Check_alphaMaterials_t Check_alphaModels_t]:table
+@outputs [Target_e]:entity [Target_P]:vector Target_detected
+@persist [Find_DynamicListExclude]:array [Find_DynamicListExclude_resetTime]:number
+
+#- prop phys box & damage system
+@persist [SpawnQueye DT]:table
+@persist [PB_base_e PB_bash_e PB_radar_e PB_camera_e]:entity
+@persist PropsBoxs_toggle
+
+#- owner friend list
+@persist [O_friends_list]:table [O_friends_listJSON]:string [O_friends_listEnt]:array [O_friends_findPlayerByName_queye]:table
+@persist [O_friends_FilePath O_friends_JSONError]:string [O_friends_loading O_friends_loaded O_friends_saveAllowed O_friends_noSave]:number
+@persist [O_friendsNoAttack]:number
+
+#- chatLog
+@persist [ChatLog_piece_turretName ChatLog_piece_FriendListDecodeError ChatLog_piece_FriendListFilePath ChatLog_piece_ChatCommandDetermined]:array
+@persist [ChatLog_piece_AddFriendRequest ChatLog_piece_FriendPlayerExists ChatLog_piece_FriendListFileSave ChatLog_piece_FriendListFileSaved]:array
+@persist [ChatLog_piece_FriendFindedAndAdded ChatLog_piece_turretNoShootTo ChatLog_piece_AddFriendRequestUnsuccessful]:array
+
+
+@persist 
+
+@model models/sprops/trans/wheel_a/wheel15.mdl
+
+
+
+switch(clkName()) {
+    
+    default,
+        #include "old_2019.04.18/Turret_01_004_model"
+        
+        if(changed(0)) {
+            runOnFile(1)
+            timer("O_friends__loadInFile", 1)
+            O_friends_FilePath = (owner():name() == "AncRad" | owner():steamID() == "STEAM_0:0:51770501	" ? "" : "AncRad/") + "creberusturret_01_004/friendlist.txt"
+            
+            #include "chatLog_v001"
+            ChatLog_piece_turretName                   = array(vec(255), "[",vec(255,50,0),"Turret",vec(255),"] ")
+            ChatLog_piece_FriendListDecodeError        = array(vec(255), "Ошибка декодиpивания списка дpyзей! \nДальнейшее сохранение списка друзей невозможно! jsonError: ",vec(160,240,240))
+            ChatLog_piece_FriendListFilePath           = array(vec(255), "\nПyсть к файлy: ",vec(240,240,160),"\".../Steam/steamapps/common/GarrysMod/garrysmod/data/e2files/" + O_friends_FilePath + "\"", vec(255))
+            ChatLog_piece_ChatCommandDetermined        = array(vec(255), "Команда определена: ", vec(160,240,240))
+            ChatLog_piece_AddFriendRequest             = array(vec(255), "Выполняется запрос на добавление в друзей список: ", vec(240,240,160))
+            ChatLog_piece_FriendPlayerExists           = array(vec(255), "Этот игрок уже добавлен: ", vec(160,240,240))
+            ChatLog_piece_FriendListFileSave           = array(vec(255), "Запрос на сохранение файла")
+            ChatLog_piece_FriendListFileSaved          = array(vec(255), "Файл сохранен")
+            ChatLog_piece_FriendFindedAndAdded         = array(vec(255), "Опознан и добавлен в список друзей игрок: ", vec(160,240,240))
+            ChatLog_piece_turretNoShootTo              = array(vec(255), "Стрельбая невозможна: отсутствует функция ", vec(160,160,240), "\"shootTo\"")
+            ChatLog_piece_AddFriendRequestUnsuccessful = array(vec(255), "Безуспешный запрос на добавление в друзья: ", vec(240,240,160))
+            function turret_modl_Print_NoShootTo() {
+                chatLog(ChatLog_piece_turretName, ChatLog_piece_turretNoShootTo)
+            }
+            function turret_mode_PrintPreloadComplited() {
+                chatLog(ChatLog_piece_turretName, array("Голограммы загружены"))
+            }
+            #- start
+            addHolo_timer("gun2", "swep_preload", 1)
+            addHolo_timer("targetSystem", 1)
+            addHolo_timer("findSystem_preload", 1)
+            addHolo_timer("physbox_preload", 1)
+            addHolo("swep_rhand",vec(),vec(),ang(),vec(),"cube","","rt") addHolo_unshift()
+            addHolo("swep_chest",vec(),vec(),ang(),vec(),"cube","","rt") addHolo_unshift()
+            addHolo_start()
+            
+            function number entity:isGodMode() {
+                local Target_god = 0
+                #ifdef entity:hasGodMode()
+                    Target_god += This:hasGodMode()
+                #endif
+                #ifdef entity:inGodMode()
+                    Target_god += This:inGodMode()
+                #endif
+                #ifdef entity:playerGod()
+                    Target_god += This:playerGod()
+                #endif
+                return !!Target_god
+            }
+            
+            
+            
+            function addChatCommand(Command:string, Variables:array) {
+                Commands:pushString(Command)
+                CChat[Command + "\variables", array] = Variables
+            }
+            
+            addChatCommand("off", array("off", ""))
+            addChatCommand("defend", array("defend", "def", ""))
+            addChatCommand("attack", array("attack", ""))
+            addChatCommand("noAttack", array("noattack", "no attack", " "))
+            addChatCommand("addFriend", array("add ", "add friend ", "addFriend "))
+            
+            
+            function entity:runOnDamage(N:number) {
+                #ifdef runOnDamage(number,entity)
+                    runOnDamage(N, This)
+                #endif
+            }
+            function propsBoxs_toggle(Toggle) {
+                foreach(C, Prop:entity = PropsBoxs) {
+                    Prop:propNotSolid(!Toggle)
+                    Prop:runOnDamage(Toggle)
+                }
+                PropsBoxs_toggle = Toggle
+            }
+            function turret_off() {
+                T = T:merge(table(
+                    "bashnyaStepNeed" = 0,
+                    "cameraStepNeed" = 0,
+                    "radarStepNeed" = 0,
+                    "baseStepNeed" = 0,
+                    "gunStepNeed" = 0
+                ))
+                Target_e = noentity()
+                Target_detected = 0
+                Gun_fire = 0
+            }
+            function turret_on() {
+                T = T:merge(table(
+                    "bashnyaStepNeed" = 1,
+                    "cameraStepNeed" = 1,
+                    "radarStepNeed" = 1,
+                    "baseStepNeed" = 4,
+                    "gunStepNeed" = T["gunAttack", number]
+                ))
+                Gun_fire = 0
+            }
+            function turret_attack() {
+                T["gunStepNeed", number] = T["bashnyaStepNeed", number]
+                T["gunAttack", number] = 1
+                Gun_fire = 0
+            }
+            function turret_noAttack() {
+                T["gunStepNeed", number] = 0
+                T["gunAttack", number] = 0
+                Gun_fire = 0
+            }
+            function number turret_addFriend(Player_e:entity) {
+                local Player_SID = Player_e:steamID()
+                if(O_friends_listJSON:find(Player_SID)) { 
+                    chatLog(ChatLog_piece_turretName, ChatLog_piece_FriendPlayerExists, array(Player_e:name() + ": " + Player_SID))
+                    return 0
+                }
+                
+                O_friends_noSave = 1
+                O_friends_listEnt:pushEntity(Player_e)
+                O_friends_list[Player_SID, string] = Player_e:name()
+                O_friends_listJSON = jsonEncode(O_friends_list)
+                chatLog(ChatLog_piece_turretName, ChatLog_piece_FriendFindedAndAdded, array(Player_e:name() + ": " + Player_e:steamID()))
+                if(O_friends_saveAllowed) {
+                    timer("O_friends__saveToFile", 5000)
+                    return 1
+                }
+                
+                chatLog(ChatLog_piece_turretName, ChatLog_piece_FriendListDecodeError, array(O_friends_JSONError+""), ChatLog_piece_FriendListFilePath)
+                return 0
+            }
+            function turret_addFriend(Request:string) {
+                if(Request == "clear*") {
+                    chatLog(ChatLog_piece_turretName, array("Очистка списка друзей"))
+                    O_friends_listEnt:clear()
+                    O_friends_list = table()
+                    O_friends_listJSON = jsonEncode(O_friends_list)
+                    O_friends_noSave = 1
+                    if(O_friends_saveAllowed) {timer("O_friends__saveToFile", 5000) return}
+                    chatLog(ChatLog_piece_turretName, ChatLog_piece_FriendListDecodeError, array(O_friends_JSONError+""), ChatLog_piece_FriendListFilePath)
+                    return
+                }
+                chatLog(ChatLog_piece_turretName, ChatLog_piece_AddFriendRequest, array("\"" + Request + "\""))
+                O_friends_findPlayerByName_queye:pushString(Request)
+            }
+            function turret_noAttackFriends() {
+                O_friendsNoAttack = 1
+            }
+            function turret_AttackFriends() {
+                O_friendsNoAttack = 0
+            }
+            function number entity:to(TO:string) {
+                if(!This:isPlayer()) {return 0}
+                local LastSWEP_status = SWEP_status
+                
+                local SID = This:steamID()
+                if(TO == "rhand") {
+                    if(SWEP_g[SID + "/rhand/entity", entity]) {return 0}
+                    
+                    local Crow = This:weapon()
+                    if(Crow:type() != "weapon_crowbar") {return 0}
+                    
+                    if(!SWEP_user_rhand_e) {
+                        SWEP_user_rhand_e = holoCreate(SWEP_user_rhand_i,vec(),vec(-0.4),ang()) holoVisible(SWEP_user_rhand_i, players(), 0) holoVisible(SWEP_user_rhand_i, owner(), 1)
+                    }
+                    holoPos(SWEP_user_rhand_i, SWEP_user:attachmentPos("anim_attachment_rh"))
+                    holoAng(SWEP_user_rhand_i, SWEP_user:attachmentAng("anim_attachment_rh"))
+                    holoParentAttachment(SWEP_user_rhand_i, SWEP_user, "anim_attachment_rh")
+                    
+                    #holoPos(SWEP_base_i, SWEP_user_rhand_e:toWorld(vec()))
+                    #holoAng(SWEP_base_i, SWEP_user_rhand_e:toWorld(ang()))
+                    local LocalAng = (Turret_base_e:toLocal(Turret_gun2_e:angles())-ang(0,90,0)):rotateAroundAxis(vec(0,1,0),25)
+                    holoAng(SWEP_base_i, SWEP_user_rhand_e:toWorld(LocalAng))
+                    holoPos(SWEP_base_i, SWEP_user_rhand_e:toWorld(vec(0.7,-0.25,0)-(Turret_base_e:toLocal(Turret_gun2_e:pos())+vec(0.5,0,0)):rotate(LocalAng)))
+                    
+                    holoParent(SWEP_base_i, SWEP_user_rhand_e)
+                    
+                    SWEP_g[SID + "/rhand/entity", entity] = SWEP_user_rhand_e
+                    SWEP_user_crowbar = Crow
+                    SWEP_status = "rhand"
+                }
+                elseif(TO == "chest") {
+                    if(SWEP_g[SID + "/chest/entity", entity]) {return 0}
+                    
+                    if(!SWEP_user_chest_e) {
+                        SWEP_user_chest_e = holoCreate(SWEP_user_chest_i,vec(),vec(-0.4),ang()) holoVisible(SWEP_user_chest_i, players(), 0) holoVisible(SWEP_user_chest_i, owner(), 1)
+                    }
+                    holoPos(SWEP_user_chest_i, SWEP_user:attachmentPos("chest"))
+                    holoAng(SWEP_user_chest_i, SWEP_user:attachmentAng("chest"))
+                    holoParentAttachment(SWEP_user_chest_i, SWEP_user, "chest")
+                    
+                    holoPos(SWEP_base_i, SWEP_user_chest_e:toWorld(vec(-8,0,-2)))
+                    holoAng(SWEP_base_i, SWEP_user_chest_e:toWorld(ang(-90,0,0)))
+                    holoParent(SWEP_base_i, SWEP_user_chest_e)
+                    
+                    SWEP_g[SID + "/chest/entity", entity] = SWEP_user_chest_e
+                    SWEP_status = "chest"
+                }
+                elseif(TO == "drop") {
+                    
+                    local SWEP_user_rt_e = LastSWEP_status == "rhand" ?  SWEP_user_rhand_e : SWEP_user_chest_e
+                    SWEP_body:propFreeze(0)
+                    SWEP_body:setAng(toWorldAng(vec(),ang(0,0,90),vec(),SWEP_base_e:angles()))
+                    SWEP_body:setPos(SWEP_rt_e:toWorld(SWEP_rt_e:toLocal(SWEP_base_e:pos() + SWEP_body:boxCenter()))) #+ SWEP_body:boxSize()[2]/2
+                    SWEP_body:setVel(SWEP_user:vel())
+                    
+                    holoPos(SWEP_base_i, SWEP_rt_e:toWorld(vec()))
+                    holoAng(SWEP_base_i, SWEP_rt_e:toWorld(ang()))
+                    holoParent(SWEP_base_i, SWEP_rt_e)
+                    
+                    turret_off()
+                    SWEP_status = "drop"
+                }
+                elseif(TO == "put") {
+                    
+                    local Norm = SWEP_user:aimNormal()
+                    local Pos = SWEP_user:aimPos()
+                    local EYE = SWEP_user:eye()
+                    
+                    #local Ang = EYE:rotateAroundAxis(EYE:cross(Norm),90-acos(Norm:dot(-EYE))):toAngle()
+                    
+                    SWEP_body:setAng(toWorldAng(vec(),ang(0,0,90),vec(),quat(Norm:cross(SWEP_user:eye()):cross(Norm),Norm):toAngle()))
+                    SWEP_body:setPos(SWEP_rt_e:toWorld(SWEP_rt_e:toLocal(Pos + Norm*SWEP_body:boxSize()[2]/2 + SWEP_body:boxCenter())))
+                    SWEP_body:propFreeze(1)
+                    
+                    holoPos(SWEP_base_i, SWEP_rt_e:toWorld(vec()))
+                    holoAng(SWEP_base_i, SWEP_rt_e:toWorld(ang()))
+                    holoParent(SWEP_base_i, SWEP_rt_e)
+                    
+                    T["gunStepNeed", number] = T["gunAttack", number] ? T["bashnyaStepNeed", number] : 0
+                    
+                    SWEP_status = "put"
+                }
+                else {
+                    return 0
+                }
+                
+                local LastSWEP_status_rhand = LastSWEP_status == "rhand"
+                local LastSWEP_status_chest = LastSWEP_status == "chest"
+                if(LastSWEP_status_rhand | LastSWEP_status_chest) {SWEP_g:removeEntity(SID + "/" + (LastSWEP_status_rhand ? "rhand" : "chest") + "/entity")}
+                #if(LastSWEP_status_rhand | LastSWEP_status_chest) {SWEP_g[SID + "/" + (LastSWEP_status_rhand ? "rhand" : "chest") + "/entity", entity] = noentity()}
+                local SWEP_status_inUser_changed = (SWEP_status == "rhand" | SWEP_status == "chest") - (LastSWEP_status == "rhand" | LastSWEP_status == "chest")
+                if(SWEP_status_inUser_changed > 0) {
+                    SWEP_body:propFreeze(1)
+                    SWEP_body:propNotSolid(1)
+                }
+                elseif(SWEP_status_inUser_changed < 0) {
+                    #SWEP_body:propFreeze(0)
+                    SWEP_body:propNotSolid(0)
+                }
+                
+                if(changed(LastSWEP_status_rhand)) {
+                    SWEP_user_crowbar:setAlpha(255*LastSWEP_status_rhand)
+                    SWEP_user_crowbar:drawShadow(LastSWEP_status_rhand)
+                }
+                propsBoxs_toggle(SWEP_status == "drop" | SWEP_status == "put")
+                SWEP_getLock = curtime() + 0.409
+                SWEP_user = SWEP_status == "drop" ? noentity() : This
+                return 1
+            }
+            
+            
+            
+            function vector entity:getTargetPos(Type:string) {
+                switch(Type) {
+                    case "box", return This:boxCenterW()
+                    case "mass", return This:massCenter()
+                    case "chest", return This:attachmentPos("chest")
+                    case "anim_attachment_head", return This:attachmentPos("anim_attachment_head")
+                    case "anim_attachment_rh", return This:attachmentPos("anim_attachment_rh")
+                    case "anim_attachment_lh", return This:attachmentPos("anim_attachment_lh")
+                    #case "chest", return This:
+                    default, return This:pos()
+                }
+            }
+            function vector entity:getTargetPos() {
+                local Target_P = vec()
+                if(This:isPlayer() | This:isNPC()) {
+                    Target_P = This:attachmentPos("anim_attachment_head")
+                    if(!Target_P) {
+                        Target_P = This:attachmentPos("chest")
+                    }
+                }
+                if(!Target_P) {
+                    Target_P = This:boxCenterW()
+                }
+                return Target_P
+            }
+            function number entity:checkVisible([StartPos EndPos]:vector) {
+                if(!This) {return 0}
+                while(perf(80)) {
+                    rangerFilter(AlphaProps)
+                    local R = rangerOffsetHull(StartPos,EndPos,vec(1),vec(5))
+                    local Ranger_e = R:entity()
+                    if(!Ranger_e | Ranger_e == This) {return Ranger_e == This}
+                    local Transparent = Ranger_e:getAlpha() < 240
+                    if(!Transparent) {
+                        local Ranger_e_m = Ranger_e:getMaterial()
+                        if(Ranger_e_m) {
+                            Transparent = Check_alphaMaterials_t:exists(Ranger_e_m) | Ranger_e_m:find("glass") | Ranger_e_m:find("effect")
+                        }
+                        else {
+                            local Ranger_e_m = Ranger_e:model()
+                            Transparent = Check_alphaModels_t:exists(Ranger_e_m) | Ranger_e_m:find("glass") | Ranger_e_m:find("window") | Ranger_e_m:find("fence")
+                        }
+                    }
+                    if(Transparent) {
+                        AlphaProps:pushEntity(Ranger_e)
+                        continue
+                    }
+                    return 0
+                }
+                return 0
+            }
+            
+            #pysbox system
+            #ifdef propSpawn(string,vector,angle,number)
+                #ifdef runOnDamage(number)
+                    runOnDamage(1)
+                #endif
+                function number propCanSpawnCreate() {
+                    #ifdef propCanSpawn()
+                        return propCanSpawn()
+                    #endif
+                    #ifdef propCanCreate()
+                        return propCanCreate()
+                    #endif
+                    return 0
+                }
+                DT=DT:merge(table(
+                     "base/damage" = 0
+                    ,"base/resistance" = table("" = 0.5,"explosion" = 0.4,"burn"=0.05)
+                    ,"camera/damage" = 0
+                    ,"camera/resistance" = table("" = 0.5,"explosion" = 0.5,"burn"=0.1)
+                    ,"radar/damage" = 0
+                    ,"radar/resistance" = table("" = 0.5,"explosion" = 0.5,"burn"=0.1)
+                ))
+                SpawnQueye = table(
+                     array(1, "base"  ,"base","models/sprops/trans/wheel_c/t_wheel15.mdl",vec(),ang(0,0,90))
+                    ,array(2, "base"  ,"bashnyaRoot","models/sprops/trans/wheel_c/t_wheel15.mdl",vec(0,0,0.5),ang(0,0,90))
+                    ,array(3, "radar" ,"radarRotor","models/sprops/cylinders/size_2/cylinder_3x3.mdl")
+                    #,array(4, "camera","cam1_1","models/sprops/cylinders/size_1/cylinder_1_5x3.mdl")
+                )
+            #endif
+            
+            exit()
+        }
+        
+        if(clk("O_friends__loadInFile") | fileClk() & O_friends_loading) {
+            if(fileClk()) {
+                O_friends_loading = 0
+                switch(fileStatus()) {
+                    case _FILE_OK,
+                        O_friends_listJSON = fileRead()
+                        O_friends_list = jsonDecode(O_friends_listJSON)
+                        O_friends_loaded = 1
+                        O_friends_saveAllowed = 1
+                        
+                        O_friends_JSONError = jsonError()
+                        if(jsonError()) {
+                            #O_friends_loaded = 0
+                            O_friends_saveAllowed = 0
+                            chatLog(ChatLog_piece_turretName, ChatLog_piece_FriendListDecodeError, array(O_friends_JSONError+""), ChatLog_piece_FriendListFilePath)
+                        }
+                        else {
+                            chatLog(ChatLog_piece_turretName, array("Список друзей загружен"))
+                        }
+                    break
+                    case _FILE_404,
+                        chatLog(ChatLog_piece_turretName, array("Файл списка друзей пуст"))
+                    break
+                    default,
+                        chatLog(ChatLog_piece_turretName, array("Ошибка загpyзки списка дpyзей! fileStatus(): ",vec(160,240,240), fileStatus()))
+                    break
+                }
+            }
+            elseif(!O_friends_loading & !O_friends_loaded) {
+                if(fileCanLoad()) {
+                    fileLoad(O_friends_FilePath)
+                    O_friends_loading = 1
+                }
+                else {
+                    chatLog(ChatLog_piece_turretName, array("Начинается загрузка списка друзей"))
+                    timer("O_friends__loadInFile", 200)
+                }
+            }
+            
+            exit()
+        }
+        
+        
+        if(damageEntClk()) {
+            local DamageEnt = damageEntClk()
+            local DamageType = DamageEnt:getDamageType()
+            local Body = DT["prop" + DamageEnt:id(), string]
+            local Resist = DT[Body + "/resistance", table][DamageType, number]
+            local Damage = DamageEnt:getDamage() * (Resist ? Resist : 0.7)
+            if(DamageType=="claw" & DamageEnt:getAttacker() == SWEP_user) {Damage=0}
+            
+            local Body_D = DT[Body + "/damage", number]
+            DT[Body + "/damage", number] = Body_D = Body_D + Damage #print(DamageEnt)
+            
+            if(Body_D >= 100) {
+                if(Body == "radar") {
+                    if(AddHolo["radarRotor/entity", entity]) {
+                        AddHolo["radarRotor/entity", entity]:remove()
+                        Radar_findRadius = 0
+                    }
+                }
+                elseif(Body == "base") {
+                    entity():remove()
+                }
+            }
+            
+            exit()
+        }
+        
+        if(chatClk(SWEP_user)) {
+            
+            local LS = SWEP_user:lastSaid()
+            if(LS:index(1) == "!" | LS:index(1) == "#") {
+                    hideChat(1)
+                
+                local LS = LS:sub(2)
+                local LS_lower = LS:lower()
+                
+                local Command = ""
+                #local EX = LS:explode(" ")
+                #local EX1 = EX[1, string]
+                
+                foreach(C, C_command:string = Commands) {
+                    if(CChat[C_command + "\variables", array]:concat("#"):find(LS_lower)) {
+                        Command = C_command
+                        chatLog(ChatLog_piece_turretName, ChatLog_piece_ChatCommandDetermined, array(Command))
+                        break
+                    }
+                }
+                
+                switch(Command) {
+                    case "off",
+                        turret_off()
+                    break
+                    case "defend",
+                        turret_on()
+                    break
+                    case "attack",
+                        turret_attack()
+                    break
+                    case "noAttack",
+                        turret_noAttack()
+                    break
+                    
+                    default,
+                        if(LS_lower:find("add ")) {
+                            local Request = LS:right(LS:length() - 4)
+                            turret_addFriend(Request)
+                        }
+                    break
+                }
+            }
+            
+            exit()
+        }
+        
+        
+        if(last()) {
+            if(SWEP_status == "rhand" | SWEP_status == "chest") {
+                SWEP_user:to("drop")
+            }
+            
+            if(O_friends_noSave) {
+                printColor(ChatLog_piece_turretName:add(array(vec(225,255,255), "Не все данные были сохpанены в файл!")))
+            }
+        }
+        setName("Turret" + (SWEP_user ? " ["+SWEP_user:name()+"]" : "") + "\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1e6) + (O_friends_noSave ? "\nЕсть не сохраненные данные" + "-":repeat(1+abs(sin(curtime()*180)) * 3) : ""))
+    break #"default"
+    
+    
+    
+    case "swep_preload",
+        if(changed(0)) {
+            SWEP_g = gTable("ancrad_swep01")
+            
+            Turret_base_e = AddHolo["base/entity", entity]
+            Turret_gun2_e = AddHolo["gun2/entity", entity]
+            SWEP_rt_e = AddHolo["rt/entity", entity]
+            SWEP_base_e = AddHolo["base/entity", entity]
+            
+            SWEP_rt_i = AddHolo["rt/index", number]
+            SWEP_base_i = AddHolo["base/index", number]
+            SWEP_user_rhand_i = AddHolo["swep_rhand/index", number] ? AddHolo["swep_rhand/index", number] : 10064501
+            SWEP_user_rhand_e = holoEntity(SWEP_user_rhand_i)
+            SWEP_user_chest_i = AddHolo["swep_chest/index", number] ? AddHolo["swep_chest/index", number] : 10064502
+            SWEP_user_chest_e = holoEntity(SWEP_user_chest_i)
+            
+            SWEP_body = entity()
+            SWEP_body:setAlpha(0)
+            SWEP_body:drawShadow(0)
+            SWEP_body:propFreeze(0)
+            SWEP_body:propNotSolid(0)
+            SWEP_status = "drop"
+            
+            O_friendsNoAttack = 1
+            
+            runOnLast(1)
+            runOnChat(1)
+            
+            if(owner():keyUse()) {
+                owner():to("chest") | owner():to("rhand") turret_attack()
+            }
+            else {
+                SWEP_status = "put"
+                turret_on() turret_attack() SWEP_user = owner()
+            }
+            timer("swep", 50)
+        }
+    break #"swep_preload"
+    
+    case "swep",
+            timer("swep", 50)
+        
+        
+        local SWEP_status_changed = changed(SWEP_status)
+        local SWEP_status_rhand = SWEP_status == "rhand"
+        local SWEP_status_chest = SWEP_status == "chest"
+        local SWEP_status_inUser = SWEP_status_rhand | SWEP_status_chest
+        
+        if(SWEP_status_changed) {
+            if(SWEP_status_inUser) {
+                turret_off()
+            }
+        }
+        
+        if(SWEP_status_rhand) {
+            if(!SWEP_user:isAlive() | SWEP_user:inVehicle() | SWEP_user:playerIsRagdoll()) {
+                SWEP_user:to("drop")
+            }
+            elseif(SWEP_user:weapon():type() != "weapon_crowbar") {
+                if(SWEP_user:keyUse()) {
+                    SWEP_user:to("chest")
+                }
+                else {
+                    SWEP_user:to("drop")
+                }
+            }
+            else {
+                local Key_dubinator = SWEP_user:keyAttack2()
+                if(changed(Key_dubinator) & Key_dubinator) {
+                    T["gunStepNeed", number] = !T["gunStepNeed", number]
+                }
+                
+                local Key_attack = SWEP_user:keyAttack1()
+                if(Key_attack & SWEP_user:aimPos():distance(SWEP_user:shootPos()) < 75) {
+                    if(SWEP_user:keyUse() & (SWEP_getLock - curtime() <= 0)) {
+                        
+                        SWEP_user:to("put")
+                        
+                    }
+                    elseif(Key_attack & (T["dubinatorLock", number] - curtime() <= 0)) {
+                        
+                        local Force = 0.5+T["gunStep1_real", number]*0.5
+                        
+                        local E = SWEP_user:aimEntity()
+                        if(E:isPlayer()) {
+                            E:setVel(SWEP_user:eye()*Force*52.5*10)
+                        }
+                        else {
+                            E:applyOffsetForce(SWEP_user:eye()*Force*52.5*75*10,SWEP_user:aimPos())
+                        }
+                        
+                        T["dubinatorLock", number] = curtime() + 0.409
+                    }
+                }
+                elseif(changed(T["gunStep1_real", number]) + changed(T["bashnyaStep1_neckReal", number]) + changed(T["bashnyaRoot_localAng", angle])) {
+                    local LocalAng = (Turret_base_e:toLocal(Turret_gun2_e:angles())-ang(0,90,0)):rotateAroundAxis(vec(0,1,0),25)
+                    holoAng(SWEP_base_i, SWEP_user_rhand_e:toWorld(LocalAng))
+                    holoPos(SWEP_base_i, SWEP_user_rhand_e:toWorld(vec(0.7,-0.25,0)-(Turret_base_e:toLocal(Turret_gun2_e:pos())+vec(0.5,0,0)):rotate(LocalAng)))
+                }
+            }
+        }
+        elseif(SWEP_status_chest) {
+            local Crow = SWEP_user:weapon():type() == "weapon_crowbar"
+            if(changed(Crow) & Crow) {
+                if(SWEP_user:keyUse()) {
+                    SWEP_user:to("rhand")
+                }
+            }
+        }
+        elseif(SWEP_status == "put") {
+            
+            local Distance = 52.5 * 1.5
+            if(SWEP_user:keyAttack1() & SWEP_user:keyUse() & SWEP_user:aimEntity() == SWEP_body & (SWEP_user:aimPos():distance(SWEP_user:shootPos()) <= Distance) & (SWEP_getLock - curtime() <= 0)) {
+                SWEP_user:to("rhand")
+            }
+        }
+        elseif(SWEP_status == "drop") {
+            
+            local Distance = 52.5 * 1.5
+            findIncludeClass("player")
+            findInSphere(SWEP_body:pos(), Distance)
+            foreach(C, P:entity  = findToArray()) {
+                if(P:keyAttack1() & P:keyUse() & P:aimEntity() == SWEP_body & (P:aimPos():distance(P:shootPos()) <= Distance) & (SWEP_getLock - curtime() <= 0)) {
+                    if(P:to("rhand")) {break} else {}
+                }
+            }
+        }
+    break #"swep"
+    
+    case "findSystem_preload",
+        if(changed(0)) {
+            Check_alphaMaterials_t = table(
+                "phoenix_storms/airboat_blur02"=0,
+                "phoenix_storms/fender_white"=0,
+                "phoenix_storms/glass"=0
+            )
+            
+            RadarRotor_e = AddHolo["radarRotor/entity", entity]
+            Camera_e = AddHolo["camera/entity", entity]
+            timer("findSystem", 350)
+        }
+    break #"findSystem_preload"
+    
+    case "findSystem",
+            timer("findSystem", 350)
+        
+        if(findCanQuery()) {
+            while(O_friends_findPlayerByName_queye:count() & findCanQuery()) {
+                local Request = O_friends_findPlayerByName_queye:removeString(1)
+                local Player_e = findPlayerByName(Request)
+                if(Player_e) {
+                    turret_addFriend(Player_e)
+                }
+                else {
+                    chatLog(ChatLog_piece_turretName, ChatLog_piece_AddFriendRequestUnsuccessful, array("\"" + Request + "\""))
+                }
+            }
+            
+            
+            local Radar = T["radarStepReal", number]
+            local Camera = 0 #T["cameraStepNeed", number]
+            if(Radar | Camera) {
+                
+                findClearBlackList()
+                findClearWhiteList()
+                #findIncludeModel("models/props_c17/oildrum001.mdl")
+                findIncludeClass("player")
+                findIncludeClass("npc")
+                
+                findExcludeClass("npc_rollermine")
+                findExcludeClass("npc_turret_ceiling")
+                findExcludeClass("npc_combine_camera")
+                findExcludeClass("npc_combinedropship")
+                findExcludeClass("npc_combinegunship")
+                findExcludeClass("npc_helicopter")
+                findExcludeClass("npc_strider")
+                findExcludeClass("npc_turret_floor")
+                findExcludeClass("npc_crow")
+                findExcludeClass("npc_pigeon")
+                findExcludeClass("npc_seagull")
+                findExcludeClass("mediaplayer_tv")
+                findExcludeEntities(SWEP_user:steamFriends():add(array(SWEP_user)))
+                findExcludeEntities(Find_DynamicListExclude)
+                if(Find_DynamicListExclude_resetTime - curtime() <= 0) {
+                    Find_DynamicListExclude_resetTime = curtime() + 5
+                    O_friends_listEnt:clear()
+                }
+                if(SWEP_user == owner() & O_friendsNoAttack) {
+                    findExcludeEntities(O_friends_listEnt)
+                }
+                
+                if(Radar) {
+                    local Radar_P = RadarRotor_e:pos()
+                    local Radar_c = findInSphere(Radar_P, Radar * Radar_findRadius)
+                    findSortByDistance(Radar_P)
+                    T["find/radar_c", number] = Radar_c
+                }
+                Find = findToArray()
+            }
+        }
+        else {
+            #print("find can not query " + round(curtime(),3))
+        }
+    break #"findSystem"
+    
+    
+    
+    case "targetSystem_preload",
+        if(changed(0)) {
+            T["targetSystem/lastCurtime", number] = curtime()
+            timer("targetSystem", 25)
+        }
+    break #"targetSystem_preload"
+    
+    case "targetSystem",
+            timer("targetSystem", Target_detected ? 25 : 100)
+        
+        local LastCurtime = T["targetSystem/lastCurtime", number]
+        local Curtime     = curtime()
+        T["targetSystem/lastCurtime", number] = Curtime
+        local Interval    = Curtime - LastCurtime
+        
+        
+        if(!Target_detected) {
+            local Ranger_SP = RadarRotor_e:pos()
+            
+            rangerPersist(1)
+            rangerFilter(AlphaProps)
+            local Count = Find:count()
+            local C = 0
+            while(perf(80) & C < Count) {
+                C++
+                local Find_e  = Find[C, entity]
+                local Find_IsPlayer = Find_e:isPlayer() 
+                local Target_P = Find_e:getTargetPos()
+                if(Find_e:checkVisible(Ranger_SP,Target_P)) {
+                    if(O_friendsNoAttack & Find_IsPlayer & O_friends_list:exists(Find_e:steamID())) {
+                        O_friends_listEnt:pushEntity(Find_e)
+                        continue
+                    }
+                    if(Find_IsPlayer & Target_e:isGodMode()) {
+                        Find_DynamicListExclude:pushEntity(Find_e)
+                        Find_DynamicListExclude_resetTime = curtime() + 5
+                        continue
+                    }
+                    Target_e = Find_e
+                    Target_detected = 1
+                    RadarRotor_e:soundPlay("target_finded", 2, "buttons/button16.wav") soundVolume("target_finded", 0.3)
+                    break
+                }
+            }
+            rangerPersist(0)
+        }
+        
+        if(Target_detected) {
+            if(Target_e & (!(Target_e:isNPC() | Target_e:isPlayer()) | Target_e:isAlive())) {
+                local Target_visible = 0
+                local CheckPos = Target_e:getTargetPos()
+                
+                local Ranger_SP = RadarRotor_e:pos()
+                Target_visible = Ranger_SP:distance(CheckPos) < Radar_findRadius * 1.2 & Target_e:checkVisible(Ranger_SP,CheckPos)
+                if(changed(Target_visible) & !Target_visible) {
+                    T["targetSystem/looseTarget", number] = curtime()
+                }
+                if(Target_visible) {
+                    Target_P = CheckPos
+                }
+                elseif((curtime() - T["targetSystem/looseTarget", number] >= 1.5)) {
+                    Target_e = noentity()
+                    Target_detected = 0
+                }
+                local Target_god = Target_e:isPlayer() & Target_e:isGodMode()
+                if(Target_god | changed(O_friends_listJSON) & SWEP_user == owner() & O_friends_list:exists(Target_e:steamID())) {
+                    if(Target_god) {
+                        Find_DynamicListExclude:pushEntity(Target_e)
+                    }
+                    Target_e = noentity()
+                    Target_detected = 0
+                }
+            }
+            else {
+                Target_e = noentity()
+                Target_detected = 0
+            }
+        }
+        
+        
+        if(T["bashnyaStep1_real", number] == 1) {
+            if(Target_detected) {
+                local BR_lA_need = angnorm(Neck2_e:toLocal(Target_P   -Gun0_e:toWorld(vec(-Radius*10,0,0))+Neck2_e:pos()):toAngle())
+                local BR_lA_real = Neck2_e:toLocal(Gun0_e:angles())
+                #local LocalADDAng = clamp(angnorm(BR_lA_need-BR_lA_real)*0.8,-Interval*225,Interval*225)
+                local LocalADDAng = clamp(angnorm(BR_lA_need-BR_lA_real)*0.98,-Interval*150,Interval*150)
+                
+                bash_localSetAng(BR_lA_real + LocalADDAng)
+                if(rangerOffset(Gun0_e:pos(),Gun0_e:toWorld(vec(Radar_findRadius*1.25,0,0))):entity() == Target_e) {
+                    Gun_fire = 1 & T["gunStep1_real", number]
+                }
+            }
+            else {
+                local BR_lA_real = Neck2_e:toLocal(Gun0_e:angles())
+                if(!inrange(BR_lA_real,ang(-0.1),ang(0.1))) {
+                    bash_localSetAng(BR_lA_real-ang(clamp(angnorm(BR_lA_real)*0.4,-Interval*225,Interval*225)[1],0,0))
+                }
+            }
+        }
+    break #"targetSystem"
+    
+    
+    
+    case "physbox_preload",
+        #ifdef propSpawn(string,vector,angle,number)
+            if(SpawnQueye:exists(1)) {
+                timer("physbox_preload", 50)
+                if(propCanSpawnCreate()) {
+                    local DATA   = SpawnQueye:removeArray(1)
+                    local Index  = DATA[1, number]
+                    local Type   = DATA[2, string]
+                    local Parent = AddHolo[ DATA[3, string]+"/entity", entity]
+                    local Model  = DATA[4, string]
+                    local Pos    = Parent:toWorld(DATA[5, vector])
+                    local Ang    = Parent:toWorld(DATA[6, angle ])
+                    
+                    local Prop = propSpawn(Model, Pos, Ang, 1)
+                    Prop:setAlpha(0)
+                    Prop:drawShadow(0)
+                    Prop:parentTo(Parent)
+                    PropsBoxs:pushEntity(Prop)
+                    AlphaProps:pushEntity(Prop)
+                    #    if(Index==1) {PB_base_e   = Prop}
+                    #elseif(Index==2) {PB_bash_e   = Prop}
+                    #elseif(Index==3) {PB_radar_e  = Prop}
+                    #elseif(Index==4) {PB_camera_e = Prop}
+                    #ifdef noCollideAll(entity, number)
+                        noCollideAll(Prop, 1)
+                    #else
+                        #ifdef entity:noCollideAll(number)
+                            Prop:noCollideAll(1)
+                        #endif
+                    #endif
+                    Prop:runOnDamage(PropsBoxs_toggle)
+                    DT["prop" + Prop:id(), string] = Type
+                }
+            }
+        #endif
+    break #"physbox_preload"
+    
+    
+    
+    case "O_friends__saveToFile",
+        if(O_friends_saveAllowed) {
+            timer("O_friends__saveToFile", 200)
+            
+            if(fileCanWrite()) {
+                chatLog(ChatLog_piece_turretName, ChatLog_piece_FriendListFileSaved)
+                fileWrite(O_friends_FilePath, O_friends_listJSON)
+                stoptimer("O_friends__saveToFile")
+                O_friends_noSave = 0
+            }
+            elseif(changed(O_friends_listJSON)) {chatLog(ChatLog_piece_turretName, ChatLog_piece_FriendListFileSave)}
+        }
+    break #"O_friends__saveToFile"
+    
+    case "chatLog",
+        chatLog()
+    break #"chatLog"
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+

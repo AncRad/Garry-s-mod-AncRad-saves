@@ -1,0 +1,162 @@
+@name put_on_the_shoulder
+
+@inputs 
+@outputs 
+@persist 
+
+
+#@persist [Chell_e]:entity
+@persist [Root_e RT_e]:entity [Root_i RT_i]:number
+
+@trigger none
+
+
+
+switch(clkName()) {
+    default,
+        if(changed(0)) {
+            #include "AddHolo_v01"
+            
+            timer("start", 1)
+        }
+    break
+    
+    case "AddHolo", addHolo() break
+    
+    case "start",
+        
+        
+        #addHolo("rt", vec(), vec(), ang(), vec(), "cube", "", "") addHolo_INTO(entity())
+        #addHolo("Chell", vec(), vec(1), ang(), vec(255), "models/player/p2_chell.mdl", "", "rt")
+        #addHolo("Mark", vec(), vec(-8), ang(), vec(), "hq_sphere", "models/wireframe", "")
+        #addHolo_alpha(125)
+        
+        
+        addHolo("root1", vec(), vec(), ang(), vec(), "cube", "", "")
+        addHolo("root2", vec(), vec(), ang(-30,0,7), vec(), "cube", "", "root1")
+        addHolo("root3", vec(), vec(), ang(0,35,0), vec(), "cube", "", "root2")
+        addHolo("root4", vec(-7,-2,10), vec(), ang(10,0,0), vec(), "cube", "", "root3")
+        addHolo("rt", vec(), vec(), ang(), vec(), "cube", "", "root4")
+        #addHolo("Cancella", vec(), vec(1), ang(), vec(255), findPlayerByName("Cancella"):model(), "", "root4")
+        
+        addHolo_INTO("root1", owner(), "chest")
+        
+        addHolo_timer("addHoloEnd", 1)
+        addHolo_timer("loop", 1)
+        addHolo_start()
+    break
+    
+    case "addHoloEnd",
+        if(changed(0)) {
+            #Chell_e = AddHolo["Chell/entity", entity]
+            #holoAnim(AddHolo["Chell/index", number], "idle_physgun")
+            #holoAnim(AddHolo["Cancella/index", number], "sit")
+            #Mark_e = AddHolo["Mark/entity", entity]
+            #Mark_i = AddHolo["Mark/index", number]
+            Root_e = AddHolo["root4/entity", entity]
+            Root_i = AddHolo["root4/index", number]
+            RT_e = AddHolo["rt/entity", entity]
+            RT_i = AddHolo["rt/index", number]
+            stoptimer("AddHolo")
+        }
+    break
+    
+    case "loop",
+        
+        if(owner():keyPressed("mouse_4")) {
+            local E = entity()
+            holoPos(RT_i, E:pos())
+            holoAng(RT_i, E:angles())
+            E:parentTo(RT_e)
+            holoPos(RT_i, Root_e:pos())
+            holoAng(RT_i, Root_e:angles())
+            E:setAlpha(0)
+            E:propNotSolid(1)
+        }
+        else {
+            timer("loop", 50)
+        }
+    break
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

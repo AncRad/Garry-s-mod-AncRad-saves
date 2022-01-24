@@ -1,0 +1,477 @@
+@name blade_test_builder
+
+@inputs [Pos1 Pos2]:entity
+@outputs Debug:string
+
+@persist [StepA StepB StepC StepD]
+@persist [ArrayF ArrayA ArrayB ArrayC]:array
+
+@persist [E]:entity
+@persist [Base]:entity
+
+@persist Counter
+
+
+if(changed(0)) {
+    
+    
+    function number stop() {
+        printColor(vec(255),"[",vec(255,60,0),"blade_test_builder",vec(255),"] ", "stopped")
+        stoptimer("")
+        exit()
+        return 1
+    }
+    
+    E = entity()
+    E:setMaterial("lights/white") E:setColor(vec(255))
+    
+    
+    Base = E:isWeldedTo()
+    
+    if(!Base | !findCanQuery()) {reset()}
+    
+    findClearBlackList()
+    findClearWhiteList()
+    findIncludeModel("models/sprops/trans/wheel_d/t_wheel40.mdl")
+    findIncludeModel("models/sprops/trans/wheel_b/wheel50.mdl")
+    findInBox(Pos1:pos(),Pos2:pos())
+    findSortByDistance(E:pos() + vec(5000,-500,0))
+    local Find = findToArray()
+    
+    
+    while(Find:count()) {
+        local Ent = Find:removeEntity(1)
+        ArrayF:pushEntity(Ent)
+        
+        Ent:setColor(vec())
+        Ent:setMaterial("lights/white")
+        #Ent:setMass(500)
+        #Ent:unConstrain()
+        
+        continue
+        if(Ent:model() == "models/sprops/trans/wheel_b/wheel50.mdl") {
+            ArrayF:remove(ArrayF:count())
+            ArrayA:pushEntity(Ent)
+        }
+    }
+    
+    timer("", 500)
+    timer("2", 500)
+    exit()
+}
+
+if(clk("")) {
+    Counter++
+    Debug="=============="
+    Debug+="\n"+"Counter = "+Counter
+    
+    switch("") {
+            #
+            #
+            #
+        case "1toAll",
+            timer("", 260)
+            
+            if(!StepA) {
+                StepA++
+            }
+            
+            local Ent = ArrayA:entity(1)
+            Ent:setColor(vec(255))
+            
+            StepB++
+            local Ent1 = ArrayF:entity(StepB)
+            Ent1:setColor(vec(50*StepA))
+            #ballsocket(Ent,vec(),Ent1,vec(-0.1),vec(0.1),vec(),1)
+            
+            if(StepB==ArrayF:count()) {
+                ArrayA:remove(1)
+                StepB = 0
+                StepA++
+                Ent:setColor(vec(0,100,255))
+                !ArrayA:count() & stop()
+            }
+        break
+            #
+            #
+            #
+        case "1by1",
+            timer("", 260)
+            local Ent = ArrayF:removeEntity(1)
+            #Ent:makeSpherical(Ent:boxSize()[3]/2)
+            #Ent:setPhysProp("jeeptire",1)
+            #Ent:setMass(500)
+            #noCollide(Ent,Base)
+            #Ent:axisTo(Base,Ent:massCenterL(),Base:toLocal(Ent:massCenter()),0,0,0,0,vec(0,Ent:right()[2],0))
+            
+            Ent:setColor(vec(255))
+            
+            !ArrayF:count() & stop()
+        break,
+            #
+            #
+            #
+        case "sosednie",
+                timer("", 260)
+            
+            if(!StepA) {
+                StepA++
+            }
+            
+            StepB++
+            local Ent = ArrayF:entity(StepA)
+            local Ent1 = ArrayF:entity(StepA+StepB)
+            
+            Ent:setColor(vec(0,100,255))
+            Ent1:setColor(vec(StepC ? 200 : 100))
+            #ballsocket(Ent,vec(),Ent1,vec(-0.1),vec(0.1),vec(),1)
+            #noCollide(Ent,Ent1)
+            
+            if(StepB == 3-StepC) {
+                StepC = !StepC
+                StepB = 0
+                StepA++
+                
+                if(StepA >= ArrayF:count()) {
+                    foreach(C, Ent:entity = ArrayF) {
+                        Ent:setColor(vec(255))
+                        Ent:setMaterial("")
+                    }
+                    stop()
+                }
+            }
+            
+            !ArrayF:count() & stop()
+        break,
+            #
+            #
+            #
+        default,
+            foreach(C, Ent:entity = ArrayF) {
+                #Ent:setPhysProp("metal",1)
+                Ent:setColor(vec(255))
+                Ent:setMaterial("")
+            }
+            stop()
+        break
+    }
+    
+    exit()
+}
+
+
+
+
+if(clk("2")) {
+        timer("2", 150)
+    
+    local P1 = Pos1:boxCenterW()
+    local P2 = Pos2:boxCenterW()
+    if(changed(P1+P2)) {
+        if(!holoEntity(0)) {holoCreate(0,vec(),vec(),ang(),vec(255),"cube") holoMaterial(0,"models/wireframe")}
+        holoPos(0,(P1+P2)/2)
+        holoScale(0,-abs(P1-P2)/12)
+    }
+    exit()
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

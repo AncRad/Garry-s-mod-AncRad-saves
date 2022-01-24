@@ -1,0 +1,93 @@
+@name cursorPos CamFix
+@inputs Cam:entity
+@outputs 
+@persist [E O]:entity [Q]:table
+@trigger 
+
+if(changed(0)) {
+    #include "EGPS"
+    
+    E = entity()
+    O = owner()
+    
+    
+    function cursorPos(Player:entity) {
+        ###########################################################################################
+        ############################################################################################
+        
+        local EyeAngles  = Player:eyeAngles()
+        local Eye        = Player:eye():rotate(angnorm(EyeAngles-Cam:angles())*ang(-1,1,0)*Player:keyPressed("mouse_4"))
+        if(changed(Eye) | changed(EyeAngles)) {                                                     ##
+            local EyeA       = EyeAngles:forward()                                                  ##
+            local EgpScrSize = egpScrSize(Player)                                                   ##
+                                                                                                    ##
+            local Holo = holoEntity(0)                                                              ##
+            if(!Holo) {holoCreate(0,vec(),vec())}                                                   ##
+            holoAng(0, EyeAngles)                                                                   ##
+                                                                                                    ##
+            local Cos = Eye[1] * EyeA[1] + Eye[2] * EyeA[2] + Eye[3] * EyeA[3]                      ##
+            local CursorV = (Holo:toLocal(Eye / Cos) / vec(1, -1.332, -0.75) + vec(0, 1, 1)) / 2    ##
+                                                                                                    ##
+            local Cursor = Q["cursor", vector2] = vec2(CursorV[2], CursorV[3]) * EgpScrSize        ###
+            egpSetPos("c", Cursor)
+        }                                                                                         ###
+        ############################################################################################
+        ###########################################################################################
+    }
+    
+    
+    
+    egpSelect(E:isWeldedTo():wirelink())
+    egpClear()
+    
+    egpAddCircle("c", v(), v(4), "o")
+    
+    
+    
+    
+    
+}
+
+
+timer("", 1)
+
+
+
+cursorPos(O)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

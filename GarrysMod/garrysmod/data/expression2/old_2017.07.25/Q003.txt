@@ -1,0 +1,153 @@
+@name Q003
+@inputs 
+@outputs 
+@persist [E O]:entity [Q Project]:table
+
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+
+if(changed(0)) {
+    
+    #include "old 28.10.2017/25.07.2017/EGPS"
+    #include "old 28.10.2017/25.07.2017/Q003LIB"
+    ##include "QResource"
+    
+    
+    E = entity() E:setSkin(1)
+    O = owner()
+    
+    
+    
+    
+    Q["fontSize", number] = 15
+    Q["indent"  , number] = 2
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    timer("", 1)
+}
+
+
+if(clk("")) {
+        timer("", 50)
+    
+    
+    local KeyC = O:keyPressed("C") | 1
+    if(KeyC) {
+        cursorPos(O)
+    }
+    
+    local Cursor = Q["cursor", vector2]
+    
+    if(changed(Cursor)) {cursorTarget()}
+     CursorTarget = Q["cursorTarget", string]
+    
+    local MOUSE_LEFT = O:keyPressed("E") | O:keyPressed("MOUSE_LEFT")
+    local MOUSE_RIGHT = O:keyPressed("MOUSE_RIGHT")
+    
+    local Click = (MOUSE_LEFT | MOUSE_RIGHT) & KeyC
+    if(changed(Click) & Click) {
+        
+        local Act = CursorTarget
+        #addAct(Act)
+    }
+    
+    
+    
+    
+    
+    local Clear = array()
+    foreach(C, Act_i:number = Q["acts", array]) {
+        local Act_name = Q[Act_i + "/act/name", string]
+        
+        local NoRemove = 0
+        switch(Act_name) {
+            case "",
+            break
+            
+            case "",
+            break
+            
+            case "",
+            break
+            case "",
+            break
+        }
+        if(!NoRemove) {Clear = array(C):add(Clear)}
+    }
+    foreach(C, I:number = Clear) {
+        Q["acts", array]:remove(I)
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

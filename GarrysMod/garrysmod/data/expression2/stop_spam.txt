@@ -1,0 +1,15 @@
+@name STOP_SPAM
+@inputs 
+@outputs 
+@persist 
+@trigger 
+
+runOnChat(1)
+
+if(chatClk()) {
+    LAST = lastSaid()
+    
+    if(LAST:find("получил 15 поинтов за удержив")) {
+        concmd("say Заебали спамить!!!!":repeat(4))
+    }
+}

@@ -1,0 +1,649 @@
+@name Turret_01_004_base
+
+@inputs 
+@outputs Find:array
+
+@persist [SWEP_user SWEP_user_crowbar SWEP_body]:entity [SWEP_status]:string SWEP_getLock    [SWEP_rt_i SWEP_user_rhand_i SWEP_user_chest_i]:number [SWEP_user_rhand_e SWEP_user_chest_e Turret_base_e Turret_gun2_e]:entity  [SWEP_g]:gtable
+
+@persist [CC]:table [Commands]:array
+
+@persist [RadarRotor_e Camera_e]:entity [Check_alphaMaterials_a Check_alphaModels_a AlphaProps]:array [Check_alphaMaterials_s Check_alphaModels_s]:string
+
+@model models/sprops/cylinders/size_5/cylinder_12x3.mdl
+
+
+
+#include "Turret_01_004_model"
+if(changed(0)) {
+    #####
+    #- start
+    addHolo_timer("gun2", "swep", 1)
+    addHolo_timer("targetSistem", 1)
+    addHolo_timer("findSistem", 1)
+    addHolo("swep_rhand",vec(),vec(),ang(),vec(),"cube","","rt") unshiftHolo()
+    addHolo("swep_chest",vec(),vec(),ang(),vec(),"cube","","rt") unshiftHolo()
+    addHolo_start()
+    ####
+    
+    
+    
+    
+}
+
+
+if(clk("swep")) {
+        timer("swep", 50)
+    
+    if(changed(0)) {
+        
+        
+        
+        function turret_off() {
+            T["bashnyaStepNeed", number] = 0
+            T["cameraStepNeed", number] = 0
+            T["radarStepNeed", number] = 0
+            T["baseStepNeed", number] = 0
+            T["gunStepNeed", number] = 0
+            Target = noentity()
+        }
+        function turret_on() {
+            T["bashnyaStepNeed", number] = 1
+            T["cameraStepNeed", number] = 1
+            T["radarStepNeed", number] = 1
+            T["baseStepNeed", number] = 4
+            T["gunStepNeed", number] = T["gunAttack", number]
+        }
+        function turret_attack() {
+            T["gunStepNeed", number] = T["bashnyaStepNeed", number]
+            T["gunAttack", number] = 1
+        }
+        function turret_noAttack() {
+            T["gunStepNeed", number] = 0
+            T["gunAttack", number] = 0
+        }
+        
+        function vector entity:getTargetPos() {
+            local Target_P = vec()
+            if(This:isPlayer() | This:isNPC()) {
+                Target_P = This:attachmentPos("anim_attachment_head")
+                if(!Target_P) {
+                    Target_P = This:attachmentPos("chest")
+                }
+            }
+            if(!Target_P) {
+                Target_P = This:boxCenterW()
+            }
+            return Target_P
+        }
+        
+        
+        
+        
+        
+        
+        SWEP_g = gTable("ancrad_swep01")
+        
+        Turret_base_e = AddHolo["base/entity", entity]
+        Turret_gun2_e = AddHolo["gun2/entity", entity]
+        
+        SWEP_rt_i = AddHolo["base/index", number]
+        SWEP_user_rhand_i = AddHolo["swep_rhand/index", number] ? AddHolo["swep_rhand/index", number] : 100501
+        SWEP_user_rhand_e = holoEntity(SWEP_user_rhand_i)
+        SWEP_user_chest_i = AddHolo["swep_chest/index", number] ? AddHolo["swep_chest/index", number] : 100502
+        SWEP_user_chest_e = holoEntity(SWEP_user_chest_i)
+        
+        SWEP_body = entity()
+        SWEP_body:setAlpha(0)
+        SWEP_body:drawShadow(0)
+        SWEP_body:propFreeze(0)
+        SWEP_body:propNotSolid(0)
+        SWEP_status = "drop"
+        
+        runOnLast(1)
+        runOnChat(1)
+        
+        function number entity:to(TO:string) {
+            if(!This:isPlayer()) {return 0}
+            local LastSWEP_status = SWEP_status
+            
+            local SID = This:steamID()
+            if(TO == "rhand") {
+                if(SWEP_g[SID + "/rhand/entity", entity]) {return 0}
+                
+                local Crow = This:weapon()
+                if(Crow:type() != "weapon_crowbar") {return 0}
+                
+                if(!SWEP_user_rhand_e) {
+                    SWEP_user_rhand_e = holoCreate(SWEP_user_rhand_i,vec(),vec(-0.4),ang()) holoVisible(SWEP_user_rhand_i, players(), 0) holoVisible(SWEP_user_rhand_i, owner(), 1) print(123)
+                }
+                holoPos(SWEP_user_rhand_i, SWEP_user:attachmentPos("anim_attachment_rh"))
+                holoAng(SWEP_user_rhand_i, SWEP_user:attachmentAng("anim_attachment_rh"))
+                holoParentAttachment(SWEP_user_rhand_i, SWEP_user, "anim_attachment_rh")
+                
+                #holoPos(SWEP_rt_i, SWEP_user_rhand_e:toWorld(vec()))
+                #holoAng(SWEP_rt_i, SWEP_user_rhand_e:toWorld(ang()))
+                local LocalAng = (Turret_base_e:toLocal(Turret_gun2_e:angles())-ang(0,90,0)):rotateAroundAxis(vec(0,1,0),25)
+                holoAng(SWEP_rt_i, SWEP_user_rhand_e:toWorld(LocalAng))
+                holoPos(SWEP_rt_i, SWEP_user_rhand_e:toWorld(vec(0.7,-0.25,0)-(Turret_base_e:toLocal(Turret_gun2_e:pos())+vec(0.5,0,0)):rotate(LocalAng)))
+                
+                holoParent(SWEP_rt_i, SWEP_user_rhand_e)
+                
+                SWEP_g[SID + "/rhand/entity", entity] = SWEP_user_rhand_e
+                SWEP_user_crowbar = Crow
+                SWEP_status = "rhand"
+            }
+            elseif(TO == "chest") {
+                if(SWEP_g[SID + "/chest/entity", entity]) {return 0}
+                
+                if(!SWEP_user_chest_e) {
+                    SWEP_user_chest_e = holoCreate(SWEP_user_chest_i,vec(),vec(-0.4),ang()) holoVisible(SWEP_user_chest_i, players(), 0) holoVisible(SWEP_user_chest_i, owner(), 1) print(124)
+                }
+                holoPos(SWEP_user_chest_i, SWEP_user:attachmentPos("chest"))
+                holoAng(SWEP_user_chest_i, SWEP_user:attachmentAng("chest"))
+                holoParentAttachment(SWEP_user_chest_i, SWEP_user, "chest")
+                
+                holoPos(SWEP_rt_i, SWEP_user_chest_e:toWorld(vec(-8,0,-2)))
+                holoAng(SWEP_rt_i, SWEP_user_chest_e:toWorld(ang(-90,0,0)))
+                holoParent(SWEP_rt_i, SWEP_user_chest_e)
+                
+                SWEP_g[SID + "/chest/entity", entity] = SWEP_user_chest_e
+                SWEP_status = "chest"
+            }
+            elseif(TO == "drop") {
+                
+                local SWEP_user_rt_e = LastSWEP_status == "rhand" ?  SWEP_user_rhand_e : SWEP_user_chest_e
+                SWEP_body:propFreeze(0)
+                SWEP_body:setPos(SWEP_user_rt_e:pos())
+                SWEP_body:setAng(SWEP_user_rt_e:angles())
+                SWEP_body:setVel(SWEP_user:vel())
+                
+                holoPos(SWEP_rt_i, SWEP_body:toWorld(vec()))
+                holoAng(SWEP_rt_i, SWEP_body:toWorld(ang()))
+                holoParent(SWEP_rt_i, SWEP_body)
+                
+                turret_off()
+                SWEP_status = "drop"
+            }
+            elseif(TO == "put") {
+                
+                local Norm = SWEP_user:aimNormal()
+                local Pos = SWEP_user:aimPos()
+                local EYE = SWEP_user:eye()
+                
+                local Ang = EYE:rotateAroundAxis(EYE:cross(Norm),90-acos(Norm:dot(-EYE))):toAngle()
+                
+                #SWEP_body:setAng(Ang:setRoll(acos(Ang:up():dot(Norm))))
+                SWEP_body:setAng(Norm:toAngle()+ang(90,0,0))
+                SWEP_body:setPos(Pos + Norm*SWEP_body:boxSize()[3]+SWEP_body:boxCenter())
+                SWEP_body:propFreeze(1)
+                
+                holoPos(SWEP_rt_i, SWEP_body:toWorld(vec()))
+                holoAng(SWEP_rt_i, SWEP_body:toWorld(ang()))
+                holoParent(SWEP_rt_i, SWEP_body)
+                
+                SWEP_status = "put"
+            }
+            else {
+                return 0
+            }
+            
+            local LastSWEP_status_rhand = LastSWEP_status == "rhand"
+            local LastSWEP_status_chest = LastSWEP_status == "chest"
+            if(LastSWEP_status_rhand | LastSWEP_status_chest) {SWEP_g:removeEntity(SID + "/" + (LastSWEP_status_rhand ? "rhand" : "chest") + "/entity")}
+            #if(LastSWEP_status_rhand | LastSWEP_status_chest) {SWEP_g[SID + "/" + (LastSWEP_status_rhand ? "rhand" : "chest") + "/entity", entity] = noentity()}
+            local SWEP_status_inUser_changed = (SWEP_status == "rhand" | SWEP_status == "chest") - (LastSWEP_status == "rhand" | LastSWEP_status == "chest")
+            if(SWEP_status_inUser_changed > 0) {
+                SWEP_body:propFreeze(1)
+                SWEP_body:propNotSolid(1)
+            }
+            elseif(SWEP_status_inUser_changed < 0) {
+                #SWEP_body:propFreeze(0)
+                SWEP_body:propNotSolid(0)
+            }
+            
+            if(LastSWEP_status_rhand | 1) {
+                if(SWEP_status == "rhand") {
+                    SWEP_user_crowbar:setAlpha(0)   SWEP_user_crowbar:drawShadow(0)
+                }
+                else {
+                    SWEP_user_crowbar:setAlpha(255) SWEP_user_crowbar:drawShadow(1)
+                }
+            }
+            SWEP_getLock = curtime() + 0.409
+            SWEP_user = SWEP_status == "drop" ? noentity() : This
+            return 1
+        }
+        
+        
+        owner():to("chest") | owner():to("rhand")
+        #turret_on() turret_attack()
+    }
+    
+    local SWEP_status_changed = changed(SWEP_status)
+    local SWEP_status_rhand = SWEP_status == "rhand"
+    local SWEP_status_chest = SWEP_status == "chest"
+    local SWEP_status_inUser = SWEP_status_rhand | SWEP_status_chest
+    
+    if(SWEP_status_changed) {
+        if(SWEP_status_inUser) {
+            turret_off()
+        }
+    }
+    
+    if(SWEP_status_rhand) {
+        if(!SWEP_user:isAlive() | SWEP_user:inVehicle() | SWEP_user:playerIsRagdoll()) {
+            SWEP_user:to("drop")
+        }
+        elseif(SWEP_user:weapon():type() != "weapon_crowbar") {
+            if(SWEP_user:keyUse()) {
+                SWEP_user:to("chest")
+            }
+            else {
+                SWEP_user:to("drop")
+            }
+        }
+        else {
+            local Key_dubinator = SWEP_user:keyAttack2()
+            if(changed(Key_dubinator) & Key_dubinator) {
+                T["gunStepNeed", number] = !T["gunStepNeed", number]
+            }
+            
+            local Key_attack = SWEP_user:keyAttack1()
+            if(Key_attack & SWEP_user:aimPos():distance(SWEP_user:shootPos()) < 75) {
+                if(SWEP_user:keyUse() & (SWEP_getLock - curtime() <= 0)) {
+                    
+                    SWEP_user:to("put")
+                    
+                }
+                elseif(Key_attack & (T["dubinatorLock", number] - curtime() <= 0)) {
+                    
+                    local Force = 0.5+T["gunStep1_real", number]*0.5
+                    
+                    local E = SWEP_user:aimEntity()
+                    if(E:isPlayer()) {
+                        E:setVel(SWEP_user:eye()*Force*52.5*10)
+                    }
+                    else {
+                        E:applyOffsetForce(SWEP_user:eye()*Force*52.5*75*10,SWEP_user:aimPos())
+                    }
+                    
+                    T["dubinatorLock", number] = curtime() + 0.409
+                }
+            }
+            elseif(changed(T["gunStep1_real", number]) + changed(T["bashnyaStep1_neckReal", number]) + changed(T["bashnyaRoot_localAng", angle])) {
+                local LocalAng = (Turret_base_e:toLocal(Turret_gun2_e:angles())-ang(0,90,0)):rotateAroundAxis(vec(0,1,0),25)
+                holoAng(SWEP_rt_i, SWEP_user_rhand_e:toWorld(LocalAng))
+                holoPos(SWEP_rt_i, SWEP_user_rhand_e:toWorld(vec(0.7,-0.25,0)-(Turret_base_e:toLocal(Turret_gun2_e:pos())+vec(0.5,0,0)):rotate(LocalAng)))
+            }
+        }
+    }
+    elseif(SWEP_status_chest) {
+        local Crow = SWEP_user:weapon():type() == "weapon_crowbar"
+        if(changed(Crow) & Crow) {
+            if(SWEP_user:keyUse()) {
+                SWEP_user:to("rhand")
+            }
+        }
+    }
+    elseif(SWEP_status == "put") {
+        
+        local Distance = 52.5 * 1.5
+        if(SWEP_user:keyAttack1() & SWEP_user:keyUse() & SWEP_user:aimEntity() == SWEP_body & (SWEP_user:aimPos():distance(SWEP_user:shootPos()) <= Distance) & (SWEP_getLock - curtime() <= 0)) {
+            SWEP_user:to("rhand")
+        }
+    }
+    elseif(SWEP_status == "drop") {
+        
+        local Distance = 52.5 * 1.5
+        findIncludeClass("player")
+        findInSphere(SWEP_body:pos(), Distance)
+        foreach(C, P:entity  = findToArray()) {
+            if(P:keyAttack1() & P:keyUse() & P:aimEntity() == SWEP_body & (P:aimPos():distance(P:shootPos()) <= Distance) & (SWEP_getLock - curtime() <= 0)) {
+                if(P:to("rhand")) {break} else {}
+            }
+        }
+    }
+}
+
+if(chatClk(SWEP_user)) {
+    if(changed(0)) {
+        
+        function addChatCommand(Command:string, Variables:array) {
+            Commands:pushString(Command)
+            CC[Command + "\variables", array] = Variables
+        }
+        
+        addChatCommand("off", array("off", "спи"))
+        addChatCommand("defend", array("defend", "def", ""))
+        addChatCommand("attack", array("attack", "бей"))
+        addChatCommand("noAttack", array("noattack", "no attack", "не бей"))
+        
+    }
+    
+    local LS = SWEP_user:lastSaid():lower()
+    
+    
+    if(LS:index(1) == "!" | LS:index(1) == "#") {
+            hideChat(1)
+        
+        local Command = ""
+        local LS = LS:sub(2)
+        #local EX = LS:explode(" ")
+        #local EX1 = EX[1, string]
+        
+        foreach(C, C_command:string = Commands) {
+            if(CC[C_command + "\variables", array]:concat("#"):find(LS)) {
+                Command = C_command
+                print(LS + " == " + Command)
+                break
+            }
+        }
+        
+        switch(Command) {
+            case "off",
+                turret_off()
+            break
+            case "defend",
+                turret_on()
+            break
+            case "attack",
+                turret_attack()
+            break
+            case "noAttack",
+                turret_noAttack()
+            break
+            default,
+                
+            break
+        }
+    }
+}
+
+
+
+if(clk("findSistem")) {
+        timer("findSistem", 300)
+    
+    if(changed(0)) {
+        
+        Check_alphaMaterials_a = array(
+            "phoenix_storms/airboat_blur02",
+            "phoenix_storms/fender_white",
+            "phoenix_storms/glass"
+        )
+        
+        Check_alphaMaterials_s = Check_alphaMaterials_a:concat("\n")
+        
+        
+        RadarRotor_e = AddHolo["radarRotor/entity", entity]
+        Camera_e = AddHolo["camera/entity", entity]
+        
+    }
+    
+    if(findCanQuery()) {
+        local Radar = T["radarStepReal", number]
+        local Camera = T["cameraStepNeed", number]
+        if(Radar | Camera) {
+            
+            findClearBlackList()
+            findClearWhiteList()
+            findIncludeModel("models/props_c17/oildrum001.mdl")
+            findIncludeClass("player")
+            findIncludeClass("npc")
+            #findExcludeEntities(SWEP_user:steamFriends():add(array(SWEP_user)))
+            
+            if(Radar) {
+                local Radar_P = RadarRotor_e:pos()
+                local Radar_c = T["find/radar_c", number] = findInSphere(Radar_P, Radar * 52.5 * 10)
+            }
+            Find = findToArray()
+            
+            #[
+            findClearBlackList()
+            findClearWhiteList()
+            findIncludeModel("models/props_c17/oildrum001.mdl")
+            findIncludeClass("player")
+            findIncludeClass("npc")
+            findExcludeEntities(SWEP_user:steamFriends():add(array(SWEP_user)))
+            
+            local Radar_P = RadarRotor_e:pos()
+            local Camera_P = Camera_e:pos()
+            
+            local Radar_c = 0
+            local Camera_c = 0
+            if(Radar) {
+                Radar_c = T["find/radar_c", number] = findInSphere(Radar_P, Radar * 52.5 * 10)
+            }
+            if(Camera) {
+                
+                Camera_c = T["find/camera_c", number] = findInCone(Camera_P,Camera_e:forward(), Camera * 52.5*15,20)
+            }
+            findSortByDistance(Radar_P)
+            Find = findToArray()
+            ]#
+        }
+    }
+    else {
+        print("find can not query")
+    }
+}
+
+if(clk("targetSistem")) {
+        timer("targetSistem", 25)
+    
+    
+    local Target_e = T["Target_e", entity]
+    
+    if(!Target_e & ((curtime() - T["checkSistem", number]) >= 0.1)) {
+            T["checkSistem", number] = curtime()
+        
+        local Ranger_SP = RadarRotor_e:pos()
+        
+        rangerPersist(1)
+        rangerFilter(AlphaProps)
+        local Count = Find:count()
+        local C = 0
+        while(perf(80) & C < Count) {
+            C++
+            
+            local Find_e  = Find[C, entity]
+            
+            local Target_P = Find_e:getTargetPos()
+            
+            #local Ranger = rangerOffsetHull(Ranger_SP,Target_P,vec(1),vec(5))
+            local Ranger = rangerOffset(Ranger_SP,Target_P)
+            local Ranger_e = Ranger:entity()
+            if(Ranger_e == Find_e) {
+                Target_e = T["Target_e", entity] = Find_e
+                RadarRotor_e:soundPlay("target_finded", 2, "buttons/button16.wav") soundVolume("target_finded", 0.3)
+                break
+            }
+            else {
+                #ignore alpha prop
+            }
+        }
+        rangerPersist(0)
+    }
+    
+    if(Target_e) {
+        local Target_P = Target_e:getTargetPos()
+        
+        rangerFilter(AlphaProps)
+        local Ranger_SP = Camera_e:pos()
+        #local R = rangerOffsetHull(Ranger_SP,Target_P,vec(1),vec(5))
+        local R = rangerOffset(Ranger_SP,Target_P)
+        local Ranger_e = R:entity()
+        
+        local Loose = Ranger_e != Target_e
+        if(Loose) {
+            local Alpha = Ranger_e:getAlpha() < 240
+            if(!Alpha) {
+                local Ranger_e_m = Ranger_e:getMaterial()
+                
+                if(Ranger_e_m) {
+                    Alpha = Ranger_e_m:find("glass") | Ranger_e_m:find("effect") | Check_alphaMaterials_s:find(Ranger_e_m)
+                }
+                else {
+                    local Ranger_e_m = Ranger_e:model()
+                    
+                    Alpha = Ranger_e_m:find("glass") | Check_alphaModels_s:find(Ranger_e_m) | Ranger_e_m:find("window")
+                }
+            }
+            if(Alpha) {
+                AlphaProps:pushEntity(Ranger_e)
+            }
+        }
+        else {
+            T["Target_P", vector] = Target_P
+        }
+        if(changed(Loose) & Loose) {
+            T["looseTarget", number] = curtime()
+        }
+        if(Loose & (curtime() - T["looseTarget", number] >= 1.5)) {
+            T["looseTarget", number] = curtime()
+            T["Target_e", entity] = Target_e = noentity()
+        }
+    }
+    elseif(T["looseTarget", number]) {
+        if(curtime() - T["looseTarget", number] >= 1.5) {
+            T["bashnyaRoot_needLocalAng", angle] = ang()
+            T["looseTarget", number] = 0
+            T["Target_P", vector] = vec()
+            #RadarRotor_e:soundPlay("target_loose", 1, "buttons/button17.wav") soundVolume("target_loose", 0.3)
+        }
+    }
+    
+    #[
+    if(!Target_e & curtime() - T["checkSistem", number] >= 0.1) {
+            T["checkSistem", number] = curtime()
+        
+        T["Target_e", entity] = noentity()
+        
+        local Radar_c = max(T["find/radar_c", number],1)
+        #local Camera_c = T["find/camera_c", number]
+        
+        local Ranger_SP = RadarRotor_e:pos()
+        
+        rangerPersist(1)
+        rangerFilter(AlphaProps)
+        local Count = Find:count()
+        local C = 0
+        while(perf(80) & C < Count) {
+            C++
+            
+            local Target_e = Find[C, entity]
+            
+            if(Radar_c==C) {Ranger_SP = Camera_e:pos()}
+            
+            local Target_P = Target_e:getTargetPos()
+            
+            #local R = rangerOffsetHull(Ranger_SP,Target_P,vec(1),vec(5))
+            local R = rangerOffset(Ranger_SP,Target_P)
+            local Ranger_e = R:entity()
+            if(Ranger_e == Target_e) {
+                T["Target_e", entity] = Target_e
+                break
+            }
+            else {
+                local Alpha = Ranger_e:getAlpha() < 240
+                if(!Alpha) {
+                    local Ranger_e_m = Ranger_e:getMaterial()
+                    
+                    if(Ranger_e_m) {
+                        Alpha = Ranger_e_m:find("glass") | Ranger_e_m:find("effect") | Check_alphaMaterials_s:find(Ranger_e_m)
+                    }
+                    else {
+                        local Ranger_e_m = Ranger_e:model()
+                        
+                        Alpha = Ranger_e_m:find("glass") | Check_alphaModels_s:find(Ranger_e_m) | Ranger_e_m:find("window")
+                    }
+                }
+                
+                if(Alpha) {
+                    
+                    AlphaProps:pushEntity(Ranger_e)
+                    rangerFilter(AlphaProps)
+                    C--
+                    continue
+                }
+            }
+        }
+        rangerPersist(0)
+    }
+    
+    
+    
+    if(Target_e) {
+        local Target_P = Target_e:getTargetPos()
+        
+        rangerFilter(AlphaProps)
+        local Ranger_SP = Camera_e:pos()
+        #local R = rangerOffsetHull(Ranger_SP,Target_P,vec(1),vec(5))
+        local R = rangerOffset(Ranger_SP,Target_P)
+        local Ranger_e = R:entity()
+        
+        local Loose = Ranger_e != Target_e
+        if(Loose) {
+            local Alpha = Ranger_e:getAlpha() < 240
+            if(!Alpha) {
+                local Ranger_e_m = Ranger_e:getMaterial()
+                
+                if(Ranger_e_m) {
+                    Alpha = Ranger_e_m:find("glass") | Ranger_e_m:find("effect") | Check_alphaMaterials_s:find(Ranger_e_m)
+                }
+                else {
+                    local Ranger_e_m = Ranger_e:model()
+                    
+                    Alpha = Ranger_e_m:find("glass") | Check_alphaModels_s:find(Ranger_e_m) | Ranger_e_m:find("window")
+                }
+            }
+            if(Alpha) {
+                AlphaProps:pushEntity(Ranger_e)
+            }
+        }
+        else {
+            T["Target_P", vector] = Target_P
+        }
+        if(changed(Loose) & Loose) {
+            T["looseTarget", number] = curtime()
+        }
+        if(Loose & (curtime() - T["looseTarget", number] >= 1.5)) {
+            T["looseTarget", number] = curtime()
+            T["Target_e", entity] = Target_e = noentity()
+        }
+    }
+    elseif(T["looseTarget", number]) {
+        if(curtime() - T["looseTarget", number] >= 1.5) {
+            T["bashnyaRoot_needLocalAng", angle] = ang()
+            T["looseTarget", number] = 0
+            T["Target_P", vector] = vec()
+        }
+    }
+    ]#
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+if(last()) {
+    if(SWEP_status == "rhand" | SWEP_status == "chest") {
+        SWEP_user:to("drop")
+    }
+}
+setName("SWEP_base\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1e6))

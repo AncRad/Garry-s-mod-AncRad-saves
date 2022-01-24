@@ -1,0 +1,813 @@
+@name Add_01
+
+#- add
+@persist [Add]:table [Add_queye]:array
+@persist [Add_lastName]:string [Add_noNameCounter]
+
+#- holo
+@persist [Add_holoCounter]
+@persist [Add_holo_actValidList Add_holo_modelList]:table
+
+#- prop
+@persist [Add_prop_actValidList]:table
+
+#- for entity
+@persist [Add_entuty_actValidList]:table
+
+#- constraint
+@persist [Add_constraint_cool Add_constraint_coolValue]
+
+#- for all
+@persist [Add_actValidList]:table
+
+#- 
+@persist 
+
+
+
+if(changed(0)) {
+    ################
+    #- extended e2
+    #
+    #- holoClip
+    function holoClip([ID Index]:number, LocalPos:vector, LocalAng:angle, Offset:number) {
+        local LocalAng_forward = LocalAng:forward()
+        
+        holoClipEnabled(ID, Index, 1)
+        holoClip(ID, Index, LocalPos + LocalAng_forward * Offset, LocalAng_forward, 0)
+    }
+    #- toWorld
+    function array table:toWorld() {
+        local O_pos     = This["pos", vector]
+        local O_ang     = This["ang", angle ]
+        local O_toWorld = This["toWorld", string]
+        
+        if(O_toWorld == "") {
+            local O_toWorld_name  = This["toWorld/name", string]
+            local O_toWorld_entity = Add[O_toWorld_name + "/entity", entity]
+            
+            local Pos = O_toWorld_entity:pos()
+            local Ang = O_toWorld_entity:angles()
+            return toWorldPosAng(O_pos,O_ang,Pos,Ang)
+        }
+        elseif(O_toWorld == "entity") {
+            local O_toWorld_entity = This["toWorld/entity", entity]
+            
+            local Pos = O_toWorld_entity:pos()
+            local Ang = O_toWorld_entity:angles()
+            return toWorldPosAng(O_pos,O_ang,Pos,Ang)
+        }
+        elseif(O_toWorld == "attachment") {
+            local O_toWorld_entity = This["toWorld/entity", entity]
+            if(!O_toWorld_entity) {
+                local O_toWorld_name  = This["toWorld/name", string]
+                O_toWorld_entity = Add[O_toWorld_name + "/entity", entity]
+            }
+            local O_toWorld_attachment = This["toWorld/attachment", string]
+            
+            local Pos = O_toWorld_entity:attachmentPos(O_toWorld_attachment)
+            local Ang = O_toWorld_entity:attachmentAng(O_toWorld_attachment)
+            return toWorldPosAng(O_pos,O_ang,Pos,Ang)
+        }
+        print("[Add] error! This[\"toWorld\", string] == \"\"")
+        return array()
+    }
+    ################
+    
+    ################
+    #- add
+    #
+    #
+    #- holo
+    function add_holo(O_name:string, [O_pos O_size]:vector, O_ang:angle, O_color:vector, [O_model O_material O_INTO]:string) {
+        while(Add:exists(O_name) | !O_name) {
+            Add_noNameCounter++
+            O_name = "noName" + Add_noNameCounter
+        }
+        
+        Add[O_name, table] = table(
+             "type" = "holo"
+            
+            ,"pos"      = O_pos
+            ,"size"     = O_size
+            ,"ang"      = O_ang
+            ,"color"    = O_color
+            ,"model"    = O_model
+            ,"material" = O_material
+            
+            ,"toWorld/name" = O_INTO
+            ,"parent/name"  = O_INTO
+            
+            ,"actList" = table()
+        )
+        
+        Add_lastName = O_name
+        Add_queye:pushString(O_name)
+    }
+    #- prop
+    function add_prop(O_name:string, O_pos:vector, O_ang:angle, O_color:vector, [O_model O_material O_toWorld]:string) {
+        while(Add:exists(O_name) | !O_name) {
+            Add_noNameCounter++
+            O_name = "noName" + Add_noNameCounter
+        }
+        
+        Add[O_name, table] = table(
+             "type" = "prop"
+            
+            ,"pos"      = O_pos
+            ,"ang"      = O_ang
+            ,"color"    = O_color
+            ,"model"    = O_model
+            ,"material" = O_material
+            
+            ,"toWorld/name" = O_toWorld
+            
+            ,"actList" = array()
+        )
+        
+        Add_lastName = O_name
+        Add_queye:pushString(O_name)
+    }
+    #- constraint
+    
+    ################
+    
+    ################
+    #- all act
+    #
+    #- timer
+    function add_timer(Timer_name:string) {
+        Add[Add_lastName, table]["actList", table]:pushTable(table(
+             "type"       = "timer"
+            
+            ,"timer_name" = Timer_name
+            ,"timer_time" = 1
+        ))
+    }
+    function add_timer(Timer_name:string,Timer_time:number) {
+        Add[Add_lastName, table]["actList", table]:pushTable(table(
+             "type"       = "timer"
+            
+            ,"timer_name" = Timer_name
+            ,"timer_time" = Timer_time
+        ))
+    }
+    function add_timer(O_name:string,Timer_name:string,Timer_time:number) {
+        Add[O_name, table]["actList", table]:pushTable(table(
+             "type"       = "timer"
+            
+            ,"timer_name" = Timer_name
+            ,"timer_time" = Timer_time
+        ))
+    }
+    #
+    #- print
+    function add_print(O_name:string,Print_text:string) {
+        Add[O_name, table]["actList", table]:pushTable(table(
+             "type"       = "print"
+            
+            ,"text" = Print_text
+        ))
+    }
+    function add_print(Print_text:string) {
+        Add[Add_lastName, table]["actList", table]:pushTable(table(
+             "type"       = "print"
+            
+            ,"text" = Print_text
+        ))
+    }
+    #
+    #- printColor
+    function add_printColor(O_name:string,Print_arrayText:array) {
+        Add[O_name, table]["actList", table]:pushTable(table(
+             "type"       = "printColor"
+            
+            ,"arrayText" = Print_arrayText
+        ))
+    }
+    function add_printColor(Print_arrayText:array) {
+        Add[Add_lastName, table]["actList", table]:pushTable(table(
+             "type"       = "printColor"
+            
+            ,"arrayText" = Print_arrayText
+        ))
+    }
+    #
+    #- call_function()
+    function add_callFunction(Function_name:string) {
+        Add[Add_lastName, table]["actList", table]:pushTable(table(
+             "type"          = "call_function()"
+            
+            ,"function_name" = Function_name
+        ))
+    }
+    function add_callFunction(O_name:string,Function_name:string) {
+        Add[O_name, table]["actList", table]:pushTable(table(
+             "type"          = "call_function()"
+            
+            ,"function_name" = Function_name
+        ))
+    }
+    
+    ################
+    
+    ################
+    #- holo act
+    #
+    #- holo_clip
+    function add_holo_clip(O_name:string, O_clip_localPos:vector, O_clip_localAng:angle, O_clip_localOffset:number) {
+        Add[O_name, table]["actList", table]:pushTable(table(
+             "type"             = "holo_clip"
+            
+            ,"clip_localPos"    = O_clip_localPos
+            ,"clip_localAng"    = O_clip_localAng
+            ,"clip_localOffset" = O_clip_localOffset
+        ))
+    }
+    function add_holo_clip(O_clip_localPos:vector, O_clip_localAng:angle, O_clip_localOffset:number) {
+        Add[Add_lastName, table]["actList", table]:pushTable(table(
+             "type"             = "holo_clip"
+            
+            ,"clip_localPos"    = O_clip_localPos
+            ,"clip_localAng"    = O_clip_localAng
+            ,"clip_localOffset" = O_clip_localOffset
+        ))
+    }
+    #- holo_clipLocal
+    #
+    function add_holo_clip(O_name:string, O_clip_localPos:vector, Clip_localPos_name:string, O_clip_localAng:angle, Clip_localAng_name:string, O_clip_localOffset:number) {
+        Add[Add_lastName, table]["actList", table]:pushTable(table(
+             "type"              = "holo_clipLocal"
+            ,"clip_local"        = 1
+            
+            ,"clip_localPos"     = O_clip_localPos
+            ,"clip_localPos_obj" = Clip_localPos_name
+            ,"clip_localAng"     = O_clip_localAng
+            ,"clip_localAng_obj" = Clip_localAng_name
+            ,"clip_localOffset"  = O_clip_localOffset
+        ))
+    }
+    function add_holo_clip(O_clip_localPos:vector, Clip_localPos_name:string, O_clip_localAng:angle, Clip_localAng_name:string, O_clip_localOffset:number) {
+        Add[Add_lastName, table]["actList", table]:pushTable(table(
+             "type"              = "holo_clipLocal"
+            ,"clip_local"        = 1
+            
+            ,"clip_localPos"     = O_clip_localPos
+            ,"clip_localPos_obj" = Clip_localPos_name
+            ,"clip_localAng"     = O_clip_localAng
+            ,"clip_localAng_obj" = Clip_localAng_name
+            ,"clip_localOffset"  = O_clip_localOffset
+        ))
+    }
+    #
+    function add_holo_clip(O_name:string, O_clip_localPos:vector, Clip_localPos_entity:entity, O_clip_localAng:angle, Clip_localAng_entity:entity, O_clip_localOffset:number) {
+        Add[O_name, table]["actList", table]:pushTable(table(
+             "type"              = "holo_clipLocal"
+            ,"clip_local"        = 1
+            
+            ,"clip_localPos"     = O_clip_localPos
+            ,"clip_localPos_obj" = Clip_localPos_entity
+            ,"clip_localAng"     = O_clip_localAng
+            ,"clip_localAng_obj" = Clip_localAng_entity
+            ,"clip_localOffset"  = O_clip_localOffset
+        ))
+    }
+    function add_holo_clip(O_clip_localPos:vector, Clip_localPos_entity:entity, O_clip_localAng:angle, Clip_localAng_entity:entity, O_clip_localOffset:number) {
+        Add[Add_lastName, table]["actList", table]:pushTable(table(
+             "type"              = "holo_clipLocal"
+            ,"clip_local"        = 1
+            
+            ,"clip_localPos"     = O_clip_localPos
+            ,"clip_localPos_obj" = Clip_localPos_entity
+            ,"clip_localAng"     = O_clip_localAng
+            ,"clip_localAng_obj" = Clip_localAng_entity
+            ,"clip_localOffset"  = O_clip_localOffset
+        ))
+    }
+    ################
+    
+    ################
+    #- prop act
+    #
+    
+    ################
+    
+    ################
+    #- entity act
+    #
+    #- toWorld
+    function add_toWorld(O_toWorld_name:string) {
+        Add[Add_lastName, table] = Add[Add_lastName, table]:merge(table(
+             "toWorld"      = ""
+            ,"toWorld/name" = O_toWorld_name
+        ))
+    }
+    function add_toWorld(O_name:string, O_toWorld_name:string) {
+        Add[O_name, table] = Add[O_name, table]:merge(table(
+             "toWorld"      = ""
+            ,"toWorld/name" = O_toWorld_name
+        ))
+    }
+    function add_toWorld(O_name:string, O_toWorld_entity:entity) {
+        Add[O_name, table] = Add[O_name, table]:merge(table(
+             "toWorld"        = "entity"
+            ,"toWorld/entity" = O_toWorld_entity
+        ))
+    }
+    function add_toWorld(O_toWorld_entity:entity) {
+        Add[Add_lastName, table] = Add[Add_lastName, table]:merge(table(
+             "toWorld"        = "entity"
+            ,"toWorld/entity" = O_toWorld_entity
+        ))
+    }
+    #
+    function add_toWorld(O_name:string, O_toWorld_entity:entity, O_toWorld_attachment:string) {
+        Add[O_name, table] = Add[O_name, table]:merge(table(
+             "toWorld"            = "attachment"
+            ,"toWorld/entity"     = O_toWorld_entity
+            ,"toWorld/attachment" = O_toWorld_attachment
+        ))
+    }
+    function add_toWorld(O_toWorld_entity:entity, O_toWorld_attachment:string) {
+        Add[Add_lastName, table] = Add[Add_lastName, table]:merge(table(
+             "toWorld"            = "attachment"
+            ,"toWorld/entity"     = O_toWorld_entity
+            ,"toWorld/attachment" = O_toWorld_attachment
+        ))
+    }
+    #
+    function add_toWorld(O_name:string, O_toWorld_name:string, O_toWorld_attachment:string) {
+        Add[O_name, table] = Add[O_name, table]:merge(table(
+             "toWorld"            = "attachment"
+            ,"toWorld/name"       = O_toWorld_name
+            ,"toWorld/attachment" = O_toWorld_attachment
+        ))
+    }
+    #
+    #- parent
+    function add_parent(O_parent_name:string) {
+        Add[Add_lastName, table] = Add[Add_lastName, table]:merge(table(
+             "parent"      = ""
+            ,"parent/name" = O_parent_name
+        ))
+    }
+    function add_parent(O_name:string, O_parent_name:string) {
+        Add[O_name, table] = Add[O_name, table]:merge(table(
+             "parent"      = ""
+            ,"parent/name" = O_parent_name
+        ))
+    }
+    function add_parent(O_name:string, O_parent_entity:entity) {
+        Add[O_name, table] = Add[O_name, table]:merge(table(
+             "parent"        = "entity"
+            ,"parent/entity" = O_parent_entity
+        ))
+    }
+    function add_parent(O_parent_entity:entity) {
+        Add[Add_lastName, table] = Add[Add_lastName, table]:merge(table(
+             "parent"        = "entity"
+            ,"parent/entity" = O_parent_entity
+        ))
+    }
+    #- 
+    function add_parent(O_name:string, O_parent_entity:entity, O_parent_attachment:string) {
+        Add[O_name, table] = Add[O_name, table]:merge(table(
+             "parent"             = "attachment"
+            ,"parent/entity"      = O_parent_entity
+            ,"parent/attachment"  = O_parent_attachment
+        ))
+    }
+    function add_parent(O_parent_entity:entity, O_parent_attachment:string) {
+        Add[Add_lastName, table] = Add[Add_lastName, table]:merge(table(
+             "parent"             = "attachment"
+            ,"parent/entity"      = O_parent_entity
+            ,"parent/attachment"  = O_parent_attachment
+        ))
+    }
+    #
+    function add_parent(O_name:string, O_parent_name:string, O_parent_attachment:string) {
+        Add[O_name, table] = Add[O_name, table]:merge(table(
+             "parent"            = "attachment"
+            ,"parent/name"       = O_parent_name
+            ,"parent/attachment" = O_parent_attachment
+        ))
+    }
+    #
+    #- INTO
+    function add_INTO(O_name:string, O_INTO_name:string) {
+        Add[O_name, table] = Add[O_name, table]:merge(table(
+             "parent"       = ""
+            ,"parent/name"  = O_INTO_name
+            ,"toWorld"      = ""
+            ,"toWorld/name" = O_INTO_name
+        ))
+    }
+    function add_INTO(O_name:string, O_INTO_entity:entity) {
+        Add[O_name, table] = Add[O_name, table]:merge(table(
+             "parent"         = "entity"
+            ,"parent/entity"  = O_INTO_entity
+            ,"toWorld"        = "entity"
+            ,"toWorld/entity" = O_INTO_entity
+        ))
+    }
+    function add_INTO(O_INTO_entity:entity) {
+        Add[Add_lastName, table] = Add[Add_lastName, table]:merge(table(
+             "parent"         = "entity"
+            ,"parent/entity"  = O_INTO_entity
+            ,"toWorld"        = "entity"
+            ,"toWorld/entity" = O_INTO_entity
+        ))
+    }
+    #
+    function add_INTO(O_name:string, O_INTO_entity:entity, O_INTO_attachment:string) {
+        Add[O_name, table] = Add[O_name, table]:merge(table(
+             "parent"             = "attachment"
+            ,"parent/entity"      = O_INTO_entity
+            ,"parent/attachment"  = O_INTO_attachment
+            ,"toWorld"            = "attachment"
+            ,"toWorld/entity"     = O_INTO_entity
+            ,"toWorld/attachment" = O_INTO_attachment
+        ))
+    }
+    function add_INTO(O_INTO_entity:entity, O_INTO_attachment:string) {
+        Add[Add_lastName, table] = Add[Add_lastName, table]:merge(table(
+             "parent"             = "attachment"
+            ,"parent/entity"      = O_INTO_entity
+            ,"parent/attachment"  = O_INTO_attachment
+            ,"toWorld"            = "attachment"
+            ,"toWorld/entity"     = O_INTO_entity
+            ,"toWorld/attachment" = O_INTO_attachment
+        ))
+    }
+    #
+    function add_INTO(O_name:string, O_INTO_name:string, O_INTO_attachment:string) {
+        Add[O_name, table] = Add[O_name, table]:merge(table(
+             "parent"             = "attachment"
+            ,"parent/name"        = O_INTO_name
+            ,"parent/attachment"  = O_INTO_attachment
+            ,"toWorld"            = "attachment"
+            ,"toWorld/name"       = O_INTO_name
+            ,"toWorld/attachment" = O_INTO_attachment
+        ))
+    }
+    #
+    #- offset
+    function add_offset(O_name:string, O_offset_list:table) {
+        Add[O_name, table]["actList", table]:pushTable(table(
+             "type"        = "offset"
+            ,"offset_list" = O_offset_list
+        ))
+    }
+    function add_offset(O_offset_vec:vector,O_offset_ang:angle) {
+        Add[Add_lastName, table]["actList", table]:pushTable(table(
+             "type"        = "offset"
+            ,"offset_list" = table(O_offset_vec,O_offset_ang)
+        ))
+    }
+    function add_offset(O_offset_ang:angle,O_offset_vec:vector) {
+        Add[Add_lastName, table]["actList", table]:pushTable(table(
+             "type"        = "offset"
+            
+            ,"offset_list" = table(O_offset_ang,O_offset_vec)
+        ))
+    }
+    function add_offset(O_offset_vec:vector) {
+        Add[Add_lastName, table]["actList", table]:pushTable(table(
+             "type"        = "offset"
+            ,"offset_list" = table(O_offset_vec)
+        ))
+    }
+    function add_offset(O_offset_ang:angle) {
+        Add[Add_lastName, table]["actList", table]:pushTable(table(
+             "type"        = "offset"
+            ,"offset_list" = table(O_offset_ang)
+        ))
+    }
+    #
+    #- alpha
+    function add_alpha(O_alpha:number) {
+        Add[Add_lastName, table]["actList", table]:pushTable(table(
+             "type"        = "alpha"
+            ,"alpha" = O_alpha
+        ))
+    }
+    function add_alpha(O_name:string, O_alpha:number) {
+        Add[O_name, table]["actList", table]:pushTable(table(
+             "type"        = "alpha"
+            ,"alpha" = O_alpha
+        ))
+    }
+    ################
+    
+    ################
+    #- constraint act
+    #
+    
+    ################
+    
+    ################
+    #- other function
+    #
+    function add_start() {
+        timer("add", 1)
+    }
+    function add_start(Time:number) {
+        timer("add", Time)
+    }
+    ################
+    
+    ################
+    #- value
+    #
+    #
+    #- act valid list
+    Add_actValidList            = invert(table("timer","print","printColor"))
+    Add_holo_actValidList       = invert(table("holo_clip"))
+    Add_prop_actValidList       = invert(table())
+    Add_entuty_actValidList     = invert(table("offset","alpha"))
+    Add_constraint_actValidList = invert(table())
+    #-
+    Add_holo_modelList = invert(holoModelList())
+    #- 
+    Add_constraint_coolValue = 0.25
+    ################
+    #- test
+    #
+    #
+    #
+    if(entity():getName() == "Add_01") {
+        add_start()
+    }
+    ################
+}
+
+if(clk("add")) {
+    
+    local Count = Add_queye:count()
+    timer("add", Count ? 50 : 500)
+    
+    while(Count & perf(80)) {
+        local Break = 1
+        
+        local O_name = Add_queye[1, string]
+        local O_table = Add[O_name, table]
+        local O_type = O_table["type", string]
+        local O_actValidList = table()
+        
+        switch(O_type) {
+                #
+                #
+                #
+            case "holo",
+                
+                if(!holoCanCreate()) {break}
+                #
+                #- holo index
+                if(holoEntity(Add_holoCounter)) {
+                    Add_holoCounter++
+                }
+                local Holo_index = Add_holoCounter
+                #
+                #- holo get data
+                local O_PA  = O_table:toWorld()
+                local O_pos = O_PA[1, vector]
+                local O_ang = O_PA[2, angle ]
+                local O_size     = O_table["size"    , vector]
+                local O_color    = O_table["color"   , vector]
+                local O_model    = O_table["model"   , string]
+                local O_material = O_table["material", string]
+                local O_parent   = O_table["parent"  , string]
+                #
+                #- holo custom model
+                local ValidModel = Add_holo_modelList:exists(O_model)
+                if(ValidModel) {O_size/=6}
+                #
+                #- holo create
+                local O_entity = holoCreate(Holo_index,O_pos,O_size,O_ang,O_color,O_model)
+                #
+                #- holo model
+                if(!ValidModel) {
+                    if(!holoModelAny()) {
+                        #ifdef entity:setModel(string)
+                            O_entity:setModel(O_model)
+                        #else
+                            if(changed(0)) {
+                                printColor(vec(255,80,0), "[Add] ", vec(255), "no function entity:setModel(string)")
+                            }
+                        #endif
+                    }
+                }
+                #
+                #- holo material
+                holoMaterial(Holo_index,O_material)
+                #
+                #- holo parent
+                if(O_parent == "") {
+                    local O_parent_name   = O_table["parent/name", string]
+                    local O_parent_entity = Add[O_parent_name + "/entity", entity]
+                    
+                    if(O_parent_entity) {
+                        holoParent(Holo_index,O_parent_entity)
+                    }
+                }
+                elseif(O_parent == "entity") {
+                    local O_parent_entity = O_table["parent/entity", entity]
+                    
+                    if(O_parent_entity) {
+                        holoParent(Holo_index,O_parent_entity)
+                    }
+                }
+                elseif(O_parent == "attachment") {
+                    local O_parent_entity = O_table["parent/entity", entity]
+                    if(!O_parent_entity) {
+                        local O_toWorld_name  = O_table["parent/name", string]
+                        O_parent_entity = Add[O_toWorld_name + "/entity", entity]
+                    }
+                    local O_parent_attachment = O_table["parent/attachment", string]
+                    
+                    if(O_parent_entity) {
+                        holoParentAttachment(Holo_index,O_parent_entity,O_parent_attachment)
+                    }
+                }
+                #
+                #- holo set data
+                Add = Add:merge(table(
+                     Holo_index + "/name"   = O_name
+                    ,O_name     + "/index"  = Holo_index
+                    ,O_name     + "/entity" = O_entity
+                ))
+                
+                O_actValidList = Add_actValidList:add(Add_holo_actValidList):add(Add_entuty_actValidList)
+                Break = 0
+            break
+                #
+                #
+                #
+            case "prop",
+                
+                if(!propCanCreate()) {break}
+                
+                
+                O_actValidList = Add_actValidList:add(Add_prop_actValidList):add(Add_entuty_actValidList)
+                Break = 0
+            break
+                #
+                #
+                #
+            case "constraint",
+                
+                if(curtime() - Add_constraint_cool < Add_constraint_coolValue) {break}
+                
+                
+                O_actValidList = Add_actValidList
+                Break = 0
+            break
+        }
+        
+        if(Break) {break}
+        
+        Add_queye:remove(1)
+        local O_actList = O_table["actList", table]
+        local O_actList_count = O_actList:count()
+        
+        
+        local O_entity = Add[O_name + "/entity", entity]
+        local O_index  = Add[O_name + "/index" , number]
+        
+        while(O_actList_count) {
+            O_actList_count--
+            
+            local O_act_table = O_actList:removeTable(1)
+            local O_act_type = O_act_table["type", string]
+            if(!O_actValidList:exists(O_act_type)) {continue}
+            
+            switch(O_act_type) {
+                    #
+                    #- all
+                    #
+                case "timer",
+                    local Timer_name = O_act_table["timer_name", string]
+                    local Timer_time = O_act_table["timer_time", number]
+                    timer(Timer_name,Timer_time)
+                break
+                    #
+                case "print",
+                    local Print_text = O_act_table["text", string]
+                    print(Print_text)
+                break
+                    #
+                case "printColor",
+                    local PrintColor_arrayText = O_act_table["arrayText", array]
+                    printColor(PrintColor_arrayText)
+                break
+                    #
+                case "call_function()",
+                    O_act_table["function_name", string]()
+                break
+                    #
+                    #- holo
+                    #
+                case "holo_clip",
+                    local O_clip_localPos    = O_act_table["clip_localPos"   , vector]
+                    local O_clip_localAng    = O_act_table["clip_localAng"   , angle ]
+                    local O_clip_localOffset = O_act_table["clip_localOffset", number]
+                    
+                    if(O_act_table:exists("clip_local")) {
+                        local O_clip_localPos_entity = O_act_table["clip_localPos_obj", entity]
+                        if(!O_clip_localPos_entity) {O_clip_localPos_entity = Add[O_act_table["clip_localPos_obj", string] + "/entity", entity]}
+                        O_clip_localPos = O_entity:toLocal(O_clip_localPos_entity:toWorld(O_clip_localPos))
+                        
+                        local O_clip_localAng_entity = O_act_table["clip_localAng_obj", entity]
+                        if(!O_clip_localAng_entity) {O_clip_localAng_entity = Add[O_act_table["clip_localAng_obj", string] + "/entity", entity]}
+                        O_clip_localAng = O_entity:toLocal(O_clip_localAng_entity:toWorld(O_clip_localAng))
+                        
+                        if(!O_clip_localPos_entity | !O_clip_localAng_entity) {break}
+                    }
+                    
+                    local O_clip_counter = 0
+                          O_clip_counter = O_table["clip_counter", number] = O_table["clip_counter", number] + 1
+                    holoClip(O_index, O_clip_counter, O_clip_localPos, O_clip_localAng, O_clip_localOffset)
+                break
+                    #
+                    #- prop
+                    #
+                case "",
+                    
+                    
+                    
+                break
+                    #
+                    #- entity
+                    #
+                case "offset",
+                    local Offset_list = O_act_table["offset_list", table]
+                    
+                    for(Offset_i = 1,Offset_list:count()) {
+                        local Offset_vec = Offset_list[Offset_i, vector]
+                        if(Offset_vec != vec()) {
+                            holoPos(O_index,O_entity:toWorld(Offset_vec))
+                        }
+                        else {
+                            local Offset_ang = Offset_list[Offset_i, angle]
+                            holoAng(O_index,O_entity:toWorld(Offset_ang))
+                        }
+                    }
+                break
+                    #
+                case "alpha",
+                    local O_alpha = O_act_table["alpha", number]
+                    
+                    O_entity:setAlpha(O_alpha)
+                break
+                    #
+                    #- constraint
+                    #
+                case "",
+                    
+                    
+                    
+                break
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

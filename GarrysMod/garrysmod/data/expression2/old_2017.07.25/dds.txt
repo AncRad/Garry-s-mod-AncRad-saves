@@ -1,0 +1,31 @@
+@name dds
+
+@inputs 
+@outputs 
+@persist [E O]:entity
+
+@trigger 
+
+if(changed(0)) {
+    
+    
+    E = entity()
+    O = owner()
+    
+    
+    
+    
+    timer("", 1)
+}
+
+
+if(clk("")) {
+        timer("", 50)
+    
+    
+    
+    
+    
+    
+    
+}

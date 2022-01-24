@@ -1,0 +1,106 @@
+@name Model manager
+
+@inputs 
+@outputs 
+@persist [E O]:entity [Q]:table [Project]:table
+
+
+
+#include "AddHolo"
+if(changed(0)) {
+    
+    E = entity()
+    O = owner()
+    
+    
+    
+    timer("", 1)
+}
+
+if(clk("")) {
+        timer("", 50)
+    
+    if(changed(0)) {
+        
+        
+        findClearBlackList()
+        findClearWhiteList()
+        findIncludeClass("prop")
+        findIncludeClass("wire_holo")
+        findInSphere(E:pos(), 500)
+        Q["find", array] = findToArray()
+        
+        addHolo("t", E:pos() + vec(0,0,250), vec(1), ang(), vec(255), "cube", "", "")
+    }
+    
+    if(Q["find", array]:count()) {
+        local E = Q["find", array][1, entity]
+        Q["find", array]:remove(1)
+        
+        #addHolo("test", E:pos(), vec(1), E:angles(), vec(255), E:model(), E:model(), "t")
+        
+        local ID = Project["counter", number] = Project["counter", number] + 1
+        Project[ID + "/type"    , string] = E:type()
+        Project[ID + "/pos"     , vector] = E:pos()
+        Project[ID + "/angl"    , angle] = E:angles()
+        Project[ID + "/model"   , string] = E:model()
+        Project[ID + "/material", string] = E:getMaterial()
+        Project[ID + "/color"   , vector] = E:getColor()
+        Project[ID + "/alpha"   , number] = E:getAlpha()
+        Project[ID + "/mass"    , number] = E:mass()
+        
+        
+    }
+    else {
+        stoptimer("")
+        Von = vonEncode(Project)
+        fileWrite("MMtest.txt", Von)
+        print("d'")
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

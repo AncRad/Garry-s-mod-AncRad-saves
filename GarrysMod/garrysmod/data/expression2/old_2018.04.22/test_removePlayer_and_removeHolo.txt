@@ -1,0 +1,45 @@
+@name test_removePlayer_and_removeHolo
+@inputs 
+@outputs 
+@persist Anc:entity
+@trigger 
+
+interval(50)
+if(changed(0)) {
+    Anc=findPlayerByName("anc")
+    
+    holoCreate(1) holoParentAttachment(1, Anc, "chest") holoColor(1, vec(255,0,0)) #RED  HOLO 1
+    holoCreate(2) holoParentAttachment(2, Anc, "chest") holoColor(2, vec(0,0,255)) #BLUE HOLO 2
+    
+    runOnLast(1)
+    runOnLast(1, Anc)
+    runOnPlayerDisconnect(1)
+    
+}
+if(lastDisconnectedPlayer() == Anc) {
+    Anc = noentity()
+}
+
+
+
+
+if(last(Anc) | !Anc) {
+    holoUnparent(1)
+}
+
+H1 = holoEntity(1)
+if(changed(H1) & !H1 & changed(0)) {print("RED  HOLO 1 DELETED!")}
+H2 = holoEntity(2)
+if(changed(H2) & !H2 & changed(0)) {print("BLUE HOLO 2 DELETED!")}
+
+
+if(!Anc & changed(0)) {
+    print("анк сдохся")
+    
+    O = owner()
+    P = O:shootPos()+O:eye() * 100
+    holoPos(1, P-O:eyeAngles():right()*10)
+    holoPos(2, P+O:eyeAngles():right()*10)
+    holoParentAttachment(1, O, "chest")
+    holoParentAttachment(2, O, "chest")
+}

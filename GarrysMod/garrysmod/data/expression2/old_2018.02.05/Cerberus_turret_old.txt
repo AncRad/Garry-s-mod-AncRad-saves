@@ -1,0 +1,352 @@
+@name Cerberus_turret_old
+
+@inputs 
+@outputs 
+@persist [E O]:entity [Q]:table Q_step        [Q_bone_size1 Q_bone_size2 Q_bone_color1 Q_bone_color2]:vector [Q_bone_material]:string
+
+
+
+#include "AddHolo"
+if(changed(0)) {
+    
+    
+    
+    timer("step", 1)
+}
+
+if(clk("step")) {
+    
+    
+    if(1) {
+        Q_bone_size1 = -vec(0.3)
+        Q_bone_size2 = Q_bone_size1*0.95
+        Q_bone_color1 = vec(255)
+        Q_bone_color2 = vec(150)
+        Q_bone_material = ""
+    }
+    
+    
+    
+    local Radius = 6
+    local Height = 0.8
+    local Height_offset = Height - 0.2
+    local Clip = Height * 1.01
+    
+    local M1 = "phoenix_storms/OfficeWindow_1-1"
+    local C1 = vec(255)
+    local M2 = "metal4"
+    local C2 = vec(255)
+    
+    switch(Q_step) {
+        case 0,
+            
+            function addHoloBone(Bone_name:string, Bone_pos:vector, Bone_ang:angle, Bone_INTO:string) {
+                
+                addHolo(Bone_name + "_root", Bone_pos, Q_bone_size1, Bone_ang, Q_bone_color1, "cube", Q_bone_material, Bone_INTO       )
+                addHolo(Bone_name          ,    vec(), Q_bone_size2,    ang(), Q_bone_color2, "cube", Q_bone_material, AddHolo_lastName)
+            }
+            
+            
+            E = entity()
+            O = owner()
+            
+            
+            addHolo("rt", vec(0,0,5),Q_bone_size1, ang(),Q_bone_color1, "cube", Q_bone_material, "") addHoloINTO(E)
+            
+            addHolo("base", vec(),Q_bone_size2, ang(),Q_bone_color2, "cube", Q_bone_material, "rt")
+            
+            local Cylinder_h = 0.05
+            addHolo("", vec(0,0,(-Cylinder_h-Height)),vec(Radius,Radius,Cylinder_h), ang(),C1, "hq_cylinder", M1, "base")
+            addHolo("", vec(0,0,(+Cylinder_h+Height)),vec(Radius,Radius,Cylinder_h), ang(),C1, "hq_cylinder", M1, "base")
+            
+            for(Lapa_i = 1,3) {
+                local F = Lapa_i - 1
+                local A = 120 * F
+                
+                addHolo("", vec(),vec(Radius,Radius,Height), ang(),C1, "hq_tube_thin", M1, "base")
+                addHolo_clip(vec(),ang(0,90+A,0),Clip)
+                addHolo_clip(vec(),ang(0,30+A,0),Clip)
+                
+                
+                local Step0 = "step0lapa" + Lapa_i
+                addHolo(Step0,vec(0,F * 3*0,5*0),Q_bone_size1,ang(0,A  * 1,0),Q_bone_color1,"cube",Q_bone_material,"base")
+                
+                
+                local Step0_h = Height
+                local Step0_l = Radius/2 * sin(acos(Clip/Radius))
+                addHolo("", vec(Step0_l,0,0),vec(Step0_h,Step0_h,Step0_l), ang(90,0,0),C1, "hq_stube_thin", M1, Step0) #addHoloClip(vec(),ang(0,45,0),-0.8)
+                
+                local Step1 = "step1lapa" + Lapa_i
+                addHoloBone(Step1,vec(0,0,-Height_offset),ang(),Step0) #addHoloOffset(ang(60,0,0),vec())
+                local Step1_ = 0.3
+                local Step1_h = Step0_h * 0.89
+                local Step1_l = Step0_l - 0.15
+                addHolo("", vec(Step1_l,0,Height_offset),vec(Step1_h,Step1_h,Step1_l), ang(90,0,0),C1, "hq_stube_thin", M1, Step1)
+                Q["step1lapa" + Lapa_i + "/length", number] = Radius + 0.1
+                
+                
+                local Step2 = "step2lapa" + Lapa_i
+                addHoloBone(Step2,vec(0,0,Height_offset),ang(),Step1)
+                local Step2_h = Step1_h * 0.89
+                local Step2_l = Step1_l - 0.3
+                addHolo("", vec(Step2_l,0,0),vec(Step2_h,Step2_h,Step2_l), ang(90,0,0),C1, "rcube_thin", M1, Step2)
+                Q["step2lapa" + Lapa_i + "/length", number] = Step1_l * 2 - Step2_l * 0.15
+                
+                
+                local Step3 = "step3lapa" + Lapa_i
+                addHoloBone(Step3,vec(),ang(),Step2)
+                local Step3_h = Step2_h * 0.8
+                local Step3_l = Step2_l + 0.05
+                addHolo("", vec(Step3_l,0,0),vec(Step3_h,Step3_h,Step3_l), ang(90,0,0),C1, "hq_cylinder", M1, Step3)
+                Q["step3lapa" + Lapa_i + "/length", number] = Step2_l * 2
+                
+                local Step4 = "step4lapa" + Lapa_i
+                addHoloBone(Step4,vec(),ang(),Step3)
+                local Step4_h = Step3_h * 0.8
+                local Step4_l = Step3_l + 0.05
+                addHolo("", vec(Step4_l,0,0),vec(Step4_h,Step4_h,Step4_l), ang(90,0,0),C1, "hq_cylinder", M1, Step4)
+                addHolo("", vec(Step4_l*2,0,0),vec(Step4_h,Step4_h,Step4_h*0.7), ang(90,0,0),C1, "hq_sphere", M1, Step4)
+                Q["step4lapa" + Lapa_i + "/length", number] = Step3_l * 2
+                
+            }
+            
+            
+            addHoloBone("bashStep1",vec(0,0,Cylinder_h*2+Height),ang(),"base")
+            addHoloBone("bashStep2",vec(),ang(),"bashStep1")
+            
+            local Bash1_h = Height * 1
+            
+            local Offset_h = Bash1_h * 1
+            addHoloBone("bash",vec(0,0,Offset_h),ang(),"bashStep2")
+            addHolo_offset(ang(), vec(0,0,-Offset_h))
+            
+            addHolo("", vec(0,0,Bash1_h),vec(Radius,Radius,Bash1_h), ang(),C1, "hq_tube_thin", M1, "bash")
+            
+            local Cone_H = Height * 0.7
+            local Cone_h = Radius*1
+            local Cone_offset = 0
+            local Cone_clip_offset = -Cone_h * 0.5
+            local Cone_r = Radius * 1.259
+            addHolo("hq_cone", vec(0,0,Bash1_h*2 - Cone_clip_offset + Cone_H-0.03),vec(Cone_r,Cone_r,Cone_h), ang(),C1, "hq_cone", M1, "bash") #addHolo("", vec(0,0,0),vec(10,10,0.0), ang(),vec(), "hq_cylinder", "models/wireframe", AddHolo_lastName)
+            addHolo_clip(vec(0,0,Cone_clip_offset),ang( 90,0,0),0-Cone_H)
+            addHolo_clip(vec(0,0,Cone_clip_offset),ang(-90,0,0),0-Cone_H)
+            
+            local OffSet = Cone_h/2+Cone_H
+            local Rad = Cone_r * (Cone_h-OffSet/2) / Cone_h
+            local Pos = vec(0,0,OffSet-Cone_h-0.1)
+            addHolo("", Pos,vec(Rad,Rad,0.1), ang(),C1, "hq_cylinder", M1, "hq_cone")
+            
+            
+            local Sphere1_r = 1 * 1.3
+            local Sphere2_r = Sphere1_r * 1.12
+            addHolo("", vec(0,0,0),vec(Sphere1_r), ang(),C2, "hq_sphere", M2, "bash_root")
+            addHolo("", vec(0,0,0),vec(Sphere2_r), ang(),C2, "hq_hdome_thin", M2, "bash_root")
+            
+            
+            #[
+            local N = 3
+            for(C = 1,N) {
+                local F = C - 1
+                local A = 360 / N * F
+                
+                local Radius = 0.1
+                local Size = vec(Radius,Radius,0.3)
+                
+                local Pos  = vec(sin(A),cos(A),0) * (Sphere2_r+Radius)
+                local Ang  = ang(0,-A,0)
+                #addHolo("", Pos,Size,Ang,C2, "rcube_thick", M2, "bash_root")
+            }
+            ]#
+            
+            #[
+            local Step0_r = Radius / 4
+            local Step0_h = Radius / 6
+            addHolo("", vec(0,0,Step0_h), vec(Step0_r,Step0_r,Step0_h), ang(), C1, "hq_cylinder", M1, "bashStep1_root")
+            addHolo("", vec(0,0,0), vec(Step0_r*1.2,Step0_r*1.2,Step0_h), ang(), C1, "hq_cone", M1, AddHolo_lastName)
+            
+            local Step1_r = Step0_r * 0.8
+            local Step1_h = Radius / 4
+            addHolo("", vec(0,0,Step0_h*2-Step1_h), vec(Step1_r,Step1_r,Step1_h), ang(), C2, "hq_cylinder", M2, "bashStep1")
+            ]#
+            
+            
+            
+            Q["bashStep1/length", number] = Radius / 2
+            Q["bashStep2/length", number] = Radius / 2
+            
+            
+            addHolo_timer("step")
+            Q_step++
+        break
+        default,
+            
+            timer("", 1)
+        break
+    }
+}
+
+
+
+
+if(clk("")) {
+        timer("", 50)
+    
+    local Key = O:keyPressed("mouse_5")-O:keyPressed("mouse_4")
+    local B = Q["b", number]
+    if(changed(Key) & Key) {
+        B = Q["b", number] = clamp(B + Key,0,1)
+    }
+    
+    local A = Q["a", number]
+    local A = Q["a", number] = clamp(floor(A + (B - A) / 8,4),0,1)
+    if(changed(A)) {
+        
+        #local Base_n = "base"
+        #local Base_e = AddHolo[Base_n + "/entity", entity]
+        
+        local Bone_n = "bashStep1"
+        local Bone_i = AddHolo[Bone_n + "/index", number]
+        local Bone_e = AddHolo[Bone_n + "_root" + "/entity", entity]
+        local Bone_l = Q["bashStep1/length", number]
+        holoPos(Bone_i, Bone_e:toWorld(vec(0,0,A*Bone_l)))
+        
+        local Bone_n = "bashStep2"
+        local Bone_i = AddHolo[Bone_n + "/index", number]
+        local Bone_e = AddHolo[Bone_n + "_root" + "/entity", entity]
+        local Bone_l = Q["bashStep2/length", number]
+        holoPos(Bone_i, Bone_e:toWorld(vec(0,0,A*Bone_l)))
+    }
+    #[
+    local A = Q["a", number]
+    local A = Q["a", number] = clamp(round(A + (B - A) / 8,2),0,1)
+    if(changed(A)) {
+        
+        local Base_n = "base"
+        local Base_e = AddHolo[Base_n + "/entity", entity]
+        
+        for(Lapa_i = 1,3) {
+            local Bone_n = "step1lapa" + Lapa_i
+            local Bone_i = AddHolo[Bone_n + "/index", number]
+            local Bone_e = AddHolo[Bone_n + "_root" + "/entity", entity]
+            local Step1LapaLength = Q["step1lapa" + Lapa_i + "/length", number]
+            holoPos(Bone_i, Bone_e:toWorld(vec(A * Step1LapaLength,0,0)))
+            
+            local Bone_n = "step2lapa" + Lapa_i
+            local Bone_i = AddHolo[Bone_n + "/index", number]
+            local Bone_e = AddHolo[Bone_n + "_root" + "/entity", entity]
+            local Step2LapaLength = Q["step2lapa" + Lapa_i + "/length", number]
+            holoPos(Bone_i, Bone_e:toWorld(vec(A * Step2LapaLength,0,0)))
+            
+            local Bone_n = "step3lapa" + Lapa_i
+            local Bone_i = AddHolo[Bone_n + "/index", number]
+            local Bone_e = AddHolo[Bone_n + "_root" + "/entity", entity]
+            local Step3LapaLength = Q["step3lapa" + Lapa_i + "/length", number]
+            holoPos(Bone_i, Bone_e:toWorld(vec(A * Step3LapaLength,0,0)))
+            
+            local Bone_n = "step4lapa" + Lapa_i
+            local Bone_i = AddHolo[Bone_n + "/index", number]
+            local Bone_e = AddHolo[Bone_n + "_root" + "/entity", entity]
+            local Step4LapaLength = Q["step4lapa" + Lapa_i + "/length", number]
+            holoPos(Bone_i, Bone_e:toWorld(vec(A * Step4LapaLength,0,0)))
+        }
+    }
+    ]#
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

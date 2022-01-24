@@ -1,0 +1,133 @@
+@name holo_praticle_01_fractal
+
+@inputs 
+@outputs 
+@persist [E O]:entity [Q]:table Curtime
+
+@persist [ParticleT]:table Particle_counter:number
+
+
+
+if(changed(0)) {
+    
+    E = entity()
+    O = owner()
+    
+    ParticleT = table()
+    
+    timer("", 1)
+}
+
+
+
+
+if(clk("")) {
+        timer("", 10)
+    
+    if(changed(0)) {
+        
+        function add([Pos Vel]:vector) {
+            
+            ParticleT:pushTable(table(
+                 "pos" = Pos
+                ,"vel" = Vel
+                ,"spawnTime" = Curtime
+            ))
+        }
+        
+        add(E:toWorld(vec(0,0,10)),vec(0,0,10))
+        
+        Q["curtime", number] = curtime()
+    }
+    
+    local LastCurtime = Q["curtime", number]
+    Curtime = curtime()
+    Q["curtime", number] = Curtime
+    local Interval = Curtime - LastCurtime
+    local Loop = Interval / 0.015625
+
+    
+    
+    
+    
+    
+    local ParticleC = ParticleT:count()
+    local C = 0
+    while(perf() & (C < ParticleC)) {
+        C++
+        local Particle_T = ParticleT[C, table]
+        
+        local Particle_i = Particle_T["holoIndex", number]
+        local Particle_e = holoEntity(Particle_i)
+        
+        local Particle_p = Particle_T["pos", vector]
+        local Particle_v = Particle_T["vel", vector]
+        
+        local Particle_lifeTime = Curtime-Particle_T["spawnTime", number]
+        
+        
+        local Acc = 0 #vec(0,0,-600*Interval) - Particle_v*min(min(Particle_v:length()/2500,1)^2,0.5)
+        
+        Particle_v = Particle_v #Particle_v:rotate(ang(randvec(-Interval,Interval)*1500))
+        
+        local Ranger = rangerOffset(Particle_p,Particle_p + (Particle_v - Acc/2) * Interval)
+        if(Ranger:hit()) {Particle_v = Particle_v * (1-max(Particle_v:normalized():dot(-Ranger:hitNormal()),0))}
+        Particle_p = Ranger:pos()
+        holoPos(Particle_i, Particle_p)
+        
+        
+        Particle_T["pos", vector] = Particle_p
+        Particle_T["vel", vector] = Particle_v
+        
+        if(Particle_lifeTime >= 5) {
+            
+            add(Particle_p,Particle_v:rotateAroundAxis(vec(1,0,0), 10))
+            add(Particle_p,Particle_v:rotateAroundAxis(vec(1,0,0),-10))
+            
+            Particle_v = vec()
+        }
+        if(Particle_v:length() < 1) {
+            ParticleT:remove(C)
+            C--
+            ParticleC--
+            #holoDelete(Particle_i)
+            continue
+        }
+        
+        
+        if(!Particle_e & holoCanCreate()) {
+            Particle_counter = Particle_i = Particle_T["holoIndex", number] = max(Particle_counter + 1,1448228)
+            local Particle_e = holoCreate(Particle_i, Particle_p, vec(0.2), ang(), vec(255), "sphere")
+            Particle_e:setTrails(2.0, 0, 2, "trails/smoke", vec(255), 255)
+        }
+    }
+}
+
+
+
+
+
+
+
+setName("holo_praticle_01\nCount: " + ParticleT:count())
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

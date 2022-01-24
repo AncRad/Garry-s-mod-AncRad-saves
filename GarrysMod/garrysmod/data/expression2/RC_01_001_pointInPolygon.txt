@@ -1,0 +1,477 @@
+@name RC_01_001_pointInPolygon
+
+@inputs 
+@outputs DEBUG:string
+
+@persist PIP_Initialized
+
+@persist PIP_Ents:array
+
+
+switch(clkName()) {
+    default,
+        if(changed(0)) {
+            if(PIP_Initialized) {reset()}
+            PIP_Initialized = 1
+            
+            
+            runOnChat(1)
+            timer("find", 1)
+            timer("pointInPolygon", 1)
+            exit()
+        }
+        
+        
+        if(chatClk(owner())) {
+            local LS = owner():lastSaid()
+            if(LS[1] == "!") {
+                local LS = LS:sub(2)
+                local LS_ex = LS:explode(" ")
+                local Command = LS_ex[1, string]
+                hideChat(1)
+                switch(Command) {
+                    case "find",
+                        timer("find", 1)
+                    break
+                    case "add",
+                        local Count = clamp(LS_ex[2, string]:toNumber(),1,4)
+                        for(C = 1,Count) {
+                            propSpawn("models/sprops/rectangles/size_1/rect_3x3x3.mdl",entity():pos()+vec(0,0,5+(C-1)*3.1),1)
+                        }
+                    break
+                    default,
+                        hideChat(0)
+                    break
+                }
+            }
+        }
+    break
+    case "pointInPolygon",
+        timer("pointInPolygon", 50)
+        
+        
+        local Tasovka_MaxI = PIP_Ents:count()-1
+        if(Tasovka_MaxI > 3) {
+            for(C = 1,Tasovka_MaxI*2) {
+                PIP_Ents:insertEntity(randint(1,Tasovka_MaxI),PIP_Ents:removeEntity(randint(1,Tasovka_MaxI)))
+            }
+        }
+        
+        local Poly_vertex_Bone = array()
+        local Poly_vertex_Pos = array()
+        local Poly_vertex_Rad = array()
+        local Poly_vertex_Yaw = array()
+        local Poly_PosZ = 9e9
+        local Poly_Pos2 = vec2()
+        
+        #- STEP 1
+        rangerPersist(1)
+        rangerFilter(PIP_Ents)
+        foreach(Bone_Index, Bone:entity = PIP_Ents) {
+            local Ranger = rangerOffset(5,Bone:pos(),vec(0,0,-1))
+            if(Ranger:hit()) {
+                local Vertex_Pos = Ranger:pos()
+                Poly_Pos2+=vec2(Vertex_Pos)
+                Poly_vertex_Bone:pushEntity(Bone)
+                Poly_vertex_Pos:pushVector2(vec2(Vertex_Pos))
+                Poly_vertex_Rad:pushNumber(Bone:mass())
+                Poly_PosZ = Vertex_Pos[3] < Poly_PosZ ? Vertex_Pos[3] : Poly_PosZ
+                if(Bone:mass()==24) {Bone:setMass(randint(7,20))}
+                Bone:setColor(vec(0,100,255))
+                continue
+            }
+            Bone:setColor(vec(100))
+        }
+        rangerPersist(0)
+        local Poly_VertexCount = Poly_vertex_Pos:count()
+        Poly_Pos2 /= Poly_VertexCount
+        if(!holoEntity(0)) {holoCreate(0,vec(),vec(1),ang(),vec(255),"models/editor/axis_helper.mdl")}
+        holoPos(0,vec(Poly_Pos2,Poly_PosZ))
+        #- STEP 2
+        if(Poly_VertexCount >= 3) {
+            local Poly_vertex_Bone_clone = Poly_vertex_Bone:clone()
+            local Poly_vertex_Pos_clone = Poly_vertex_Pos:clone()
+            local Poly_vertex_Rad_clone = Poly_vertex_Rad:clone()
+            Poly_vertex_Bone:clear()
+            Poly_vertex_Pos:clear()
+            Poly_vertex_Rad:clear()
+            foreach(Vertex_Index, Vertex_Pos2:vector2 = Poly_vertex_Pos_clone) {
+                local Insert = Poly_vertex_Yaw:count()+1
+                Vertex_Pos2 = Vertex_Pos2-Poly_Pos2
+                local Vertex_Yaw = Vertex_Pos2:toAngle()
+                foreach(Check_Index, Check_Yaw:number = Poly_vertex_Yaw) {
+                    if(Vertex_Yaw < Check_Yaw) {
+                        Insert = Check_Index
+                        break
+                    }
+                }
+                Poly_vertex_Bone:insertEntity(Insert, Poly_vertex_Bone_clone[Vertex_Index, entity])
+                Poly_vertex_Pos:insertVector2(Insert, Vertex_Pos2)
+                Poly_vertex_Rad:insertNumber(Insert, Poly_vertex_Rad_clone[Vertex_Index, number])
+                Poly_vertex_Yaw:insertNumber(Insert, Vertex_Yaw)
+            }
+        }
+        else {foreach(Vertex_Index, Vertex_Pos2:vector2 = Poly_vertex_Pos) {Poly_vertex_Pos[Vertex_Index, vector2] = Vertex_Pos2-Poly_Pos2}}
+        #- STEP 3
+        if(Poly_VertexCount >= 4) {
+            local C = 0
+            local OK = 0
+            while(OK < Poly_VertexCount) {
+                C = C == Poly_VertexCount ? 1 : C+1
+                OK++
+                
+                local P1 = Poly_vertex_Pos[C==1 ? Poly_VertexCount : C-1,vector2]
+                local P2 = Poly_vertex_Pos[C,vector2]
+                local P3 = Poly_vertex_Pos[C==Poly_VertexCount ? 1 : C+1,vector2]
+                
+                local P3P1_yaw = (P1-P3):toAngle()
+                local P2P3_local = (P2-P3):rotate(-P3P1_yaw)
+                
+                if(P2P3_local[2] < 0) {
+                    Poly_vertex_Bone:removeEntity(C):setColor(vec(200))
+                    Poly_vertex_Pos:remove(C)
+                    Poly_vertex_Rad:remove(C)
+                    Poly_vertex_Yaw:remove(C)
+                    C--
+                    OK=0
+                    Poly_VertexCount--
+                }
+            }
+        }
+        DEBUG = ""+Poly_VertexCount
+        for(C = 1,10) {
+            if(!holoEntity(C+100)) {holoCreate(C+100,vec(),vec(0.5),ang(),vec(200),"models/sprops/misc/alphanum/alphanum_"+C+".mdl")}
+            if(!holoEntity(C+200)) {holoCreate(C+200,vec(),vec(),ang(),vec(200),"cplane") holoMaterial(C+200,"models/wireframe")}
+            if(Poly_vertex_Pos:exists(C)) {
+                local LP = Poly_vertex_Pos[C, vector2]
+                holoPos(C+100, vec(LP+Poly_Pos2,Poly_PosZ+10))
+                holoPos(C+200, vec(LP+Poly_Pos2,Poly_PosZ))
+                holoScale(C+200, vec(Poly_vertex_Rad[C, number]/6))
+                #DEBUG+= "\n" + C + ": " + floor(Poly_vertex_Yaw[C,number])
+            }
+            else {
+                holoPos(C+100,vec())
+                holoPos(C+200,vec())
+            }
+        }
+        #- STEP 4
+        local Check_Pos = entity():pos()
+        local Check_DifPos = vec2(Check_Pos)-Poly_Pos2
+        local Check_ClampPos = vec()
+        local Sector_vertex1_Index = 1
+        local Sector_vertex2_Index = 2
+        
+        if(Poly_VertexCount >= 3) {
+            local Check_Yaw = Check_DifPos:toAngle()
+            foreach(Vertex_Index, Vertex_Yaw:number = Poly_vertex_Yaw) {
+                if(Check_Yaw < Vertex_Yaw) {
+                    Sector_vertex1_Index = Vertex_Index
+                    break
+                }
+            }
+            Sector_vertex2_Index = Sector_vertex1_Index==1 ? Poly_VertexCount : Sector_vertex1_Index-1
+            
+            if(Sector_vertex1_Index & Sector_vertex2_Index) {
+                Poly_vertex_Bone[Sector_vertex1_Index,entity]:setColor(vec(255,0,0))
+                Poly_vertex_Bone[Sector_vertex2_Index,entity]:setColor(vec(0,255,0))
+            }
+        }
+        
+        local Edge_vertex1_Pos = Poly_vertex_Pos[Sector_vertex1_Index, vector2]
+        local Edge_vertex2_Pos = Poly_vertex_Pos[Sector_vertex2_Index, vector2]
+        local Edge_Vec = Edge_vertex2_Pos-Edge_vertex1_Pos
+        local Edge_Yaw = Edge_Vec:toAngle()
+        local Edge_vertex2_LocalPos = vec2(Edge_Vec:length(),0)
+        local Edge_check_LocalPos = (Check_DifPos-Edge_vertex1_Pos):rotate(-Edge_Yaw)
+        if(Edge_check_LocalPos[2]<=0 & Poly_VertexCount >= 3) {
+            DEBUG+= "\nCHECK POS IN POLYGON!"
+            Check_ClampPos = Check_Pos:setZ(Poly_PosZ)
+            holoColor(2281448,vec(120,255,120))
+        }
+        else {
+            local Procent = Poly_VertexCount==1 ? 0 : clamp(Edge_check_LocalPos[1] / Edge_vertex2_LocalPos[1] ,0,1)
+            local Radius = Poly_vertex_Rad[Sector_vertex1_Index, number]*(1-Procent) + Poly_vertex_Rad[Sector_vertex2_Index, number]*Procent
+            local Edge_check_Projection = vec2(Edge_vertex2_LocalPos[1]*Procent,0)
+            local DIF = (Edge_check_LocalPos-Edge_check_Projection)
+            local Edge_check_ClampedLocalPos = Edge_check_Projection + DIF:normalized() * min(DIF:length(),Radius)
+             DEBUG+="\n Procent" + floor(Procent,2):toString()
+            if(DIF:length() <= Radius) {
+                DEBUG+= "\nCHECK POS IN POLYGON!"
+                holoColor(2281448,vec(120,255,120))
+                Check_ClampPos = Check_Pos:setZ(Poly_PosZ)
+            }
+            else {
+                DEBUG+= "\nCHECK POS OUT OF POLYGON!"
+                holoColor(2281448,vec(255,120,120))
+                Check_ClampPos = vec(Edge_check_ClampedLocalPos:rotate(Edge_Yaw)+Edge_vertex1_Pos+Poly_Pos2 ,Poly_PosZ)
+            }
+        }
+        
+        #holoCreate(228,vec(Edge_Vec:normalized()*Edge_check_LocalPos[1]+Edge_vertex1_Pos+Poly_Pos2 , Poly_PosZ),vec(0.2))
+        
+        if(!holoEntity(2281448)) {holoCreate(2281448,vec(),vec(0.2),ang(),vec())}
+        holoPos(2281448,Check_ClampPos)
+        
+        DEBUG+="\nEdge_check_LocalPos [ " + floor(Edge_check_LocalPos[1],2) + " , " + floor(Edge_check_LocalPos[2],2) + " ]"
+        
+        #[
+        local LVertex_Index = 0
+        local RVertex_Index = 0
+        if(Poly_VertexCount >= 3) {
+            for(C = 1,Poly_VertexCount) {
+                local 
+            }
+        }
+        ]#
+        
+    break
+    case "find",
+        if(findCanQuery()) {
+            findClearBlackList()
+            findClearWhiteList()
+            findIncludeModel("models/sprops/rectangles/size_1/rect_3x3x3.mdl")
+            findClipFromPlayerProps(owner())
+            findInSphere(entity():pos(), 52.5*4)
+            findSortByDistance(entity():pos())
+            PIP_Ents = findToArray()
+            break
+        }
+        timer("find", 50)
+    break
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

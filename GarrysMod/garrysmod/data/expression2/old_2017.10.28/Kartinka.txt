@@ -1,0 +1,10 @@
+@name Kartinka
+@inputs 
+@outputs 
+@persist 
+@trigger 
+
+O  = owner()
+V = vec2(egpScrW(O),egpScrH(O))
+guiHTML(O,1,vec2(),V)
+guiSetValue(O,1,"https://pp.userapi.com/c637630/v637630103/65598/tGti-2yX0vo.jpg")

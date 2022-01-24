@@ -1,0 +1,15 @@
+@name new operator
+@inputs 
+@outputs 
+@persist 
+@trigger 
+
+
+
+"print"("Expression 2 продолжает удивлять")
+
+function dd(V:vector) {
+    owner():setVel(V)
+}
+
+"dd"(vec(0,0,300))

@@ -1,0 +1,101 @@
+@persist Bones:table 
+
+function entity:addBone(B_name:string) # Создание объекта кости на основе существующего entity
+{  
+    #local Holo_e = This
+    local B_ID = Bones["indexCounter", number] = Bones["indexCounter", number] + 1 # Получение ID кости исходя из общей таблицы костей
+        
+    Bones[B_name + "/index"     , number] = B_ID # ID кости
+    Bones[B_ID + "/name"      , string] = B_name # Имя кости
+    
+    Bones[B_ID + "/holoEntity", entity] = This # Entity кости
+    Bones[B_ID + "/holoIndex" , number] = holoIndex(This) # ID голограммы кости
+        
+    Bones[B_ID + "/realPos"   , vector] = This:pos() # Реальная позиция
+    Bones[B_ID + "/needPos"   , vector] = This:pos() # Необходимая позиция
+    Bones[B_ID + "/animateVec"   , number] = 0 # Нужно ли менять позицию?
+    
+    Bones[B_ID + "/realAng"   , angle] = This:angles() # Реальный угол
+    Bones[B_ID + "/needAng"   , angle] = This:angles() # Необходимый угол
+    Bones[B_ID + "/animateAng"   , number] = 0 # Нужно ли менять угол?
+       
+    Bones["boneList", array] = Bones["boneList", array]:add(array(B_ID)) # Добавление данных этой кости в таблицу костей
+}
+    
+function boneNewNeedPos(B_name:string, B_Pos:vector) # Изменение требуемой позиции
+{
+    local B_ID = Bones[B_name + "/index", number]
+        
+    Bones[B_ID + "/needPos", vector] = B_Pos
+    if(!Bones[B_ID + "/animateVec", number]) # Кость отсутствует в таблице для анимаций?
+    { 
+        Bones[B_ID + "/animateVec", number] = 1 # Нужно анимировать
+        Bones["animatedVecBoneList", array] = Bones["animatedVecBoneList", array]:add(array(B_ID)) # Добавление кости в таблицу для анимаций 
+    }
+}
+
+function boneNewNeedAng(B_name:string, B_Ang:angle) 
+{
+    local B_ID = Bones[B_name + "/index", number]
+        
+    Bones[B_ID + "/needAng", angle] = B_Ang
+    if(!Bones[B_ID + "/animateAng", number]) 
+    { 
+        Bones[B_ID + "/animateAng", number] = 1
+        Bones["animatedAngBoneList", array] = Bones["animatedAngBoneList", array]:add(array(B_ID))
+    }
+}
+
+function bonesVecAnimate(Softness, Speed)
+{
+    foreach(C, B_ID:number = Bones["animatedVecBoneList", array]) 
+    {
+        if(Bones[B_ID + "/animateVec", number]) 
+        {
+            local RealPos = Bones[B_ID + "/realPos", vector]
+            local NeedPos = Bones[B_ID + "/needPos", vector]
+            local Dif = NeedPos - RealPos
+            if(Dif:length() >= 1) 
+            {
+                RealPos = Bones[B_ID + "/realPos", vector] = RealPos + clamp(Dif / Softness   , -Speed, Speed)
+                
+                local H_ID = Bones[B_ID + "/holoIndex" , number]
+                
+                holoPos(H_ID, RealPos)
+            }
+            else 
+            {
+                #Clear = array(C):add(Clear)
+                Bones["animatedVecBoneList", array]:remove(C)
+                Bones[B_ID + "/animateVec", number] = 0
+            }
+        }
+    }
+}
+function bonesAngAnimate(Softness, Speed)
+{
+    foreach(C, B_ID:number = Bones["animatedAngBoneList", array]) 
+    {
+        if(Bones[B_ID + "/animateAng", number]) 
+        {
+            local RealAng = Bones[B_ID + "/realAng", angle]
+            local NeedAng = Bones[B_ID + "/needAng", angle]
+            local Dif = angnorm(NeedAng - RealAng)
+            if(vec(Dif):length() >= 1) 
+            {
+                RealAng = Bones[B_ID + "/realAng", angle] = RealAng + clamp(Dif / Softness   , -Speed, Speed)
+                
+                local H_ID = Bones[B_ID + "/holoIndex" , number]
+                
+                holoAng(H_ID, RealAng)
+            }
+            else 
+            {
+                #Clear = array(C):add(Clear)
+                Bones["animatedAngBoneList", array]:remove(C)
+                Bones[B_ID + "/animateAng", number] = 0
+            }
+        }
+    }
+}
+

@@ -1,0 +1,52 @@
+@name test 01 001 egpPoly egpMaterial
+@inputs 
+@outputs 
+@persist Material:string
+@trigger 
+
+runOnChat(1)
+interval(75)
+W = entity():isWeldedTo():wirelink()
+
+W:egpClear()
+
+Ar = array()
+for(C = 1,4) {
+    F = C - 1
+    A = 360/4*F
+    
+    D = vec2(256,256) + vec2(256,256):rotate(A)
+    Ar = Ar:add(array(D))
+}
+
+
+T = curtime() / 10
+S = 1
+Ar = array(
+    vec4( 10, 10, T-S, 0-S),
+    vec4(502, 10,  T, 0-S),
+    vec4(502,502,  T,  0),
+    vec4( 10,502, T-S,  0)
+)
+W:egpPoly(1, Ar)
+W:egpMaterial(1, Material)
+
+LS = owner():lastSaid()
+if(LS:left(1) == "!") {
+    hideChat(1)
+    Material = LS:right(LS:length()-1)
+}
+#W:egpBox(1, vec2(256), vec2(251))
+#W:egpMaterial(1, "hlmv/floor")
+
+
+
+
+
+
+
+
+
+
+
+

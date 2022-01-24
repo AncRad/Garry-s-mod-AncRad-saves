@@ -1,0 +1,133 @@
+@name bomb_throw
+
+@inputs 
+@outputs 
+
+@persist [E O]:entity
+@persist [List]:table [Simulation_curtime]
+@persist [Remover]:entity
+
+
+
+
+switch(clkName()) {
+    default,
+        if(changed(0)) {
+            
+            Remover = holoCreate(0,vec(),vec())
+            function throw(Pos:vector, Dir:vector) {
+                local Prop_e = propSpawn("models/props_phx/mk-82.mdl", Pos, Dir:toAngle(), 0)
+                if(Prop_e) {
+                    Prop_e:remove(60)
+                    Prop_e:removeOnDelete(Remover)
+                    Prop_e:propFreeze(0)
+                    Prop_e:setTrails(50, 0, 5, "trails/smoke", vec(255), 255)
+                    
+                    Prop_e:applyForce(Dir * 52.5 * 100 * 500)
+                    Prop_e:applyAngForce(ang( 0 , 0 , 500 * 500 ))
+                    
+                    List:pushTable(table(
+                         "ent" = Prop_e
+                        #,""
+                    ))
+                }
+            }
+            
+            timer("simulationPreload", 1)
+        }
+    break
+    
+    case "simulationPreload",
+        if(changed(0)) {
+            Simulation_curtime = curtime()
+            O = owner()
+            timer("simulation", 1)
+        }
+    break
+    case "simulation",
+            timer("simulation", 75)
+        
+        local Key = O:keyPressed("mouse_4")
+        if(changed(Key) & Key) {
+            throw(O:shootPos() + vec(0,0,100), O:eye())
+        }
+        
+        local Curtime = curtime()
+        local Loop = (Curtime - Simulation_curtime) / 0.015625
+        Simulation_curtime = Curtime
+        
+        
+        local Count = List:count()
+        local Index = 0
+        while(perf() & Count > Index) {
+            Index++
+            
+            local Prop_T = List[Index, table]
+            local Prop_e = Prop_T["ent", entity]
+            if(Prop_e) {
+                local Prop_vl = Prop_e:velL()
+                local Ang = ang(0, angnorm(vec2(Prop_vl):toAngle()) , 0.7 ) - Prop_e:angVel():setRoll(0) / 10
+                local Mul = 10 * clamp(Prop_vl:length()/1500 ,0,1)
+                Prop_e:applyAngForce(Ang * (Loop * 500 * Mul))
+            }
+            else {
+                List:removeTable(Index)
+                Index--
+                Count--
+            }
+        }
+    break
+}
+
+
+
+
+
+entity():setName(
+    "bomb_throw"
+    + "\nOPS: " + ops()
+    + "\nCPU: " + floor(cpuUsage() * 1e6)
+    + "\nBombCount: " + List:count()
+)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

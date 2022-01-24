@@ -1,0 +1,225 @@
+@name Tank_01_version01_bashnya
+
+@inputs [Base  GunCam Root  BashYaw BashPitch  Target]:entity
+@inputs [Pod]:entity [Cam]:wirelink
+
+@outputs 
+@persist [Q]:table
+@persist [CamRoot]:entity
+
+@trigger 
+
+
+
+if(changed(0)) {
+    
+    
+    function number array:getIndex([Value Delimiter]:string) {
+        if(!Delimiter) {Delimiter = "\n#\n"}
+        local Concat = This:concat(Delimiter)
+        local Find = (Delimiter + Concat + Delimiter):find(Delimiter + Value + Delimiter)
+        
+        if(!Find) {return 0}
+        return Concat:left(Find):explode(Delimiter):count()
+    }
+    function number array:getIndex(Value:string) {
+        return This:getIndex(Value, "")
+    }
+    
+    
+    ################
+    #
+    #= camera
+    #
+    holoCreate(22800,vec(),vec(),ang())
+    holoCreate(22801,vec(),vec(),ang()) holoParent(22801,22800)
+    #
+    Cam["Activated",number] = 0
+    Cam["Direction",vector] = vec()
+    Cam["Angle"    ,angle ] = ang()
+    Cam["Position" ,vector] = vec()
+    Cam["Distance" ,number] = 0
+    Cam["Parent"   ,entity] = holoEntity(22801)
+    Cam["Flir"     ,number] = 0
+    Cam["FOV"      ,number] = 0
+    
+    Q["cam/modeList",array] = array(
+        "thirdPerson",
+        "gunCam"#,
+        #"oko"
+    )
+    #
+    ################
+    
+    
+    
+    
+    timer("user", 1)
+    timer("control", 1)
+}
+
+if(clk("user")) {
+    
+    local User = Pod:driver()
+    
+    if(changed(User)) {
+        if(User) {
+            Cam["Activated",number] = 1
+        }
+        else {
+            Cam["Activated",number] = 0
+        }
+    }
+    if(User) {
+        
+        local ChangeCam = User:keyPressed("mouse_4")-User:keyPressed("mouse_5")
+        if(changed(ChangeCam) & ChangeCam) {
+            local List_a = Q["cam/modeList",array]
+            local List_c = List_a:count()
+            local Index = List_a:getIndex(Q["camMode",string])
+            if(inrange(Index+ChangeCam,1,List_c)) {
+                Q["camMode",string] = Q["cam/modeList",array][Index+ChangeCam, string]
+            }
+        }
+        
+        
+        local CamMode = Q["camMode",string]
+        local CamMode_changed = changed(CamMode)
+        switch(CamMode) {
+            case "thirdPerson",
+                
+                
+                if(CamMode_changed) {
+                    Cam["Activated",number] = 1
+                    Cam["FLIR"     ,number] = 0
+                    Cam["FOV"      ,number] = 0
+                    
+                    holoParent(22800, Root)
+                    holoPos(22800, Root:pos())
+                    holoAng(22800, ang())
+                    holoPos(22801, Root:pos())
+                    holoAng(22801, ang())
+                }
+                local LocalEYE = angnorm(Pod:toLocal(User:eyeAngles()))-ang(0,90,0)
+                if(changed(LocalEYE) | CamMode_changed) {
+                    holoPos(22801, holoEntity(22800):toWorld(vec(-175,0,30 * (1-sin(LocalEYE[1])^2))))
+                    holoAng(22800, LocalEYE)
+                }
+            break
+                #
+                #- 
+                #
+            case "gunCam",
+                
+                if(CamMode_changed) {
+                    Cam["Activated",number] = 1
+                    Cam["FLIR"     ,number] = 0
+                    Cam["FOV"      ,number] = 0#min(User:getFOV(),80)
+                    
+                    holoParent(22800, GunCam)
+                    holoPos(22800, GunCam:boxCenterW())
+                    holoAng(22800, GunCam:toWorld(ang(-90,0,0)))
+                    holoPos(22801, holoEntity(22800):toWorld(vec(3,0,2)))
+                    holoAng(22801, holoEntity(22800):toWorld(ang()))
+                }
+            break
+                #
+                #
+                #
+            default,
+                
+                
+                
+                
+                Q["camMode",string] = Q["cam/modeList",array][1, string]
+            break
+        }
+        Cam["Angle"    ,angle ] = holoEntity(22801):angles()
+        Cam["Position" ,vector] = holoEntity(22801):pos()
+    }
+    
+    timer("user", User ? 50 : 200)
+}
+
+
+
+
+
+
+
+if(clk("control")) {
+        timer("control", 50)
+    
+    if(changed(0)) {
+        
+        Q["control/lastCurtime", number] = curtime()
+    }
+    local LastCurtime = Q["control/lastCurtime", number]
+    local Curtime = Q["control/lastCurtime", number] = curtime()
+    local Interval = Curtime - LastCurtime
+    local Loop = Interval / 0.015625
+    
+    local NeedAng = angnorm(Base:toLocal(Target:boxCenterW()-Base:toLocal(BashPitch:massCenter())):toAngle())
+    
+    
+    #
+    #- Yaw
+    #
+    local LastYaw = Q["lastYaw", number]
+    local Yaw     = Q["lastYaw", number] = Base:toLocal(BashYaw:angles())[2]
+    local YawVel  = angnorm(Yaw-LastYaw)
+    
+    
+    local F = (-YawVel+clamp(angnorm(NeedAng[2]-Yaw),-10,10))*25
+    BashYaw:applyAngForce(ang(F*Loop*3372,0,0))
+    
+    #
+    #- Pitch
+    #
+    local LastPitch = Q["lastPitch", number]
+    local Pitch     = Q["lastPitch", number] = Base:toLocal(BashPitch:angles())[1]
+    local PitchVel  = angnorm(Pitch-LastPitch)
+    
+    
+    local F = (-PitchVel+clamp(angnorm(NeedAng[1]-Pitch),-10,10))*25
+    BashPitch:applyAngForce(ang(F*Loop*3372,0,0))
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName("Tank_01_version01_bashnya\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1e6))
+if(dupefinished()) {reset()}
+
+
+
+
+
+
+
+
+
+
+
+
+

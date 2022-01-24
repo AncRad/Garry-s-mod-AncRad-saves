@@ -1,0 +1,304 @@
+@name HK 002
+
+@inputs [Pod]:entity
+@outputs OPS HC AngYaw
+@persist [E O User Base  Target]:entity [Q]:table
+
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+
+#include "AddHolo"
+#include "old 28.10.2017/effect_01_001"
+if(changed(0)) {
+    Effect01["interval", number] = 50
+    E = entity() E:setSkin(1)
+    O = owner()
+    
+    Base = E:isWeldedTo()
+    foreach(C, Ent:entity = E:getConstraints()) {
+        local Model = Ent:model()
+        if(Model == "models/mechanics/wheels/wheel_smooth_24f.mdl") {
+            local LocalPos = Base:toLocal(Ent:pos())
+            if(LocalPos[1] < -50) {
+                Q["thr3", entity] = Ent
+            }
+            elseif(LocalPos[2] > 0) {
+                Q["thr1", entity] = Ent
+            }
+            elseif(LocalPos[2] < 0) {
+                Q["thr2", entity] = Ent
+            }
+            
+        }
+        elseif(Model == "models/machinegun/machinegun_20mm_compact.mdl") {
+            local LocalPos = Base:toLocal(Ent:pos())
+            if(LocalPos[2] > 0) {
+                Q["gun1", entity] = Ent
+                Q["gunW1", wirelink] = Ent:wirelink()
+            }
+            elseif(LocalPos[2] < 0) {
+                Q["gun2", entity] = Ent
+                Q["gunW2", wirelink] = Ent:wirelink()
+            }
+        }
+        elseif(Model == "models/ammocrates/ammocrate_2x2x2.mdl") {
+            Q["ammoContainer", entity] = Ent
+        }
+    }
+    for(C = 1, 3) {
+        local Thr = "thr" + C
+        local Ent = Q[Thr, entity]
+        #holoCreate(C, vec(), vec(1.5,1.5,4), ang(), vec(255,0,0), "hq_cylinder")
+        holoMaterial(C, "models/wireframe")
+        holoAlpha(C, 50)
+        holoClipEnabled(C, 1, 1)
+        holoClip(C, 1, vec(0,0,0), vec(0,0,-1), 0)
+        holoParent(C, Ent)
+        holoPos(C, Ent:pos())
+        holoAng(C, Ent:angles())
+        #Ent:soundPlay(Thr, 0, "ambient/levels/citadel/portal_beam_loop1.wav") soundPitch(Thr, 0) soundVolume(Thr, 0)
+        Ent:effect01("flame" + C, vec(0,0,-6), 7, 50, ang(180,0,0), vec(255,30,0), 20)
+    }
+    
+    local W = Q["ammoContainer", entity]:wirelink()
+    W["Active", number] = 1
+    
+    timer("user", 1)
+    timer("engines", 1)
+}
+
+if(clk("user")) {
+    
+    if(changed(0)) {
+        local CamHolo = holoCreate(0, Base:pos(), vec(), Base:angles()) holoParent(0, Base)
+        cameraCreate(0, CamHolo:toWorld(vec(-170,0,50)), CamHolo:angles(), 0)
+        cameraParent(0, CamHolo)
+    }
+    
+    
+    User = Pod:driver()
+    timer("user", User ? 50 : 500)
+    
+    
+    if(User) {
+        local CamAng = angnorm(Pod:toLocal(User:eyeAngles()) - ang(0,90,0))
+        
+        holoAng(0, clamp(CamAng,-ang(70,999,0),ang(70,999,0)))
+        
+    }
+    
+    
+    if(changed(User)) {
+        cameraToggle(0, User | 0, Pod)
+    }
+}
+
+
+if(clk("engines")) {
+        timer("engines", 1)
+    
+    if(changed(0)) {
+        
+        HC = 1
+        
+        Q["lastCurtime", number] = curtime()
+    }
+    
+    local LastCurtime = Q["lastCurtime", number]
+    local Curtime = curtime()
+    Q["lastCurtime", number] = Curtime
+    
+    local Interval = Curtime - LastCurtime
+    local Loop = Interval / 0.015625
+    
+    local CamAng = angnorm(Pod:toLocal(User:eyeAngles())-ang(0,90,0))
+    
+    local NeWNeedVel = vec(User:keyForward()-User:keyBack(),User:keyLeft()-User:keyRight(),User:keyJump()-User:keyWalk()) * vec(900,300,200) * (User:keySprint() ? 2 : 1)
+    local NeedVel = Q["needVel", vector]
+    Q["needVel", vector] = NeedVel + (NeWNeedVel - NeedVel) / 15
+    
+    local Ang    = Base:angles()
+    local Vel    = Base:vel()
+    local VelL   = Vel:rotate(ang(0,-Ang[2],0)) - NeedVel:rotate(ang(0,-angnorm(Ang[2]-CamAng[2]),0))
+    local AngVel = Base:angVel()
+    
+    
+    
+          VelZ = Vel[3] - NeedVel[3]
+          HC   = clamp(HC + clamp( -VelZ / 75 ,-0.5,0.5) ,0,8)
+    local HF   = clamp(HC + clamp(-$VelZ      ,-0.5,0.5) ,0,8)
+    
+    
+    
+    local D = clamp(1 - Vel:length() / 1500 ,0.5,1)
+    local X = clamp(VelL[1] / 6 ,-45,45)
+    local Y = clamp(VelL[2] / 5 ,-45,45)
+    
+     AngVelYaw = AngVel[2]
+    
+    local XR =         sin(clamp( sin(Ang[3]-Y) * 45 + AngVel[3] / 5             ,-65,65))
+    local YR = 0.255 + sin(clamp(      Ang[1] * 1.5 + AngVel[1] / 5              ,-65,65))
+    local ZR =         sin(clamp( (sin(clamp(angnorm(Ang[2] - CamAng[2]),-90,90)) * 150 + clamp(AngVelYaw ,-250,250)),-90,90))*20*D
+    
+    local F = HF * 360
+    local F = F / 3
+    Q["f1", number] = F * (1 + clamp( -XR + YR   ,-1.0,1.0))
+    Q["f2", number] = F * (1 + clamp(  XR + YR   ,-1.0,1.0))
+    Q["f3", number] = F * (1 + clamp(      -YR*2 ,-1.0,1.0))
+    
+    
+    
+    
+    local A = -X
+    Q["a1", number] = clamp(A + ZR,-70,70)
+    Q["a2", number] = clamp(A - ZR,-70,70)
+    Q["a3", number] = clamp(A     ,-70,70)
+    
+    
+    
+    
+    
+    
+    for(C = 1,3) {
+        local Thr = "thr" + C
+        
+        local T = Q[Thr, entity]
+        local AngVel = T:angVel()
+        local Ang = T:angles()
+        
+        local A = (Q["a" + C, number] - Ang - AngVel / 15) * 10
+        T:applyAngForce(ang(A[1],0,0)*T:mass())
+        
+        local F = Q["f" + C, number]
+        T:applyForce(T:up() * F * 9 * Loop)
+        
+        soundPitch(Thr, F)
+        soundVolume(Thr, F)
+        #holoScale(C, vec(1.5,1.5,max(F,0) / 80))
+        
+        local Mul = Q["mul" + C, number]
+        local Mul = Q["mul" + C, number] = Mul + (F - Mul) / 1.5
+        effect01("flame" + C, Mul / (C == 3 ? 100 : 600))
+    }
+    
+    findIncludeClass("player")
+    findIncludeClass("npc")
+    findClosest(Base:pos())
+    findInCone(Base:toWorld(vec(30,0,0)), Base:forward(), 52.5 * 100, 30)
+    
+    Target = find()
+    for(C = 1,2) {
+        local Gun = Q["gun" + C, entity]
+        if(Gun) {
+            if(changed(0)) {
+                
+                Q[C + "lastAng", angle] = Base:toLocal(Gun:angles())
+            }
+            
+            local TargetAng = ang()
+            local LastTargetAng = ang()
+            if(Target) {
+                local TPos = vec()
+                if(1) {
+                    TPos = Target:boxCenterW()
+                }
+                local TVel = Target:vel()
+                
+                local GPos = Gun:boxCenterW()
+                
+                local Vec = TPos - GPos #+ (TVel-Vel) / 5
+                TargetAng = Base:toLocal((Vec):toAngle()):setRoll(0)
+                LastTargetAng = Q[C + "lastTargetAng", angle]
+            }
+            
+            local TargetAng = Q[C + "lastTargetAng", angle] = TargetAng
+            local TargetAngVel = TargetAng - LastTargetAng
+            
+            local LastLocalAng = Q[C + "lastAng", angle]
+            local LocalAng = Q[C + "lastAng", angle] = Base:toLocal(Gun:angles()):setRoll(0)
+            local LocalAngV = LocalAng - LastLocalAng
+            
+            local Ang = (LocalAngV - TargetAngVel + clamp((LocalAng - TargetAng) / 3,-25,25)) * 50
+            Gun:applyAngForce(clamp(Ang,-150,150)*Gun:mass()*Loop)
+            #Gun:setColor(randvec(0,255))
+            
+        }
+    }
+    local Fire = User:keyPressed("MOUSE_LEFT") & Target
+    if(changed(Fire) | Fire) {
+        local W1 = Q["gunW1", wirelink]
+        local W2 = Q["gunW2", wirelink]
+        
+        local Ammo = W1["AmmoCount", number]
+        local Ammo = ((floor(Ammo / 2)) == (Ammo / 2))
+        
+        local D = Q["d", number]
+        W1["Fire", number] = Fire & !Ammo 
+        W2["Fire", number] = Fire &  Ammo
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+OPS = ops()
+CPU = floor(cpuUsage() * 1000000)

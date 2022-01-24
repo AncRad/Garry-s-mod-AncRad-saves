@@ -1,0 +1,7 @@
+@name test_include_changed
+@inputs 
+@outputs 
+@persist 
+@trigger 
+
+print(changed(1))

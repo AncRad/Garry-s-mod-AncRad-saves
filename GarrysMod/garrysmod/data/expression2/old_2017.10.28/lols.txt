@@ -1,0 +1,66 @@
+@name lols
+@inputs 
+@outputs T L Pitch TP:vector Song:string F F1 V:vector Ft
+@persist Random E:entity C:vector4
+@trigger none
+
+interval(50)
+
+if(first() | dupefinished()) {
+    Random = randint(1,5)
+    E = entity()
+    Ft = 1
+}
+
+
+F = F * (F < 360 | F < -360) + 0.5 * F1
+
+V = vec(-cos(F),sin(F),0) * 70
+
+
+
+
+T = T * (T < 20 + 20 * (L < 150)) + 1
+if(T > 19 + 20 * (L < 150)) {
+    E:applyForce(clamp(TP * 0.5 * clamp(sqrt(L),1.5,1.5) ,-300,300))
+    E:applyAngForce(ang(TP / 20))
+    
+    Name = E:id()
+    soundPlay(Name,1.8,Song)
+    soundPitch(Name,Pitch + random(0,50))
+    soundVolume(Name, 0.5)
+    
+    
+    
+    TP = (owner():pos() + V * (L < 150)) - E:pos() + vec(0,0,1) * 300
+    
+}
+
+if(Random == 0) {Song = "buttons/button18.wav"}
+elseif(Random == 1) {Song = "buttons/button15.wav" C = vec4(250,0,0,255)   F1 = 1}
+elseif(Random == 2) {Song = "buttons/button18.wav" C = vec4(0,250,0,255)   F1 = 2}
+elseif(Random == 3) {Song = "buttons/button3.wav"  C = vec4(0,0,250,255)   F1 = 0.5}
+elseif(Random == 4) {Song = "buttons/button19.wav" C = vec4(255,170,0,255) F1 = -1}
+elseif(Random == 5) {Song = "buttons/button3.wav"  C = vec4(0,150,255,255) F1 = -3}
+
+
+
+Pitch = clamp(sqrt(L) * 5,0,100)
+L = (owner():pos() - entity():pos()):length()
+
+holoColor(1,C)
+if(first() | dupefinished()) {
+    holoCreate(1,E:toWorld(vec(0,0,0)),vec(0.8,0.8,0.2),E:toWorld(ang(0,0,0)))
+    holoModel(1,"hq_icosphere") holoMaterial(1,"models/shiny") holoParent(1,E)
+    
+    holoDisableShading(1, 1)
+    
+    E:propFreeze(0)
+    E:noCollideAll(0)
+}
+
+
+
+
+
+

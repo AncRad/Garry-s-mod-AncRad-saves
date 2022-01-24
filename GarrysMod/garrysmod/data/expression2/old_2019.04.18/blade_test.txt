@@ -1,0 +1,213 @@
+@name blade_test
+
+@inputs [LHC1 LHC2 LHC3 LHC4 LHC5 LHC6 LHC7 LHC8 LHC9 LHC10 LHC11 LHC12]:wirelink
+@inputs [RHC1 RHC2 RHC3 RHC4 RHC5 RHC6 RHC7 RHC8 RHC9 RHC10 RHC11 RHC12]:wirelink
+
+@outputs 
+
+@persist [Base]:entity
+@persist [LW RW]:array WS AD
+
+@persist [E O]:entity [Q]:table
+
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+
+if(changed(0)) {
+    
+    ################
+    #
+    #- constants
+    E = entity() E:setSkin(1)
+    O = owner()
+    #
+    ################
+    ################
+    #
+    #- start
+    timer("", 1)
+    #
+    ################
+}
+
+if(clk("")) {
+        timer("", 50)
+    
+    local Step = Q["step", number]
+    if(Step != -1) {
+        ################
+        #
+        #- подготовка
+        #
+        switch(Step) {
+                #
+                #- 
+                #
+            case 0,
+                Q["step", number] = 1
+            break
+                #
+                #- 
+                #
+            case 1,
+                        Base = E:isWeldedTo()
+                        Q["step", number] = Step + 1
+            break
+                #
+                #- 
+                #
+            case 2,
+                if(changed(0)) {
+                    
+                    Q["constraints", array] = Base:getConstraints()
+                    
+                    Q["1C", array] = array()
+                    Q["2C", array] = array()
+                }
+                local Box_s = Base:boxSize()
+                local Box_sx = Box_s[1]
+                local Box_sy = Box_s[2]
+                local Box_sx12 = floor(Box_sx / 12)
+                
+                local Constraints_a = Q["constraints", array]
+                local Constraints_c = Constraints_a:count()
+                while(perf(80) & Constraints_c) {
+                    local C_e = Q["constraints", array]:removeEntity(1)
+                    local C_t = C_e:type()
+                    
+                    if(C_t == "prop_physics") {
+                        local C_m = C_e:model()
+                        if(C_m == "models/sprops/trans/wheel_b/wheel40.mdl") {
+                            local C_lp = Base:toLocal(C_e:pos())
+                            C_e:setPhysProp(0 ? "jeeptire" : "rubber",1)
+                            if(C_lp[2] > 0) {
+                                LW:pushEntity(C_e)
+                            }
+                            else {
+                                RW:pushEntity(C_e)
+                            }
+                        }
+                    }
+                }
+                if(!Constraints_c) {
+                    Q["step", number] = Step + 1
+                }
+            break
+                #
+                #- 
+                #
+            case 3,
+                Q["step", number] = Step + 1
+            break
+                #
+                #- 
+                #
+            default,
+                for(C1 = 1,2) {
+                    local CW = select(C1,array(LHC1,LHC2,LHC3,LHC4,LHC5,LHC6,LHC7,LHC8,LHC9,LHC10,LHC11,LHC12),array(RHC1,RHC2,RHC3,RHC4,RHC5,RHC6,RHC7,RHC8,RHC9,RHC10,RHC11,RHC12)) Q[C1 + "CW", array] = CW
+                    
+                    
+                    for(C2 = 1,12) {
+                        local W = CW[C2, wirelink]
+                        
+                        Q[C1 + "CE", array]:pushEntity(W:entity())
+                        
+                        W["Length"  , number] = 40
+                        W["Constant", number] = 100000
+                        W["Damping" , number] = 5000
+                    }
+                }
+                
+                Q["step", number] = -1
+            break
+            #
+            ################
+        }
+    }
+    else {
+        
+        
+        if(changed(0)) {
+            
+            Q["lastCurtime", number] = curtime()-0.015625
+        }
+        local LastCurtime = Q["lastCurtime", number]
+        local Curtime = curtime() Q["lastCurtime", number] = Curtime
+        local Interval = Curtime - LastCurtime
+        local Loop = Interval / 0.015625
+        
+        
+        
+        local LVel = 0 foreach(C, LW:entity = LW) {LVel+=LW:angVel()[1]} LVel/=LW:count()
+        local RVel = 0 foreach(C, RW:entity = RW) {RVel+=RW:angVel()[1]} RVel/=RW:count()
+        
+        local W     = O:keyPressed("pad_8")
+        local S     = O:keyPressed("pad_5")
+        local A     = O:keyPressed("pad_4")
+        local D     = O:keyPressed("pad_6")
+        local Shift = O:keyPressed("pad_0")
+        
+         WS = WS + ((W-S) * (Shift ? 2500 : 1200) - WS) / 5
+         AD = AD + ((A-D) * 1200 - AD) / 5
+        
+        local LF = (WS-AD)-LVel
+        local RF = (WS+AD)-RVel
+        
+        local LAF = ang(LF*15000/LW:count()*Loop,0,0) foreach(C, LW:entity = LW) {LW:applyAngForce(LAF) LW:setPhysProp( AD>50 ? "rubber" : "jeeptire",1)}
+        local RAF = ang(RF*15000/RW:count()*Loop,0,0) foreach(C, RW:entity = RW) {RW:applyAngForce(RAF) RW:setPhysProp(-AD>50 ? "rubber" : "jeeptire",1)}
+        
+        local RX = clamp(Base:velL()[2]/300,-1,1)*20
+        
+        #[
+        local WS = W - S
+        
+        local L = W - S + (D - A)*(WS ? 0.75 : 1)*2.5
+        local R = W - S + (A - D)*(WS ? 0.75 : 1)*2.5
+        
+        local F = Shift ? 3000 : 1000
+        
+        
+        local LF = F * L
+        LW:applyAngForce(ang(0,-LF*LW:mass()*Loop,0))
+        
+        local RF = F * R
+        RW:applyAngForce(ang(0,-RF*RW:mass()*Loop,0))
+        local M45 = O:keyPressed("mouse_4")-O:keyPressed("mouse_5")
+        ]#
+    }
+    
+    setName("tank_24x24_controller\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1e6))
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

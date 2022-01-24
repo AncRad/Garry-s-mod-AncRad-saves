@@ -1,0 +1,33 @@
+@name QResource
+@persist [Q]:table
+
+
+
+if(changed(0)) {
+    
+    function string  qGet_string( [Cell]:string) {return Q[Cell, string ]}
+    function number  qGet_number( [Cell]:string) {return Q[Cell, number ]}
+    function vector2 qGet_vector2([Cell]:string) {return Q[Cell, vector2]}
+    function vector  qGet_vector( [Cell]:string) {return Q[Cell, vector ]}
+    function vector4 qGet_vector4([Cell]:string) {return Q[Cell, vector4]}
+    function angle   qGet_angle(  [Cell]:string) {return Q[Cell, angle  ]}
+    function array   qGet_array(  [Cell]:string) {return Q[Cell, array  ]}
+    function table   qGet_table(  [Cell]:string) {return Q[Cell, table  ]}
+    function entity  qGet_entity( [Cell]:string) {return Q[Cell, entity ]}
+    function bone    qGet_bone(   [Cell]:string) {return Q[Cell, bone   ]}
+    
+    
+    
+    function qResource() {
+        
+    }
+    
+    
+    function qAddValue([Name Type]:string) {
+        
+    }
+    
+    
+    qAddValue("Name", "string")
+    
+}

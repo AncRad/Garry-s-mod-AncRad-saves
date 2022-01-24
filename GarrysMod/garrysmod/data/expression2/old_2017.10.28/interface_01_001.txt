@@ -1,0 +1,934 @@
+@name interface 01 001
+
+@inputs 
+@outputs OPS
+@persist [E O]:entity [Q]:table
+
+@trigger none
+
+
+
+if(changed(0)) {
+    #include "old 28.10.2017/EGPS"
+    #include "old 28.10.2017/QResource"
+    #### Q RESOURCE
+    function q() {
+        
+    }
+    
+    
+    #### Q RESOURCE
+    
+    E = entity()
+    O = owner() #holoCreate(12123123, O:attachmentPos("anim_attachment_head"), -vec(3), O:attachmentAng("anim_attachment_head"), vec(), "hq_sphere") holoParentAttachment(12123123, O, "anim_attachment_head")
+    Q["scrSize" , vector2] = egpScrSize(O)
+    Q["fontSize", number ] = 15
+    Q["indent"  , number ] = 2
+    
+    
+    
+    
+    egpSelect(E:isWeldedTo():wirelink())
+    egpClear()
+    
+    
+    
+    ###############################################################################################################
+    ###############################################################################################################  ACT
+    ###############################################################################################################
+    function number addAct(Act_n:string, Tag:string) {
+        if(!Q[Act_n + "/lock", number]) {
+            local Act_i = Q["act", number] = Q["act", number] + 1
+            
+            Q[Act_i + "/act/name", string] = Act_n
+            Q[Act_i + "/act/tag", string] = Tag
+            
+            Q["acts", array] = Q["acts", array]:add(array(Act_i))
+            return Act_i
+        }
+    }
+    function number addAct(Act_n:string) {
+        return addAct(Act_n, "")
+    }
+    ###############################################################################################################
+    ###############################################################################################################  CURSOR
+    ###############################################################################################################
+    function cursorPos(Player:entity) {
+        ###########################################################################################
+        ############################################################################################
+        local EyeAngles  = Player:eyeAngles()
+        local Eye        = Player:eye():rotate(angnorm(EyeAngles-Q["camera/ang", angle])) 
+        if(changed(Eye) | changed(EyeAngles)) {                                                     ##
+            local EyeA       = EyeAngles:forward()                                                  ##
+            local EgpScrSize = egpScrSize(Player)                                                   ##
+                                                                                                    ##
+            local Holo = holoEntity(0)                                                              ##
+            if(!Holo) {holoCreate(0,vec(),vec())}                                                   ##
+            holoAng(0, EyeAngles)                                                                   ##
+                                                                                                    ##
+            local Cos = Eye[1] * EyeA[1] + Eye[2] * EyeA[2] + Eye[3] * EyeA[3]                      ##
+            local CursorV = (Holo:toLocal(Eye / Cos) / vec(1, -1.332, -0.75) + vec(0, 1, 1)) / 2    ##
+                                                                                                    ##
+            local Cursor = Q["cursorPos", vector2] = vec2(CursorV[2], CursorV[3]) * EgpScrSize     ###
+        }                                                                                         ###
+        ############################################################################################
+        ###########################################################################################
+    }
+    ######################################
+    ###################################### global inrange
+    ######################################
+    function number globalInrange(Name:string, CursorPos:vector2) {
+        local TargetGP = egpGetGlobalPos(Name)
+        if(TargetGP == v(9999) | !TargetGP) {
+            return 0
+        }
+        local TargetS  = egpGetSize(Name) / 2
+        local Inrange = inrange(CursorPos - TargetGP,-TargetS,TargetS)
+        
+        return Inrange
+    }
+    ######################################
+    ###################################### cursor target
+    ######################################
+    function string cursorTarget(TargetList:string) {
+        local CursorPos = Q["cursorPos", vector2]
+        
+        if(Q["cursorTarget/end", number]) {
+            local CursorTarget = Q["cursorTarget", string]
+            if(CursorTarget) {
+                if(globalInrange(CursorTarget, CursorPos)) {
+                    return CursorTarget
+                }
+                else {
+                    Q["cursorTarget/end", number] = 0
+                }
+            }
+        }
+        else {
+            Q["cursorDown", string] = ""
+            local CursorTargets = Q[TargetList, array]
+            local Return = ""
+            local Real = 0
+            while(1) {
+                Real++
+                local Target = CursorTargets[Real, string]
+                if(Target) {
+                    if(globalInrange(Target, CursorPos)) {
+                        
+                        local CursorDown = Q["cursorDown", string]
+                        Q["cursorDown", string] = CursorDown + (CursorDown ? "///" : "") + Target
+                        
+                        Return = Target
+                        local Targets = Q[Target + "/cursorTargets", array]
+                        if(Targets:count()) {
+                            CursorTargets = Targets
+                            Real = 0
+                        }
+                        else {
+                            Q["cursorTarget/end", number] = 1
+                            Q["cursorTarget", string] = Target
+                            return Target
+                        }
+                    }
+                }
+                else {
+                    local CursorDown = Q["cursorDown", string]
+                    Q["cursorTarget/end", number] = 0
+                    Q["cursorTarget", string] = Return
+                    return Return
+                }
+            }
+        }
+    }
+    function string cursorTarget() {
+        cursorTarget("cursorTargets")
+    }
+    ###############################################################################################################
+    ###############################################################################################################  
+    ###############################################################################################################
+    ######################################
+    ###################################### create
+    ######################################
+    function spawnPanel(Name:string, Pos:vector2, Size:vector2) {
+        
+        local SCR = Q["scrSize", vector2]
+        
+        local Base_n = Name + "Base"
+        local Base_s = Size
+        local Base_p = clamp(Pos, Size/2, SCR-Size/2)
+        egpAddBox(Base_n, Base_p, Base_s, "")
+        egpSetColor(60)
+    }
+    function spawnPanel(Name:string, NameTo:string, SetTo:string, Size:vector2) {
+        
+        local ToBase_n = NameTo + "Base"
+        local ToBase_s = egpGetSize(ToBase_n)
+        
+        local Base_n = Name + "Base"
+        local Base_s = Size if(Size[1] == 0) {Base_s[1] = ToBase_s[1]} if(Size[2] == 0) {Base_s[2] = Size[2]}
+        local Base_p = v() if(SetTo == "top") {Base_p = v(0,(Base_s[2]-ToBase_s[2])/2)} if(SetTo == "right") {Base_p = v((ToBase_s[1]-Base_s[1])/2,0)}
+        egpAddBox(Base_n, Base_p, Base_s, "")
+        egpSetParent(ToBase_n)
+    }
+    ######################################
+    ###################################### 
+    ######################################
+    function spawn_CameraMenu() {
+        
+        local Indent = Q["indent", number] = 2
+        local FontSize = Q["fontSIze", number] = 15
+        
+        
+        local SettingsList_a = Settings["camera/settings/list", array]
+        local SettingsList_c = SettingsList_a:count()
+        
+        local Name = "cameraMenu"
+        
+        local Base_n = Name + "Base"
+        local Base_s = v(330,FontSize*(SettingsList_c + 1))
+        local Base_p = v(700, 930)
+        egpAddBox(Base_n, Base_p, Base_s, "")
+        egpSetColor(10)
+        
+        local TB_n = Name + "TitleBase"
+        local TB_s = v(Base_s[1], FontSize)
+        local TB_p = (TB_s-Base_s)/2
+        egpAddBox(TB_n, TB_p, TB_s, "")
+        egpSetParent(Base_n)
+        egpSetColor(30)
+        
+        
+        local LeftText   = Language["camera/settings/title", string] + "\n"
+        local CenterText = "\n"
+        foreach(C, CSetting:string = SettingsList_a) {
+            local Type = CSetting:left(1)
+            local Setting = CSetting:right(CSetting:length()-1)
+            
+            LeftText+= Language["camera/settings/" + CSetting, string]+"\n"
+            
+            switch(Type) {
+                case "$",
+                    CenterText+= Settings["camera/settings/" + CSetting, number]+"\n"
+                break
+                case "#",
+                    local Key = Settings["camera/settings/" + CSetting, string]
+                    CenterText+= Language[Key, string]+"\n"
+                break
+            }
+        }
+        # "$vel", "$altVel", "#forward", "#back", "#left", "#right", "#up", "#down", "#altVel", "#rootZ"
+        
+        local Offset = Q["cameraMenuTextOffset", number] = 220
+        
+        local LT_n = Name + "letfText"
+        local LT_s = v(Base_s[1]-Indent,Base_s[2])
+        local LT_p = v(Indent,0)-Base_s/2
+        egpAddTextLayout(LT_n, LeftText, LT_p, LT_s)
+        egpSetParent(Base_n)
+        egpSetSize(FontSize)
+        local CT_n = Name + "rightText"
+        local CT_p = v(Offset,0)
+        local CT_s = LT_s-CT_p
+        egpAddTextLayout(CT_n, CenterText, CT_p, CT_s)
+        egpSetParent(LT_n)
+        egpSetSize(FontSize)
+        
+        
+        Q["cursorTargets", array] = Q["cursorTargets", array]:add(array(Base_n))
+    }
+    ######################################
+    ###################################### 
+    ######################################
+    function spawn_objectList() {
+        
+        local Indent = Q["indent", number] = 2
+        local FontSize = Q["fontSIze", number] = 15
+        
+        local B_n = "objectList"
+        local B_s = v(300,285)
+        local B_p = v(800,935)
+        egpAddBox(B_n, B_p, B_s, "")
+        egpSetColor(10)
+        
+        local TB_n = "objectList/titleBase"
+        local TB_s = v(B_s[1], 20)
+        local TB_p = (TB_s-B_s)/2
+        egpAddBox(TB_n, TB_p, TB_s, "")
+        egpSetParent(B_n)
+        egpSetColor(30)
+        local T_n = "objectList/title"
+        local T_p = v(Indent-TB_s[1]/2,0)
+        egpAddText(T_n, "TREE", T_p)
+        egpSetParent(TB_n)
+        egpSetAlign(0,1)
+        egpSetSize(FontSize)
+        
+        local SB_n = "objectList/scrollBase"
+        local SB_s = v(15,B_s[2]-TB_s[2]-Indent)
+        local SB_p = (B_s-SB_s)/2
+        egpAddBox(SB_n, SB_p, SB_s, "")
+        egpSetParent(B_n)
+        egpSetColor(30)
+        local S_n = "objectList/scroll"
+        local S_s = SB_s*v(1,0.5)
+        local S_p = v(0,(S_s[2]-SB_s[2])/2)
+        egpAddBox(S_n, S_p, S_s, "")
+        egpSetParent(SB_n)
+        egpSetColor(60)
+        
+        local T1_n = "objectList/text1"
+        local T1_s = v(B_s[1]-Indent-SB_s[1],SB_s[2]-TB_s[2]*0)
+        local T1_p = v(Indent,TB_s[2])-B_s/2
+        egpAddTextLayout(T1_n, T1_n, T1_p, T1_s)
+        egpSetParent(B_n)
+        egpSetSize(FontSize)
+        local T2_n = "objectList/text2"
+        local T2_s = T1_s
+        local T2_p = v()
+        egpAddTextLayout(T2_n, "\n"+T2_n, T2_p, T2_s)
+        egpSetParent(T1_n)
+        egpSetSize(FontSize)
+        egpSetColor(175)
+        local T3_n = "objectList/text3"
+        local T3_s = T1_s
+        local T3_p = v()
+        egpAddTextLayout(T3_n, "\n\n"+T3_n, T3_p, T3_s)
+        egpSetParent(T1_n)
+        egpSetSize(FontSize)
+        egpSetColor(0,175,255)
+        
+        Q["objectList/method", string] = "tree"
+        Q["objectList/lines" , number] = floor(T1_s[1] / FontSize)
+        Q["objectList/height", number] = T1_s[1]
+        Q["objectList/offset", number] = 0
+        Q["objectList/scroll", number] = 0
+        
+        
+        Q["cursorTargets", array] = Q["cursorTargets", array]:add(array(B_n))
+        Q[B_n + "/cursorTargets", array] = Q[B_n + "/cursorTargets", array]:add(array(TB_n, SB_n))
+    }
+    function listing_objectList() {
+        
+        local Indent = Q["indent", number] = 2
+        local FontSize = Q["fontSIze", number] = 15
+        
+        local Text1 = ""
+        local Text2 = ""
+        local Text3 = ""
+        
+        #local Method = Q["objectList/method", string]
+        #local Height = Q["objectList/height", number]
+        local Lines  = Q["objectList/lines" , number]
+        local Offset = Q["objectList/offset", number]
+        
+        
+        local Step = "#"
+        local Step_a = Q["baseObj", array]
+        local Step_c = Step_a:count()
+        local Step_n = 0
+        local String = 0
+        while(String < Lines) {
+            String++
+            
+            Step_n++
+            local Obj_i = Step_a[Step_n, number]
+            local Obj_n = Q[Obj_i + "/obj/name", string]
+            local ObjParented_a = Q[Obj_i + "/obj/parents", array]
+            local ObjParented_c = ObjParented_a:count()
+            
+            local Text = Obj_n + "(" + ObjParented_c + ")"
+            Text1+= Step + Text + "\n"
+            Text2+= Step + "\n"
+            Text3+= Step + "\n"
+            
+        }
+        
+        egpSetText("objectList/text1", Text1)
+        egpSetText("objectList/text2", Text2)
+        egpSetText("objectList/text3", Text3)
+        Q["objectList/endLine" , number] = String-1
+    }
+    ###############################################################################################################
+    ###############################################################################################################  
+    ###############################################################################################################
+    
+    
+    
+    
+    #######  Q STRUCTURE
+    function number addObj(Obj_n:string, Type:string, To_n:string) {
+        local Obj_i = Q["objCount", number] = Q["objCount", number] + 1
+        
+        Q[Obj_n + "/obj/index"  , number] = Obj_i
+        Q[Obj_i + "/obj/name"   , string] = Obj_n
+        Q[Obj_i + "/obj/parents", array ] = array()
+        
+        if(To_n) {
+            local To_i = Q[To_n + "/obj/index", number]
+            Q[Obj_i + "/obj/parented/", number] = To_i
+            Q[To_i + "/obj/parents", array] = Q[To_i + "/obj/parents", array]:add(array(Obj_i))
+        }
+        else {
+            Q["baseObj", array] = Q["baseObj", array]:add(array(Obj_i))
+        }
+        return Obj_i
+    }
+    
+    addObj("base", "holo", "")
+        addObj("lapa1", "holo", "base")
+            addObj("zveno1", "holo", "lapa1")
+                addObj("zveno2", "holo", "zveno1")
+                    addObj("zveno3", "holo", "zveno2")
+                        addObj("zveno4", "holo", "zveno3")
+            
+        addObj("lapa2", "holo", "base")
+            addObj("zveno1", "holo", "lapa2")
+                addObj("zveno2", "holo", "zveno1")
+                    addObj("zveno3", "holo", "zveno2")
+                        addObj("zveno4", "holo", "zveno3")
+        
+        addObj("lapa3", "holo", "base")
+            addObj("zveno1", "holo", "lapa3")
+                addObj("zveno2", "holo", "zveno1")
+                    addObj("zveno3", "holo", "zveno2")
+                        addObj("zveno4", "holo", "zveno3")
+    
+        addObj("podemnikBashni1", "holo", "base")
+            addObj("podemnikBashni2", "holo", "podemnikBashni1")
+                addObj("podemnikBashni3", "holo", "podemnikBashni2")
+                    addObj("bashnya", "holo", "podemnikBashni3")
+                        addObj("gun"   , "holo", "bashnya")
+                        addObj("antena", "holo", "bashnya")
+    
+    
+    #######  Q STRUCTURE
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    timer("block1", 1)
+}
+
+
+
+if(clk("block1")) {
+        timer("block1", 50)
+    
+    if(changed(0)) {
+        
+        local Pod = Q["pod", entity]
+        local Egp = Q["egp", entity]
+        
+        if(!Pod | !Egp) {
+            findClearBlackList()
+            findClearWhiteList()
+            
+            if(!Pod) {findIncludeClass("prop_vehicle_prisoner_pod")}
+            if(!Egp) {findIncludeClass("gmod_wire_egp_hud")}
+            findInSphere(E:pos(), 25)
+            
+            foreach(C, Ent:entity = findToArray()) {
+                local Type = Ent:type()
+                if(!Pod & Type == "prop_vehicle_prisoner_pod") {
+                    Q["pod", entity] = Ent
+                }
+                if(!Egp & Type == "gmod_wire_egp_hud") {
+                    Q["egp", entity] = Ent
+                }
+            }
+        }
+        
+        
+        Q["block1/curtime", number] = curtime()
+    }
+    #
+    #
+    local LastCurtime = Q["block1/curtime", number]
+    local Curtime = Q["block1/curtime", number] = curtime()
+    local Interval = Curtime - LastCurtime
+    local Loop = Interval / 0.015625
+    ####
+    #
+    #
+    #
+    
+    if(Q["pod", entity]) {
+        if(changed(0)) {
+            
+            local Pod = Q["pod", entity]
+            cameraCreate(0, Pod:pos() + vec(0,0,50), ang())
+            
+            
+            
+            Settings["interface/#showCursor"    , string] = "C"
+            Settings["interface/#leftClick"     , string] = "keyAttack1"
+            
+            Language["interface/#showCursor"    , string] = "Показать курсор"
+            Language["interface/#leftClick"     , string] = "Левый клик"
+            
+            
+            Settings["camera/settings/$vel"    , number] = 10
+            Settings["camera/settings/$altVel" , number] = 100
+            Settings["camera/settings/#forward", string] = "keyForward"
+            Settings["camera/settings/#back"   , string] = "keyBack"
+            Settings["camera/settings/#left"   , string] = "keyLeft"
+            Settings["camera/settings/#right"  , string] = "keyRight"
+            Settings["camera/settings/#up"     , string] = "keyJump"
+            Settings["camera/settings/#down"   , string] = "keyWalk"
+            Settings["camera/settings/#altVel" , string] = "keySprint"
+            Settings["camera/settings/#rootZ"  , string] = "keyDuck"
+            Settings["camera/settings/!rootZ"  , number] = 0
+            Settings["camera/settings/list"    , array ] = array("$vel", "$altVel", "#altVel", "#forward", "#back", "#left", "#right", "#up", "#down", "#rootZ")
+            
+            Language["camera/settings/title"   , string] = "Параметры камеры"
+            Language["camera/settings/$vel"    , string] = "Скорость"
+            Language["camera/settings/$altVel" , string] = "Альтернативная скорость"
+            Language["camera/settings/#forward", string] = "Вперёд"
+            Language["camera/settings/#back"   , string] = "Назад"
+            Language["camera/settings/#left"   , string] = "Влево"
+            Language["camera/settings/#right"  , string] = "Вправо"
+            Language["camera/settings/#up"     , string] = "Вверх"
+            Language["camera/settings/#down"   , string] = "Вниз"
+            Language["camera/settings/#altVel" , string] = "Альтернативная скорость"
+            Language["camera/settings/#rootZ"  , string] = "Блокоривка вращения Z"
+        }
+        
+        
+        
+        local Pod = Q["pod", entity]
+        local User = Pod:driver()
+        
+        if(changed(User)) {
+            
+            Q["user", entity] = User
+            cameraToggle(0, User|0, Pod)
+            # / - derectory
+            # # - key
+            # $ - value
+        }
+        
+        
+        if(User) {
+            
+            local User_eyeA = User:eyeAngles()
+            local User_LeyeA = angnorm(Pod:toLocal(User_eyeA)-ang(0,90,0))
+            
+            local KeyForward = User:userKey(Settings["camera/settings/#forward", string])
+            local KeyBack    = User:userKey(Settings["camera/settings/#back"   , string])
+            local KeyLeft    = User:userKey(Settings["camera/settings/#left"   , string])
+            local KeyRight   = User:userKey(Settings["camera/settings/#right"  , string])
+            local KeyJump    = User:userKey(Settings["camera/settings/#up"     , string])
+            local KeyWalk    = User:userKey(Settings["camera/settings/#down"   , string])
+            local KeySprint  = User:userKey(Settings["camera/settings/#altVel" , string])
+            local KeyDuck    = User:userKey(Settings["camera/settings/#rootZ"  , string])
+            if(changed(KeyDuck) & KeyDuck) {
+                Settings["camera/settings/!rootZ", number] = !Settings["camera/settings/!rootZ", number]
+            }
+            
+            local KeyV = vec(KeyForward-KeyBack,KeyLeft-KeyRight,KeyJump-KeyWalk)
+            local Key = KeyV!=vec()
+            
+            
+            local CameraSettingsVel = (KeySprint ? Settings["camera/settings/$altVel", number] : Settings["camera/settings/$vel", number])
+            local CameraVel = Q["camera/vel", number]
+            local CameraVel = Q["camera/vel", number] = CameraVel + clamp((Key * CameraSettingsVel - CameraVel) / max(1 / Loop,1) ,-CameraSettingsVel*0.5,CameraSettingsVel*0.05)
+            local CameraVelV = KeyV:normalized():rotate(User_LeyeA * ang(Settings["camera/settings/!rootZ", number] ,1,1)) * CameraVel
+            local CameraAng = Q["camera/ang", angle] = User_LeyeA
+            local CameraPos = cameraPos(0) + CameraVelV
+            
+            
+            cameraAng(0, CameraAng)
+            cameraPos(0, CameraPos)
+        }
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    if(Q["egp", entity]) {
+        if(changed(0)) {
+            
+            egpSelect(Q["egp", entity]:wirelink())
+            egpClear()
+            
+            spawn_objectList()
+            listing_objectList()
+            
+            
+            egpAddCircle("cursor", v(), v(2), "o")
+            
+            
+            #spawnCameraMenu()
+            #[
+            spawnPanel("testPanel", v(700, 930), v(400,250))
+            spawnPanel("testPanel/Title", "testPanel", "top", v(0,20))
+            egpSetColor(20)
+            spawnPanel("testPanel/Title/close", "testPanel/Title", "right", v(20,20))
+            egpSetColor(40)
+            ]#
+        }
+        
+        local User = Q["user", entity]
+        
+        local KeyClick = User:userKey(Settings["interface/#leftClick", string])
+        
+        if(User:userKey(Settings["interface/#showCursor", string])) {
+            cursorPos(User)
+            local CursorPos = Q["cursorPos", vector2]
+            egpSetPos("cursor", CursorPos)
+            
+            if(changed(KeyClick) & KeyClick) {
+                local CursorTarget = cursorTarget("cursorTargets")
+                
+                if(CursorTarget) {
+                    addAct(CursorTarget)
+                }
+            }
+        }
+        
+        
+        local Clear = array()
+        foreach(C, Act_i:number = Q["acts", array]) {
+            local Act_n = Q[Act_i + "/act/name", string]
+            
+            local NoRemove = 0
+            switch(Act_n) {
+                case "cameraMenuBase",
+                    
+                    local CursorPos = Q["cursorPos", vector2]
+                    local Base_n = "cameraMenuBase"
+                    local Base_s = egpGetSize(Base_n)
+                    local Base_p = egpGetPos(Base_n)
+                    local LocalCursorPos = CursorPos - Base_p
+                    
+                    local Lock = Q["cameraMenuBase/lock", number]
+                    if(!Lock) {
+                        local FontSize = Q["fontSize", number ]
+                        local Indent   = Q["indent"  , number ]
+                        
+                        local String = ceil((LocalCursorPos[2]+Base_s[2]/2) / FontSize)
+                        
+                        if(String != 1) {
+                            String--
+                            
+                            if(LocalCursorPos[1] >= Q["cameraMenuTextOffset", number]-Base_s[1]/2) {
+                                #Q["cameraMenuBase/lock", number] = 0
+                            }
+                        }
+                        else {
+                            Q["cameraMenuBase/lock", number] = 0 #1
+                        }
+                    }
+                    NoRemove = Lock
+                break
+                case "",
+                    
+                break
+            }
+            if(!NoRemove) {
+                Clear = array(C):add(Clear)
+            }
+        }
+        foreach(C, I:number = Clear) {
+            Q["acts", array]:remove(I)
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+OPS = ops()
+
+

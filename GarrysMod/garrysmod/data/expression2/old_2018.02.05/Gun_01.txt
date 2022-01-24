@@ -1,0 +1,80 @@
+@name Gun_01
+
+@inputs [Pod]:entity W:wirelink
+@outputs 
+@persist [E]:entity LastGet Cons:array
+
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+
+if(changed(0)) {
+    
+    E = entity() E:setSkin(1)
+    
+    holoCreate(1, E:toWorld(vec(0,0,15)), -vec(0.1),ang(),vec(255,10,10),"hq_sphere") holoParent(1, E)
+    
+    
+    local H = holoCreate(2, vec(),vec())
+    W:egp3DTracker(1, H:pos())
+    W:egpParent(1, H)
+    W:egpCircleOutline(2, vec2(5), vec2(5))
+    W:egpParent(2, 1)
+    
+    timer("", 1)
+}
+
+if(clk("")) {
+        timer("", 50)
+    
+    local User = Pod:isWeldedTo() ? Pod:driver() : noentity()
+    local Key_fire = User:keyAttack1()
+    
+    
+    local Curtime = curtime()
+    if(curtime() - LastGet >= 5) {
+        LastGet = curtime()
+        Cons = E:getConstraints()
+    }
+    
+    
+    local Pos = User:shootPos()
+    local Eye = User:eye()
+    
+    rangerFilter(Cons)
+    local R = rangerOffsetHull(5000, Pos, Eye,vec(10))
+    if(R:distance() > 130) {
+        local Pos = E:toWorld(vec(0,0,15))
+        local Dir = (R:pos()-Pos):normalized()
+        if(Key_fire) {
+            E:shootTo(Pos,Dir,0.008,10,10,"")
+        }
+        holoPos(2, R:pos())
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

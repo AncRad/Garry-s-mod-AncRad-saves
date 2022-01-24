@@ -1,0 +1,88 @@
+@name Turret_01_ropeTest_01
+
+@inputs [P1 P2]:entity
+@outputs L
+@persist [H1 H2]:entity Curtime DIS
+
+
+
+if(changed(0)) {
+    
+    
+    #VL1 = P1:boxSize()*vec(0.5,0.5,0.5)*0
+    #VL2 = P2:boxSize()*vec(0.5,0.5,0.5)*0
+    H1 = holoCreate(1, P1:toWorld(vec()), vec(-0.1), P1:angles()) holoParent(1, P1)
+    H2 = holoCreate(2, P2:toWorld(vec()), vec(-0.1), P2:angles()) holoParent(2, P2)
+    #H1 = holoCreate(1, P1:boxCenterW() + (P1:boxSize()*vec(0,0,15)):rotate(P1:angles()), vec(-0.1), P1:angles()) holoParent(1, P1)
+    #H2 = holoCreate(2, P2:boxCenterW() + (P2:boxSize()*vec(0,0,0.5)):rotate(P2:angles()), vec(-0.1), P2:angles()) holoParent(2, P2)
+    
+    
+    local Beam = P1:drawBeam("cable/cable2",H1:pos(),H2:pos(),vec(255),5,2,0,0)
+    Beam:setBeamEndEnt(H2)
+    Beam:removeOnDelete(H1)
+    
+    P1:setMass(50)
+    P2:setMass(50)
+    
+    L = H1:pos():distance(H2:pos())
+    
+}
+
+
+
+timer("", 25)
+
+
+LastCurtime = Curtime
+Curtime = curtime()
+Interval = Curtime - LastCurtime
+if(changed(0)) {Interval = 0}
+
+
+L = max(L + Interval * 52.5 * 10 * (owner():keyPressed("mouse_4")-owner():keyPressed("mouse_5")),0)
+
+
+Pos1 = H1:pos()
+Pos2 = H2:pos()
+
+DIF = Pos1 - Pos2
+NORM = DIF:normalized()
+LastDis = DIS
+DIS = DIF:length()
+DISVEL = (DIS - LastDis) / Interval
+
+Dif = L - DIS
+F = NORM * (Dif < 0 ? (clamp(Dif*5,-300,300) - DISVEL/2) : 0) * 1000 * Interval
+
+F1 = F
+F2 = -F
+
+#P1:applyOffsetForce(F1,Pos1)
+P2:applyOffsetForce(F2,Pos2)
+
+
+
+
+
+
+setName("Turret_01_ropeTest_01\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1e6) + "\nInterval: " + Interval + "\nDIF: " + floor(Dif))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

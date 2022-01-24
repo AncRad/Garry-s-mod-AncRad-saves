@@ -1,0 +1,111 @@
+@name board
+@persist [O E Board]:entity LS:string
+
+
+
+if(changed(0)) {
+    
+    E = entity()
+    O = owner()
+    Board = E:isWeldedTo()
+    runOnChat(1)
+    runOnKeys(O, 1)
+    
+}
+
+if(chatClk(O) | O:keyPressed("E")) {
+    
+    local NewLS = O:lastSaid()
+    if(NewLS:left(1) == "!") {
+        LS = NewLS:right(NewLS:length()-1)
+    }
+    
+    if(LS) {
+        local S = O:aimEntity()
+        local Ex = LS:explode(" ")
+        local Ex_1 = Ex[1, string]
+        if(Ex_1 == "color" | Ex_1 == "c") {
+            if(S == Board | S:type() == "gmod_wire_textscreen") {
+                local Color = vec()
+                if(Ex:count() == 2) {
+                    Color = vec(Ex[2, string]:toNumber())
+                }
+                else {
+                    Color[1] = Ex[2, string]:toNumber()
+                    Color[2] = Ex[3, string]:toNumber()
+                    Color[3] = Ex[4, string]:toNumber()
+                }
+                
+                S:setColor(Color)
+            }
+        }
+        elseif(Ex_1 == "clear") {
+            local Cons = Board:getConstraints()
+            
+            for(C = 1, Cons:count()) {
+                local Ent = Cons[1, entity]
+                if(Ent != E) {
+                    Ent:remove()
+                }
+            }
+            E:propFreeze(1)
+            Board:propFreeze(1)
+            Board:unConstrain()
+            E:weldTo(Board, 0)
+        }
+        else {
+            if(S:type() == "gmod_wire_textscreen" & S:isWeldedTo() == Board) {
+                local S_w = S:wirelink()
+                S_w["String", string] = LS
+            }
+        }
+        hideChat(1)
+    }
+}
+
+#[
+if(O:keyPressed("E") & LS) {
+    local S = O:aimEntity() print(S:type())
+    if(S:type() == "gmod_wire_textscreen") {
+        local S_w = S:wirelink()
+        S_w["String", string] = LS
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

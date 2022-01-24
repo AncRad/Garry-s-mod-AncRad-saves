@@ -1,0 +1,123 @@
+@name XVOST
+
+@outputs T
+@persist [O E]:entity [Scale Gravity]:vector ThickZ Amount
+
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+if(changed(0)) {
+    
+    
+    Amount = 21
+    ThickX = 0.1
+    ThickY = 0.1
+    ThickZ = 0.15
+    ColorSpeed = 1
+    Gravity = vec(0,0,2)
+    
+    
+    
+    E = entity() E:setSkin(1)
+    O = owner()
+    
+    
+    local Scale1 = vec(ThickX,ThickY,ThickZ*1.5)
+    local Scale2 = -Scale1*vec(1.05)-vec(0.05)
+    for(I = 1,Amount) {
+        #local Scale = vec(ThickX+I/Amount*0.1,ThickY+I/Amount*0.1,ThickZ*1.5)
+        holoCreate(I, vec(), Scale1, ang(), vec(), "hq_rcylinder_thick")
+        holoMaterial(I, "lights/white")
+        #holoParent(I, I-1)
+        
+        holoCreate(I+Amount, vec(), Scale2, ang(), vec(), "hq_rcylinder_thick")
+        holoMaterial(I+Amount, "lights/white")
+        holoParent(I+Amount,I)
+    }
+    
+    local Var = "loli"
+    if(Var == "tyan") {
+        holoPos(1, O:attachmentPos("chest"))
+        holoAng(1, O:attachmentAng("chest"))
+        holoParentAttachment(1, O, "chest")
+        local H = holoEntity(1)
+        holoPos(1, H:toWorld(vec(-5,0,-13)))
+        holoAng(1, H:toWorld(ang(180,0,0)))
+        E = H
+    }
+    if(Var == "loli") {
+        holoPos(1, O:attachmentPos("chest"))
+        holoAng(1, O:attachmentAng("chest"))
+        holoParentAttachment(1, O, "chest")
+        local H = holoEntity(1)
+        holoPos(1, H:toWorld(vec(-4,0,-6)))
+        holoAng(1, H:toWorld(ang(180,0,0)))
+        E = H
+    }
+    else {
+        holoPos(1, E:pos())
+        holoAng(1, E:angles())
+        holoParent(1, E)
+    }
+    
+    
+    holoScale(Amount, vec(0.35))
+    holoModel(Amount,"hq_sphere")
+    holoScale(Amount*2, -vec(0.40))
+    holoModel(Amount*2,"hq_sphere")
+    
+    
+    timer("", 1)
+}
+
+
+if(clk("")) {
+        timer("", 35)
+    
+    local G = 0
+    for(I = 1,Amount) {
+        if(I == 1){
+            #holoPos(I,E:pos())
+            #Ang = (holoEntity(I+1):pos()-E:pos()+E:up()*6):toAngle()+ang(90,0,0)
+            #holoAng(I,Ang)
+            G = (1-abs(E:up()[3]))^0.2
+        }
+        else {
+            #local Holo_e = holoEntity(I)
+            local Holo2_e = holoEntity(I-1)
+            local Holo2_p = Holo2_e:pos()
+            
+            holoPos(I,Holo2_p+Holo2_e:up()*ThickZ*12)
+            Ang = (holoEntity(I+1):pos() - Holo2_p + Gravity*(I/Amount)^1.8 * vec(1,1,G)):toAngle() + ang(90,0,0)
+            holoAng(I,Ang)
+        }
+        
+        T += 0.01
+        Color = (I*ColorSpeed)-T%360
+        holoColor(I, hsv2rgb(Color,1,1))
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,146 @@
+@name UMP_0.2
+
+@inputs 
+@outputs 
+@persist [E O]:entity
+
+
+@persist [User]:entity # [Q]:table
+
+@persist [EGP_color1 EGP_color2 EGP_color3 EGP_color4 EGP_color5]:vector
+@persist [ActList]:table
+
+#@persist [HTTP_status]:string [HTTP_requestList]:table HTTP_maxTime DATA:table
+
+@persist 
+
+
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+
+if(changed(0)) {
+    
+    #include "EGPS"
+    
+    E = entity() E:setSkin(1)
+    O = owner()
+    User = O
+    
+    noDuplications()
+    runOnChat(1)
+    runOnHTTP(1)
+    
+    
+    
+    
+    function string parser_request([Parser_name Request_song]:string) {
+        switch(Parser_name) {
+            case "music-pesni.ru", return "http://music-pesni.ru/mp3-music/" + httpUrlEncode(Request_song)
+            default, return ""
+        }
+    }
+    function table parser_data([Parser_name HTTP_data]:string) {
+        switch(Parser_name) {
+            case "music-pesni.ru",
+                local HTTP_data = HTTP_data:replace("&quot;", "\""):replace("&amp;", "&"):replace("&lt;", "<"):replace("&gt;", ">")
+                local DATA = table(
+                    "url"   = HTTP_data:gmatch("/play/[0-9a-zA-Z+%%]*"),
+                    "name1" = HTTP_data:gmatch("class%=\"author\"%>%<span class%=\"b%-link%_%_inner\" onclick%=\"getText%_author%(this%)%;scroll%(0%,0%)%; return false\"%>(.-)%<"),
+                    "name2" = HTTP_data:gmatch("class%=\"song\"%>%<span class%=\"b%-link%_%_inner\" onclick%=\"getText%_author%(this%)%;scroll%(0%,0%)%; return false\"%>(.-)%<"),
+                    "time"  = HTTP_data:gmatch("duration%-real\"%>([0-9%:]*)%<")
+                )
+            return DATA
+            default, return table()
+        }
+    }
+    function table table:parser_data(Parser_name:string, Song_i:number) {
+        switch(Parser_name) {
+            case "music-pesni.ru",
+                
+                This[,table][Song_i, array]
+                
+            return This
+            default, return table()
+        }
+    }
+    
+    
+    
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName("Universal E2 music player\nvresion 0.2\nOPS: " + ops() + "\nCPU: " + round(cpuUsage()*1e6))

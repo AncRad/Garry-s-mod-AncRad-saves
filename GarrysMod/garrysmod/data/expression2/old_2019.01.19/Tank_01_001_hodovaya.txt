@@ -1,0 +1,212 @@
+@name Tank_01_001_hodovaya
+
+@inputs [Base LW_e RW_e  AirCover ExhaustCover]:entity
+@inputs [Pod]:entity
+
+@outputs Debug:string
+
+@persist [E O]:entity
+
+@persist [Q]:table Control:vector
+
+@persist Temperature ExhaustPressure
+
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+
+if(changed(0)) {
+    
+    E = entity() E:setSkin(1)
+    O = owner()
+    
+    Q["constraints", array] = entity():isWeldedTo():getConstraints()
+    
+    
+    timer("user", 1)
+    timer("control", 1)
+    timer("control_2", 1)
+}
+
+
+if(clk("user")) {
+    
+    
+    local User = Pod:driver()
+    
+    
+    if(User) {
+        
+        local Key_W = User:keyForward()
+        local Key_A = User:keyLeft()
+        local Key_S = User:keyBack()
+        local Key_D = User:keyRight()
+        Control = vec(Key_W-Key_S,Key_A-Key_D,0)
+    }
+    
+    if(changed(User) & !User) {
+        Control = vec()
+    }
+    
+    
+    timer("user", User ? 50 : 200)
+}
+
+
+if(clk("control")) {
+        timer("control", 50)
+    
+    if(changed(0)) {
+        
+        Q["control/lastCurtime", number] = curtime()
+        
+        
+    }
+    
+    local Constraints = Q["constraints", array]
+    while(Constraints:count() & perf(90)) {
+        local E = Constraints:removeEntity(1)
+        #ifdef entity:propBuoyancy(number)
+            E:propBuoyancy(0)
+        #endif
+        E:propPhysicalMaterial("metal")
+    }
+    
+    
+    
+    
+    local LastCurtime = Q["control/lastCurtime", number]
+    local Curtime = curtime() Q["control/lastCurtime", number] = Curtime
+    local Interval = Curtime - LastCurtime
+    local Loop = Interval / 0.015625
+    
+    
+    
+    
+    
+     LV =  LW_e:angVel()[1]
+     RV = -RW_e:angVel()[1]
+    
+    LF = 0
+    RF = 0
+    
+    LW_e:applyAngForce(ang( LF*500*Loop,0,0))
+    RW_e:applyAngForce(ang(-RF*500*Loop,0,0))
+    
+    
+    local LF = Q["LF", number]
+    
+    local F = clamp(Base:toLocal(ExhaustCover:angles())[3],0,55)
+    Q["LF", number] = F
+    
+    A = angnorm(F-LF)
+    
+}
+
+if(clk("control_2")) {
+        timer("control_2", 25)
+    
+    if(changed(0)) {
+        
+        Q["control_2/lastCurtime", number] = curtime()
+        
+    }
+    local LastCurtime = Q["control_2/lastCurtime", number]
+    local Curtime = curtime() Q["control_2/lastCurtime", number] = Curtime
+    local Interval = Curtime - LastCurtime
+    local Loop = Interval / 0.015625
+    
+    
+    
+    
+    
+    local A = clamp(Base:toLocal(AirCover:angles())[3],0,55)
+    local F = (min(Temperature,80) - (A+20))*5 - AirCover:angVel()[3]/50
+    AirCover:applyAngForce(ang(0,0,F*AirCover:mass()*Loop))
+    
+    local A = clamp(Base:toLocal(ExhaustCover:angles())[3],0,55)
+    local F = (min(ExhaustPressure,80) - (A+20))*5 - ExhaustCover:angVel()[3]/50
+    ExhaustCover:applyAngForce(ang(0,0,F*ExhaustCover:mass()*Loop))
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName("Tank_01_001_hodovaya\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1e6))
+if(dupefinished()) {reset()}

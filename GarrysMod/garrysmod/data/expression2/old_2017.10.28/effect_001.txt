@@ -1,0 +1,139 @@
+@name effect 001
+
+@inputs 
+@outputs 
+@persist [E O]:entity [Q]:table
+
+@trigger none
+
+
+
+if(changed(0)) {
+    
+    E = entity()
+    O = owner()
+    
+    
+    local H = Q["holo", entity] = holoCreate(0, E:toWorld(vec(0,0,30)), vec(-10/6)*0, E:toWorld(ang()), vec(), "icosphere2") holoMaterial(0, "models/wireframe")
+    holoParent(0, E)
+    
+    #local S1 = Q["sprite1", entity] = H:drawSprite("sprites/heatwave", Pos, vec(), 0, 20, 20)
+    #local S2 = Q["sprite2", entity] = H:drawSprite("sprites/light_glow01", Pos, vec(), 0, 300, 300)
+    #local S3 = Q["sprite3", entity] = H:drawSprite("sprites/light_glow01", Pos, vec(), 0, 300, 300)
+    #local S4 = Q["sprite4", entity] = H:drawSprite("sprites/light_glow01", Pos, vec(), 0, 1200, 15)
+    
+    #[
+    sprites/heatwave
+    sprites/light_glow01
+    
+    
+    ]#
+    
+    Q["quad1", entity] = H:drawQuad("sprites/heatwave"    , H:toWorld(vec(0,0,0)), H:toWorld(ang()), vec(255,255,255), 255, 150, 150)
+    Q["quad2", entity] = H:drawQuad("sprites/light_glow01", H:toWorld(vec(0,0,2)), H:toWorld(ang()), vec(255,50,50), 255, 150, 150)
+    Q["quad2", entity] = H:drawQuad("sprites/light_glow01", H:toWorld(vec(0,0,2)), H:toWorld(ang()), vec(255,150,0), 255, 75, 500)
+    
+    
+    timer("", 1)
+}
+
+
+if(clk("")) {
+        timer("", 50)
+    
+    if(changed(0)) {
+        
+        Q["curtime", number] = curtime()
+    }
+    local LastCurtime = Q["curtime", number]
+    local Curtime = Q["curtime", number] = curtime()
+    local Interval = Curtime - LastCurtime
+    
+    
+    local T = Q["time", number]
+    
+    local H  = Q["holo"   , entity]
+    local S1 = Q["sprite1", entity]
+    local S2 = Q["sprite2", entity]
+    local S3 = Q["sprite2", entity]
+    
+    local Size = 1 - min(T/1,1)
+    
+    
+    Q["time", number] = T + Interval
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

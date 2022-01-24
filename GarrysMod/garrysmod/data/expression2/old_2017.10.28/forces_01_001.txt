@@ -1,0 +1,121 @@
+@name forces 01 001
+
+@inputs 
+@outputs 
+@persist [E O H]:entity [Q]:table
+
+@trigger none
+@model models/hunter/plates/plate025x05.mdl
+
+
+
+if(changed(0)) {
+    
+    E = entity()
+    O = owner()
+    
+    
+    
+    
+    timer("", 1)
+}
+
+if(clk("")) {
+        timer("", 1)
+    
+    if(changed(0)) {
+        
+        E:setMass(10)
+        E:propFreeze(0)
+        
+        
+        H = holoCreate(1, E:boxCenterW(), vec(), E:toWorld(ang(0,0,90)))
+        holoParent(1, E)
+        
+        Q["lastCurtime", number] = curtime()
+    }
+    local LastCurtime = Q["lastCurtime", number]
+    local Curtime = Q["lastCurtime", number] = curtime()
+    Q["lastCurtime", number] = Curtime
+    local Interval = Curtime - LastCurtime
+    local Loop = Interval / 0.015625
+    
+    local Mass = E:mass()
+    
+    
+    local V = vec(0,0,9.2) - E:vel() / 8
+    E:applyForce(V * Mass * Loop)
+    
+    local LHA = Q["HA", angle]
+    local HA = Q["HA", angle] = H:angles()
+    local DHA = HA - LHA
+    
+    local A = ((ang(0,0,0)-H:angles()) * 3) * Loop - E:angVel() / 4
+    E:applyAngForce(A * Mass)
+    
+    
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

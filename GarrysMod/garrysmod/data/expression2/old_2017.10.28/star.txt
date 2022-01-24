@@ -1,0 +1,183 @@
+@name star
+@inputs 
+@outputs 
+@persist [E O Target Box]:entity [Q]:table [Color SP]:vector Start
+@model models/sprops/geometry/fhex_12.mdl
+
+
+
+#include "AddHolo"
+if(changed(0)) {
+    
+    O = owner()
+    E = entity()
+    
+    #сделать разбовающиеся звёздочки как слизни в майне
+    
+    runOnKeys(O, 1)
+}
+
+if(changed(Box:type()) & !Box & Start) {
+    Target = findPlayerByName("Marmella")
+    timer("1", 150)
+    timer("", 1)
+    
+    E:setPos(SP)
+}
+elseif(Box & Start) {
+    SP = Box:boxCenterW()
+}
+else {
+    interval(50)
+}
+
+if(clk("")) {
+        timer("", 1)
+    
+    if(changed(0)) {
+        
+    local Scale = 0.3
+        addHolo("test", vec(0,0,-8*Scale), vec(Scale), ang(0,90,0), vec(255), "models/balloons/balloon_star.mdl", "", "") #lights/white
+        addHoloINTO(E)
+        E:propDraw(0)
+        
+        
+        
+        local Pos = E:toWorld(vec(0,0,0))
+        local H = Q["holo", entity] = holoCreate(0, Pos, vec(-10/6)*0, ang(), vec(), "icosphere2") holoMaterial(0, "models/wireframe")
+        holoParent(0, E)
+        
+        local S2 = Q["sprite2", entity] = H:drawSprite("sprites/light_glow01", Pos, vec(0,100,255), 255, 100, 100)
+        local S3 = Q["sprite3", entity] = H:drawSprite("sprites/light_glow01", Pos, vec(0,0,255), 255, 100, 100)
+        local S4 = Q["sprite4", entity] = H:drawSprite("sprites/light_glow01", Pos, vec(100,100,255), 255, 1200, 15)
+        local L  = Q[";", entity] = H:setdLight(Pos, vec(), 1, 150, 0)
+        
+        #[
+        sprites/heatwave
+        sprites/light_glow01
+        
+        
+        ]#
+        
+        E:propFreeze(0)
+        E:propNotSolid(0)
+    }
+    
+    Color = hsv2rgb((curtime() * 10) % 360, 1, 1)
+    holoEntity(1):setColor(Color)
+    
+    
+    local TP = Target:pos()
+    
+    local P = E:pos()
+    
+    rangerFilter(E)
+    local R = rangerOffset(60, P, vec(0,0,-1))
+    local Dist = clamp(60-R:distance() -30,-5,5)
+    local V = vec(0,0,9 + Dist) - E:vel() / 10
+    E:applyForce(V * E:mass())
+    
+    local A = -E:angles():setYaw(0) - E:angVel() / 10 * ang(1,0.01,1) + ang(0,0.1,0)
+    E:applyAngForce(A * E:mass())
+    
+    
+    
+    
+    local H  = Q["holo"   , entity]
+    local S2 = Q["sprite2", entity]
+    local S3 = Q["sprite3", entity]
+    local S4 = Q["sprite4", entity]
+    local L  = Q[";", entity]
+    
+    local S1_s = 30
+    local S1_sx = S1_s
+    local S1_sy = S1_s * 2 + sin(curtime() * 30) * 15
+    S2:spriteSize(S1_sy, S1_sx * 2)
+    
+    findIncludeClass("player")
+    findInSphere(P, 100)
+    Target = find()
+    
+    if(Target:aimEntity() == E) {
+        if(Target:aimPos():distance(Target:shootPos()) < 60 & Target:keyUse()) {
+            timer("2", 1)
+            holoAlpha(1, 0)
+        }
+    }
+}
+
+if(clk("1")) {
+        timer("1", 150)
+    
+    
+    local V = randvec(-3,3)
+    local Pos = E:pos() + V
+    local Vel = V * 2
+    particleGravity(vec(0,0,-150))
+    particle(1, 5, 0, "particle/particle_glow_0" + randint(2,5) , Color, Pos, Vel, 0, 0, 255, 0)
+    
+    
+}
+
+
+
+
+
+
+if(clk("2")) {
+        timer("2", 50)
+    
+    if(changed(0)) {
+        stoptimer("1")
+        stoptimer("")
+        Target:soundPlay("", 10, "buttons/button19.wav") soundPitch("", 100)
+        E:propFreeze(1)
+        E:propNotSolid(1)
+        Q["T", number] = 1
+    }
+    
+    local T = Q["T", number]
+    Q["T", number] = T = max(T - 0.05,0)
+    
+    local S2 = Q["sprite2", entity]
+    local S3 = Q["sprite3", entity]
+    local S4 = Q["sprite4", entity]
+    local L  = Q[";", entity]
+    local Color = Color * T
+    S2:setColor(Color)
+    S3:setColor(Color)
+    S4:setColor(Color)
+    L:setColor(Color)
+    
+    if(T == 0) {
+        stoptimer("2")
+        Target:soundPlay("end", 5, "garrysmod/save_load4.wav")
+        Target:psGive(8888)
+        E:remove(5)
+    }
+}
+
+
+
+
+K = O:keyPressed("mouse_5")
+if(changed(K) & K & !Start) {
+    Box = propSpawn("models/props_junk/wood_crate001a.mdl", O:aimPos() + vec(0,0,20), ang(), 0)
+    Box:propFreeze(0)
+    runOnKeys(O, 0)
+    interval(50)
+    Start = 1
+}
+
+
+
+
+
+
+
+
+
+
+#models/balloons/balloon_classicheart.mdl
+#models/maxofs2d/balloon_classic.mdl
+

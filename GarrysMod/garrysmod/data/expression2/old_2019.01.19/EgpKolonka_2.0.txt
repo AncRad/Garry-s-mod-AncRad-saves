@@ -1,0 +1,797 @@
+@name EgpKolonka_2.0
+@inputs 
+@outputs 
+@outputs W:wirelink [Find RadioList]:table [Zay TempUrl LastReqvest]:string Egp:entity TimePlay:array
+@outputs List Vol Mix Radio Cycle IsLoad IsPlaying#Sound
+@persist FindOb1 FindOb2 FindOb3 FindOb4 LeftTringleButton ListText VolText RadioButton CycleText MixText PlayingText
+@persist StopButton FuncButton TimeText PlayButton LeftButton RightButton
+@persist [ColFind ColUpBox ColLeftBox ColBackGraund ColTime ColTimePos ColRadio]:vector
+@trigger 
+
+#https://i.imgur.com/4H5aEpj.png
+
+if(first()){
+#noDuplications()
+
+hint("by Artur200320081",1)
+hint("V 1.0",1)
+hint("EgpKolonka_2.0",1)
+
+runOnHTTP(1)
+runOnChat(1)
+runOnSoundURL(1)
+runOnKeys(owner(),1,array("mouse_left","e"))
+
+function void finding(FINDING:string){
+httpRequest("http://go.mail.ru/zaycev?q="+httpUrlEncode(FINDING))}
+
+function void sul(Url:string){
+soundURLPurge()
+soundURLload("ek2",Url,Vol/100,0,owner())
+#print(Url)
+}
+
+function void wirelink:egpGUI(){
+This:egpClear()
+
+ColFind = vec(200,235,245)
+ColUpBox = vec(0,160,230)
+ColLeftBox = vec(235,250,250)
+ColBackGraund = vec(255,255,255)
+ColTime = vec(0,85,110)
+ColTimePos = vec(125,210,235)
+ColRadio = vec(100,200,230)
+ColRad = 3
+Interface = 1
+#back
+#index 1
+This:egpBox(Interface,vec2(256),vec2(512))
+This:egpColor(Interface,ColBackGraund)
+
+#UpBox
+#index 2-7
+Interface++
+This:egpBox(Interface,vec2(256,24),vec2(512,48))
+This:egpColor(Interface,ColUpBox)
+Interface++
+This:egpText(Interface,"ZAYCEV.NET",vec2(16,12))
+This:egpFont(Interface,"calibri",24)
+This:egpColor(Interface,ColBackGraund)
+Interface++
+This:egpText(Interface,"player",vec2(148,16))
+This:egpFont(Interface,"calibri",18)
+This:egpColor(Interface,ColBackGraund)
+Interface++
+This:egpRoundedBox(Interface,vec2(360,24),vec2(270,30))
+This:egpRadius(Interface,ColRad)
+This:egpColor(Interface,ColFind)
+Interface++
+This:egpText(Interface,"FIND:",vec2(230,12))
+This:egpFont(Interface,"calibri",24)
+This:egpColor(Interface,ColUpBox)
+Interface++
+This:egpText(Interface,"(say !find <name>)",vec2(300,14))
+This:egpFont(Interface,"calibri",18)
+This:egpColor(Interface,ColUpBox)
+
+
+#LeftPanel
+#index 8-30
+Interface++
+This:egpBox(Interface,vec2(74,280),vec2(148,464))
+This:egpColor(Interface,ColLeftBox)
+Interface++
+This:egpBoxOutline(Interface,vec2(74,280),vec2(148,464))
+This:egpColor(Interface,ColFind)
+This:egpSize(Interface,ColRad)
+Interface++
+This:egpRoundedBox(Interface,vec2(74,128),vec2(110,36))
+This:egpRadius(Interface,ColRad)
+This:egpColor(Interface,ColFind)
+Interface++
+This:egpRoundedBox(Interface,vec2(74,208),vec2(110,36))
+This:egpRadius(Interface,ColRad)
+This:egpColor(Interface,ColFind)
+Interface++
+This:egpRoundedBox(Interface,vec2(74,288),vec2(110,36))
+This:egpRadius(Interface,ColRad)
+This:egpColor(Interface,ColFind)
+Interface++
+This:egpRoundedBoxOutline(Interface,vec2(74,358),vec2(110,36))
+This:egpRadius(Interface,ColRad)
+This:egpColor(Interface,ColUpBox)
+Interface++
+This:egpRoundedBox(Interface,vec2(74,358),vec2(110,36))
+This:egpRadius(Interface,ColRad)
+This:egpColor(Interface,ColUpBox)
+This:egpAlpha(Interface,0)
+Interface++
+This:egpRoundedBox(Interface,vec2(74,408),vec2(110,36))
+This:egpRadius(Interface,ColRad)
+This:egpColor(Interface,ColFind)
+
+
+Interface++
+This:egpText(Interface,"Volume:",vec2(37,88))
+This:egpFont(Interface,"calibri",18)
+This:egpColor(Interface,ColUpBox)
+Interface++
+This:egpText(Interface,"Cycle:",vec2(37,168))
+This:egpFont(Interface,"calibri",18)
+This:egpColor(Interface,ColUpBox)
+Interface++
+This:egpText(Interface,"Mix:",vec2(37,248))
+This:egpFont(Interface,"calibri",18)
+This:egpColor(Interface,ColUpBox)
+Interface++
+This:egpText(Interface,"Radio",vec2(45,345))
+This:egpFont(Interface,"calibri",24)
+This:egpColor(Interface,ColUpBox)
+
+Interface++
+This:egpText(Interface,"100",vec2(55,116))
+This:egpFont(Interface,"calibri",24)
+This:egpColor(Interface,ColUpBox)
+Interface++
+This:egpText(Interface,"Off",vec2(60,196))
+This:egpFont(Interface,"calibri",24)
+This:egpColor(Interface,ColUpBox)
+Interface++
+This:egpText(Interface,"Off",vec2(60,276))
+This:egpFont(Interface,"calibri",24)
+This:egpColor(Interface,ColUpBox)
+Interface++
+This:egpText(Interface,"L:1",vec2(60,395))
+This:egpFont(Interface,"calibri",24)
+This:egpColor(Interface,ColUpBox)
+
+Interface++
+This:egpTriangle(Interface,vec2(45,113),vec2(45,143),vec2(25,127))
+This:egpColor(Interface,ColUpBox)
+Interface++
+This:egpTriangle(Interface,vec2(105,113),vec2(105,143),vec2(125,127))
+This:egpColor(Interface,ColUpBox)
+
+Interface++
+This:egpTriangle(Interface,vec2(45,193),vec2(45,223),vec2(25,207))
+This:egpColor(Interface,ColUpBox)
+Interface++
+This:egpTriangle(Interface,vec2(105,193),vec2(105,223),vec2(125,207))
+This:egpColor(Interface,ColUpBox)
+
+Interface++
+This:egpTriangle(Interface,vec2(45,273),vec2(45,303),vec2(25,287))
+This:egpColor(Interface,ColUpBox)
+Interface++
+This:egpTriangle(Interface,vec2(105,273),vec2(105,303),vec2(125,287))
+This:egpColor(Interface,ColUpBox)
+
+Interface++
+This:egpTriangle(Interface,vec2(45,423),vec2(45,393),vec2(25,407))
+This:egpColor(Interface,ColUpBox)
+Interface++
+This:egpTriangle(Interface,vec2(105,423),vec2(105,393),vec2(125,407))
+This:egpColor(Interface,ColUpBox)
+
+
+#Time
+#index 31-35 +
+Interface++
+This:egpBox(Interface,vec2(256,476),vec2(512,72))
+This:egpColor(Interface,ColTime)
+Interface++
+This:egpRoundedBox(Interface,vec2(256,491),vec2(400,18))
+This:egpRadius(Interface,ColRad)
+This:egpColor(Interface,ColLeftBox)
+Interface++
+This:egpRoundedBoxOutline(Interface,vec2(256,491),vec2(400,18))
+This:egpRadius(Interface,ColRad)
+This:egpColor(Interface,ColUpBox)
+Interface++
+This:egpRoundedBox(Interface,vec2(56,492),vec2(12,19)) #56-456
+This:egpRadius(Interface,ColRad)
+This:egpColor(Interface,ColTimePos)
+Interface++
+This:egpRoundedBoxOutline(Interface,vec2(56,491),vec2(12,19)) #56-456
+This:egpRadius(Interface,ColRad)
+This:egpColor(Interface,ColUpBox)
+
+Interface++
+This:egpText(Interface,"00:00",vec2(3,480))
+This:egpColor(Interface,ColBackGraund)
+
+#panelControl
+#play
+Interface++
+This:egpCircle(Interface,vec2(20,460),vec2(15))
+This:egpRadius(Interface,ColRad)
+This:egpColor(Interface,ColFind)
+
+Interface++
+This:egpTriangle(Interface,vec2(15,450),vec2(15,470),vec2(30,460))
+This:egpColor(Interface,ColUpBox)
+#This:egpAlpha(Interface,0)
+
+Interface++
+This:egpBox(Interface,vec2(17,461),vec2(5,15))
+This:egpColor(Interface,ColUpBox)
+This:egpAlpha(Interface,0)
+Interface++
+This:egpBox(Interface,vec2(25,461),vec2(5,15))
+This:egpColor(Interface,ColUpBox)
+This:egpAlpha(Interface,0)
+#peremotka Left
+Interface++
+This:egpCircle(Interface,vec2(55,465),vec2(10))
+This:egpRadius(Interface,ColRad)
+This:egpColor(Interface,ColFind)
+Interface++
+This:egpTriangle(Interface,vec2(60,460),vec2(60,470),vec2(50,465))
+This:egpColor(Interface,ColUpBox)
+Interface++
+This:egpBox(Interface,vec2(50,465),vec2(3,10))
+This:egpColor(Interface,ColUpBox)
+#Stop
+Interface++
+This:egpCircle(Interface,vec2(80,465),vec2(10))
+This:egpRadius(Interface,ColRad)
+This:egpColor(Interface,ColFind)
+Interface++
+This:egpBox(Interface,vec2(80,465),vec2(10))
+This:egpColor(Interface,ColUpBox)
+#peremotka Right
+Interface++
+This:egpCircle(Interface,vec2(105,465),vec2(10))
+This:egpRadius(Interface,ColRad)
+This:egpColor(Interface,ColFind)
+Interface++
+This:egpTriangle(Interface,vec2(100,460),vec2(100,470),vec2(110,465))
+This:egpColor(Interface,ColUpBox)
+Interface++
+This:egpBox(Interface,vec2(110,465),vec2(3,10))
+This:egpColor(Interface,ColUpBox)
+#name Track
+Interface++
+This:egpRoundedBox(Interface,vec2(290,463),vec2(325,25))
+This:egpRadius(Interface,ColRad)
+This:egpColor(Interface,ColTimePos)
+Interface++
+This:egpText(Interface,"None music!",vec2(135,453))
+This:egpColor(Interface,ColBackGraund)
+#addon Func
+Interface++
+This:egpRoundedBox(Interface,vec2(485,490),vec2(50,20))
+This:egpRadius(Interface,ColRad)
+This:egpColor(Interface,ColUpBox)
+Interface++
+This:egpText(Interface,"Func",vec2(467,480))
+This:egpColor(Interface,ColBackGraund)
+
+
+#find
+#X = 148 -- 512       Y = 48 -- 440
+#space 9 | 8
+#count 10
+#height 40
+#index 36-67
+
+Interface++
+This:egpRoundedBox(Interface,vec2(330,74),vec2(355,40))
+This:egpRadius(Interface,ColRad)
+This:egpColor(Interface,ColLeftBox)
+Interface++
+This:egpRoundedBoxOutline(Interface,vec2(330,74),vec2(355,40))
+This:egpRadius(Interface,ColRad)
+This:egpColor(Interface,ColUpBox)
+Interface++
+This:egpTriangle(Interface,vec2(168,59),vec2(168,89),vec2(188,74))
+This:egpColor(Interface,ColUpBox)
+Interface++
+This:egpText(Interface,"None 1",vec2(200,64))
+This:egpColor(Interface,ColUpBox)
+
+Interface++
+This:egpRoundedBox(Interface,vec2(330,122),vec2(355,40))
+This:egpRadius(Interface,ColRad)
+This:egpColor(Interface,ColLeftBox)
+Interface++
+This:egpRoundedBoxOutline(Interface,vec2(330,122),vec2(355,40))
+This:egpRadius(Interface,ColRad)
+This:egpColor(Interface,ColUpBox)
+Interface++
+This:egpTriangle(Interface,vec2(168,107),vec2(168,137),vec2(188,122))
+This:egpColor(Interface,ColUpBox)
+Interface++
+This:egpText(Interface,"None 2",vec2(200,112))
+This:egpColor(Interface,ColUpBox)
+
+Interface++
+This:egpRoundedBox(Interface,vec2(330,170),vec2(355,40))
+This:egpRadius(Interface,ColRad)
+This:egpColor(Interface,ColLeftBox)
+Interface++
+This:egpRoundedBoxOutline(Interface,vec2(330,170),vec2(355,40))
+This:egpRadius(Interface,ColRad)
+This:egpColor(Interface,ColUpBox)
+Interface++
+This:egpTriangle(Interface,vec2(168,155),vec2(168,185),vec2(188,170))
+This:egpColor(Interface,ColUpBox)
+Interface++
+This:egpText(Interface,"None 3",vec2(200,160))
+This:egpColor(Interface,ColUpBox)
+
+Interface++
+This:egpRoundedBox(Interface,vec2(330,218),vec2(355,40))
+This:egpRadius(Interface,ColRad)
+This:egpColor(Interface,ColLeftBox)
+Interface++
+This:egpRoundedBoxOutline(Interface,vec2(330,218),vec2(355,40))
+This:egpRadius(Interface,ColRad)
+This:egpColor(Interface,ColUpBox)
+Interface++
+This:egpTriangle(Interface,vec2(168,203),vec2(168,233),vec2(188,218))
+This:egpColor(Interface,ColUpBox)
+Interface++
+This:egpText(Interface,"None 4",vec2(200,208))
+This:egpColor(Interface,ColUpBox)
+
+Interface++
+This:egpRoundedBox(Interface,vec2(330,266),vec2(355,40))
+This:egpRadius(Interface,ColRad)
+This:egpColor(Interface,ColLeftBox)
+Interface++
+This:egpRoundedBoxOutline(Interface,vec2(330,266),vec2(355,40))
+This:egpRadius(Interface,ColRad)
+This:egpColor(Interface,ColUpBox)
+Interface++
+This:egpTriangle(Interface,vec2(168,251),vec2(168,281),vec2(188,266))
+This:egpColor(Interface,ColUpBox)
+Interface++
+This:egpText(Interface,"None 5",vec2(200,256))
+This:egpColor(Interface,ColUpBox)
+
+Interface++
+This:egpRoundedBox(Interface,vec2(330,315),vec2(355,40))
+This:egpRadius(Interface,ColRad)
+This:egpColor(Interface,ColLeftBox)
+Interface++
+This:egpRoundedBoxOutline(Interface,vec2(330,315),vec2(355,40))
+This:egpRadius(Interface,ColRad)
+This:egpColor(Interface,ColUpBox)
+Interface++
+This:egpTriangle(Interface,vec2(168,300),vec2(168,330),vec2(188,315))
+This:egpColor(Interface,ColUpBox)
+Interface++
+This:egpText(Interface,"None 6",vec2(200,305))
+This:egpColor(Interface,ColUpBox)
+
+Interface++
+This:egpRoundedBox(Interface,vec2(330,364),vec2(355,40))
+This:egpRadius(Interface,ColRad)
+This:egpColor(Interface,ColLeftBox)
+Interface++
+This:egpRoundedBoxOutline(Interface,vec2(330,364),vec2(355,40))
+This:egpRadius(Interface,ColRad)
+This:egpColor(Interface,ColUpBox)
+Interface++
+This:egpTriangle(Interface,vec2(168,349),vec2(168,379),vec2(188,364))
+This:egpColor(Interface,ColUpBox)
+Interface++
+This:egpText(Interface,"None 7",vec2(200,354))
+This:egpColor(Interface,ColUpBox)
+
+Interface++
+This:egpRoundedBox(Interface,vec2(330,413),vec2(355,40))
+This:egpRadius(Interface,ColRad)
+This:egpColor(Interface,ColLeftBox)
+Interface++
+This:egpRoundedBoxOutline(Interface,vec2(330,413),vec2(355,40))
+This:egpRadius(Interface,ColRad)
+This:egpColor(Interface,ColUpBox)
+Interface++
+This:egpTriangle(Interface,vec2(168,398),vec2(168,428),vec2(188,413))
+This:egpColor(Interface,ColUpBox)
+Interface++
+This:egpText(Interface,"None 8",vec2(200,403))
+This:egpColor(Interface,ColUpBox)
+
+}
+
+function void listUpdate(){
+if(Radio){
+W:egpColor(RadioButton+6,ColLeftBox)
+W:egpAlpha(RadioButton+1,255)
+for(K=1,8){
+W:egpAlpha(FindOb1+K*4,0)
+W:egpAlpha(FindOb2+K*4,0)
+W:egpAlpha(FindOb3+K*4,0)
+W:egpAlpha(FindOb4+K*4,0)
+S = RadioList[K+(List-1)*8,array][1,string]
+W:egpSetText(FindOb4+K*4,S)
+if(S != ""){
+W:egpAlpha(FindOb1+K*4,255)
+W:egpAlpha(FindOb2+K*4,255)
+W:egpAlpha(FindOb3+K*4,255)
+W:egpAlpha(FindOb4+K*4,255)}}
+}else{
+W:egpColor(RadioButton+6,ColUpBox)
+W:egpAlpha(RadioButton+1,0)
+for(K=1,8){
+W:egpAlpha(FindOb1+K*4,0)
+W:egpAlpha(FindOb2+K*4,0)
+W:egpAlpha(FindOb3+K*4,0)
+W:egpAlpha(FindOb4+K*4,0)
+S = Find[K+(List-1)*8,array][2,string]
+W:egpSetText(FindOb4+K*4,S)
+if(S != ""){
+W:egpAlpha(FindOb1+K*4,255)
+W:egpAlpha(FindOb2+K*4,255)
+W:egpAlpha(FindOb3+K*4,255)
+W:egpAlpha(FindOb4+K*4,255)}}}
+
+W:egpSetText(ListText,"L:"+List:toString())
+}
+
+function void plays(NUMBER){
+TimePlay = array()
+stoptimer("time")
+if(!Radio){
+httpRequest(Find[NUMBER+(List-1)*8,array][1,string])
+W:egpSetText(PlayingText,Find[NUMBER+(List-1)*8,array][2,string])}else{
+sul(RadioList[NUMBER+(List-1)*8,array][2,string])
+W:egpSetText(PlayingText,RadioList[NUMBER+(List-1)*8,array][1,string])}
+IsPlaying = 1
+W:egpAlpha(PlayButton+1,0)
+W:egpAlpha(PlayButton+2,255)
+W:egpAlpha(PlayButton+3,255)
+}
+
+function void stop(){
+soundURLPurge()
+IsPlaying = 0
+W:egpAlpha(PlayButton+1,255)
+W:egpAlpha(PlayButton+2,0)
+W:egpAlpha(PlayButton+3,0)
+}
+
+W =  entity():isWeldedTo():wirelink()
+Egp =  entity():isWeldedTo()
+W:egpGUI()
+
+Zay = "http://zaycev.net"
+List = 1
+Vol = 100
+RadioList = table(
+array("Evropa 128Kb","http://ep128.streamr.ru"),
+array("Record 320Kb","http://air.radiorecord.ru:8102/chil_320"),
+array("RussRadio","http://icecast.russkoeradio.cdnvideo.ru/st37.mp3"),
+array("Шансон","http://chanson.hostingradio.ru:8041/chanson64.mp3"),
+array("Ретро 128Kb","http://retroserver.streamr.ru:8043/retro128"),
+array("Юмор 128Kb","http://ic2.101.ru:8000/v5_1"),
+array("Evropa ResiDance 128Kb","http://emg02.hostingradio.ru/ep-residance128.mp3"),
+array("На семи холмах 128Kb","http://server03.hostingradio.ru:8040/radio7128.mp3"),
+array("Дорожное радио 256Kb","http://dorognoe.hostingradio.ru:8000/radio"),
+array("Новое радио (2015) 128Kb","http://newradio.fmtuner.ru/newradio3"),
+array("Radio Record - Гоп FM 320Kb","http://air2.radiorecord.ru:805/gop_320"),
+array("Лав радио 192Kb","http://stream.variant.fm:8000/LOVE-192"),
+array("Радио Крым 256Kb","http://fm.1tvcrimea.ru:8000/stream.mp3"),
+array("Радио Море 256Kb","http://sea.1tvcrimea.ru:9003/stream_sea.mp3"),
+array("Радио Точка 256Kb","http://radiowired.1tvcrimea.ru:9001/stream_provod.mp3"),
+array("Anison","http://pool.anison.fm:9000/AniSonFM(320)?nocache=0.98.."))
+
+Smech = 17
+
+FindOb1 = 33 + Smech
+FindOb2 = 34 + Smech
+FindOb3 = 35 + Smech
+FindOb4 = 36 + Smech
+PlayingText = 51
+LeftTringleButton = 24
+ListText = 23
+VolText = 20
+RadioButton = 13
+CycleText = 21
+MixText = 22
+StopButton = 45
+FuncButton = 52
+TimeText = 37
+PlayButton = 38
+LeftButton = 42
+RightButton = 47
+
+listUpdate()
+
+httpRequest("http://go.mail.ru/zaycev?q=calvin")
+LastReqvest = "calvin"
+}
+
+if(chatClk(owner())){
+LS = owner():lastSaid():lower():explode(" ")
+
+if(LS[1,string] == "!find"){
+Radio = 0
+stoptimer("retry")
+finding(LS:concat(" ",2))
+W:egpSetText(7,LS:concat(" ",2))
+IsLoad = 0
+LastReqvest = LS:concat(" ",2)}
+
+if(LS[1,string] == "!reload"){
+Radio = 0
+stoptimer("retry")
+finding(LastReqvest)
+W:egpSetText(7,LastReqvest)
+IsLoad = 0}
+
+
+}
+
+
+
+
+
+if(keyClk(owner()) && (owner():keyUse() || owner():keyAttack1())){
+if(Egp:type() == "gmod_wire_egp_emitter"){
+}elseif(Egp:type() == "gmod_wire_egp"){
+if(owner():aimEntity() != Egp){
+exit()}
+}else{
+exit()}
+
+for(K=1,8){
+Pos = W:egpPos(FindOb1+K*4)
+Size = W:egpSize(FindOb1+K*4)
+Pos1 = Pos-Size/2
+Pos2 = Pos+Size/2
+
+if(inrange(W:egpCursor(owner()),Pos1,Pos2)){
+if(IsLoad){
+plays(K)}else{
+printColor(vec(30),"[",vec(255,0,0),"EgpKolonka_2.0",vec(30),"] ",vec(255,255,0),"Невозможно загрузить музыку до получения списков!")
+}}}
+
+
+for(K=1,100){
+Pos = W:egpPos(K)
+Size = W:egpSize(K)
+Pos1 = Pos-Size/2
+Pos2 = Pos+Size/2
+
+#radio
+if(inrange(W:egpCursor(owner()),Pos1,Pos2) && K == RadioButton){
+Radio = !Radio
+List = 1
+listUpdate()}
+
+#list < >
+TringleButtonLeft1 = vec2(40,128)
+TringleButtonLeft2 = vec2(40,208)
+TringleButtonLeft3 = vec2(40,288)
+TringleButtonLeft4 = vec2(40,408)
+TringleButtonRight1 = vec2(110,128)
+TringleButtonRight2 = vec2(110,208)
+TringleButtonRight3 = vec2(110,288)
+TringleButtonRight4 = vec2(110,408)
+
+TringleSize = vec2(30)
+if(K >= LeftTringleButton && K <= LeftTringleButton+7){
+if(inrange(W:egpCursor(owner()),TringleButtonLeft1-TringleSize/2,TringleButtonLeft1+TringleSize/2)){
+Vol -= 10
+if(Vol <= -10){
+Vol = 0}
+soundURLvolume("ek2",Vol/100)
+W:egpSetText(VolText,Vol:toString())
+break}
+if(inrange(W:egpCursor(owner()),TringleButtonRight1-TringleSize/2,TringleButtonRight1+TringleSize/2)){
+Vol += 10
+if(Vol >= 110){
+Vol = 100}
+soundURLvolume("ek2",Vol/100)
+W:egpSetText(VolText,Vol:toString())
+break}
+if(inrange(W:egpCursor(owner()),TringleButtonLeft2-TringleSize/2,TringleButtonLeft2+TringleSize/2)){
+Cycle = !Cycle
+if(Cycle){
+W:egpSetText(CycleText,"On")}else{
+W:egpSetText(CycleText,"Off")}
+print("Not Job !")
+break}
+if(inrange(W:egpCursor(owner()),TringleButtonRight2-TringleSize/2,TringleButtonRight2+TringleSize/2)){
+Cycle = !Cycle
+if(Cycle){
+W:egpSetText(CycleText,"On")}else{
+W:egpSetText(CycleText,"Off")}
+print("Not Job !")
+break}
+if(inrange(W:egpCursor(owner()),TringleButtonLeft3-TringleSize/2,TringleButtonLeft3+TringleSize/2)){
+Mix = !Mix
+if(Mix){
+W:egpSetText(MixText,"On")}else{
+W:egpSetText(MixText,"Off")}
+print("Not Job !")
+break}
+if(inrange(W:egpCursor(owner()),TringleButtonRight3-TringleSize/2,TringleButtonRight3+TringleSize/2)){
+Mix = !Mix
+if(Mix){
+W:egpSetText(MixText,"On")}else{
+W:egpSetText(MixText,"Off")}
+print("Not Job !")
+break}
+if(inrange(W:egpCursor(owner()),TringleButtonLeft4-TringleSize/2,TringleButtonLeft4+TringleSize/2)){
+List--
+if(List <= 0){
+List = 1}
+listUpdate()
+break}
+if(inrange(W:egpCursor(owner()),TringleButtonRight4-TringleSize/2,TringleButtonRight4+TringleSize/2)){
+List++
+if(List >= 10){
+List = 9}
+listUpdate()
+break}
+continue}
+
+if(K == FuncButton){
+if(inrange(W:egpCursor(owner()),Pos1,Pos2)){
+if(W:egpAlpha(K) == 255){
+for(I=1,100){
+W:egpAlpha(I,0)}}else{
+for(I=1,100){
+W:egpAlpha(I,255)}}}
+continue}
+
+if(K == StopButton){
+if(W:egpCursor(owner()):distance2(Pos) <= 100){
+stop()
+stoptimer("time")}
+continue}
+
+if(K == PlayButton){
+if(W:egpCursor(owner()):distance2(Pos) <= 200 && IsPlaying != 0){
+if(IsPlaying == 1){
+soundURLpause("ek2")
+IsPlaying = 2
+W:egpAlpha(PlayButton+1,255)
+W:egpAlpha(PlayButton+2,0)
+W:egpAlpha(PlayButton+3,0)
+stoptimer("time")
+}elseif(IsPlaying == 2){
+soundURLplay("ek2")
+IsPlaying = 1
+W:egpAlpha(PlayButton+1,0)
+W:egpAlpha(PlayButton+2,255)
+W:egpAlpha(PlayButton+3,255)
+timer("time",1000)}}
+continue}
+
+if(K == LeftButton){
+if(W:egpCursor(owner()):distance2(Pos) <= 100){
+print("Dont Jobs !")}
+continue}
+
+if(K == RightButton){
+if(W:egpCursor(owner()):distance2(Pos) <= 100){
+print("Dont Jobs !")}
+continue}
+
+
+
+
+
+
+
+
+
+
+
+
+
+}
+}
+
+
+
+
+
+
+
+
+if(httpClk()){
+Url = httpRequestUrl()
+#print(Url)
+
+if(Url:find("http://go.mail.ru/zaycev?q=") && Url:find("&page=") == 0){
+TempUrl = Url+"&page=2"
+timer("retry",10)
+Find = httpData():gmatch("<a.class..light.link..target...blank..href..(http:..zaycev.net.pages.[^s]*.shtml)..data.pxt..zcv.res.ttl..href..extern.[^>]*>([^<]*)<.a.>")
+for(K=1,8){
+S = Find[K+(List-1)*8,array][2,string]
+W:egpSetText(FindOb4+K*4,S)}
+List = 1
+listUpdate()
+
+}
+
+if(Url:find("http://go.mail.ru/zaycev?q=") && Url:find("&page=") != 0){
+Find = Find:add(httpData():gmatch("<a.class..light.link..target...blank..href..(http:..zaycev.net.pages.[^s]*.shtml)..data.pxt..zcv.res.ttl..href..extern.[^>]*>([^<]*)<.a.>"))
+if(Url:find("&page=2")){
+TempUrl = Url:replace("&page=2","&page=3")
+timer("retry",10)
+}elseif(Url:find("&page=3")){
+TempUrl = Url:replace("&page=3","&page=4")
+timer("retry",10)}elseif(Url:find("&page=4")){
+printColor(vec(30),"[",vec(255,0,0),"EgpKolonka_2.0",vec(30),"] ",vec(255,255,0),"список загружен")
+IsLoad = 1
+TempUrl = ""}
+listUpdate()}
+
+if(Url:find("http://zaycev.net/pages/")){
+TempUrl = Zay+httpData():matchFirst("data.url..(.musicset.play.[^j]*json)..data.id")
+if(httpCanRequest()){
+httpRequest(TempUrl)}else{
+timer("retry",10)}
+}
+
+if(Url:find("http://zaycev.net/musicset/play/")){
+TempUrl = httpData():replace("=json", ">"):matchFirst("(http:..cdndl.zaycev.net.play[^>]*)>")
+sul(TempUrl)
+}
+
+}
+
+if(clk("retry")){
+if(httpCanRequest()){
+httpRequest(TempUrl)}else{
+timer("retry",10)}}
+
+if(soundURLClk()){
+if(soundURLErrorString() != "OK"){
+printColor(vec(30),"[",vec(255,0,0),"EgpKolonka_2.0",vec(30),"] ",vec(255,255,0),"При загрузки музыки у игрока ",vec(255,0,0),soundURLClkEnt():name(),vec(255,255,0)," произошла ошибка: ",vec(100,100,255),soundURLErrorString())
+}else{
+if(soundURLClkEnt() == owner()){
+timer("time",1000)}}}
+
+if(clk("time")){
+timer("time",1000)
+SSEC = SMIN = ""
+SEC = TimePlay[1,number]
+MIN = TimePlay[2,number]
+SEC++
+if(SEC >= 60){
+MIN++
+SEC = 0}
+TimePlay[1,number] = SEC
+TimePlay[2,number] = MIN
+
+if(MIN <= 9){
+SMIN = "0"+MIN}else{
+SMIN = MIN:toString()}
+if(SEC <= 9){
+SSEC = "0"+SEC}else{
+SSEC = SEC:toString()}
+
+W:egpSetText(TimeText,SMIN+":"+SSEC)
+}
+
+
+
+
+
+
+
+
+
+
+
+#artur200320081
+#STEAM_0:1:120984849
+
+
+
+
+
+
+
+
+
+

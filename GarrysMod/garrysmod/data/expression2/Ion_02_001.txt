@@ -1,0 +1,83 @@
+@name Ion_02_001
+
+@inputs 
+@outputs 
+
+@persist Code_FirstRun
+
+@persist 
+
+@persist 
+
+
+
+switch(clkName()) {
+    default,
+        if(changed(0)) {
+            if(Code_FirstRun) {reset()}
+            Code_FirstRun = 1
+            
+            #include "AddHolo_v01"
+            
+            
+            
+        }
+        
+        
+    break
+    case "1",
+        
+    break
+    case "AddHolo",
+        addHolo()
+    break
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

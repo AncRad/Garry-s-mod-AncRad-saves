@@ -1,0 +1,26 @@
+@name setHoldType
+@inputs 
+@outputs 
+@persist 
+@trigger 
+#[
+pistol	One hand grasp used for pistols
+smg	Used for two-handed weapons such as the SMG1 ( rifles with a grip )
+grenade	Used for grenade, similar to melee
+ar2	Used for two-handed weapons such as the AR2 ( rifles without a grip )
+shotgun	Used for weapons such as shotguns
+rpg	Used for weapons that rest on your shoulder, such as RPG
+physgun	Used for the gravity and physics guns
+crossbow	Used for weapons such as crossbows, very similar to shotgun
+melee	Hand raised above head, used for crowbar
+slam	Used for weapons such as SLAM/explosives/c4
+normal	No weapon stance, hands at sides
+fist	Hands up punching hold type
+melee2	Two-handed sword
+passive	Sort of an "idle" stance, like when the civil protection hold their smg's when they aren't aiming
+knife	Bent over stabbing hold type
+duel	Dual pistols hold type
+camera	Holds the weapon in front of your face as a camera
+magic	Use your power of will to move objects. One hand in front of you, one hand to your head
+revolver	Two hand pistol holdtype, revolver reload animation.
+]#

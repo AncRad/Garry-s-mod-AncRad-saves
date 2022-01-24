@@ -1,0 +1,23 @@
+@name Trail setColor
+@inputs 
+@outputs 
+@persist Trail:entity
+@trigger 
+
+if ( first() ) {
+    
+    holoCreate(1)   
+    holoEntity(1):setTrails(25, 0, 2, "trails/laser", vec(), 255)
+    
+    findIncludeClass("env_spritetrail") # this class
+    findInSphere(holoEntity(1):pos(), 1)
+    
+    Trail = findToTable()[1, entity]
+    
+}
+
+interval(100)
+
+holoPos(1, entity():toWorld(vec(sin(curtime()*50)*55, cos(curtime()*50)*55, 50)))
+
+Trail:setColor( hsv2rgb( (curtime() * 50)%360, 1, 1 ) )

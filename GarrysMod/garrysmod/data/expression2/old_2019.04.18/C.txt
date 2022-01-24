@@ -1,0 +1,170 @@
+@name C
+@inputs  [L1 L2 L3 R1 R2 R3 B P Dr]:entity W A S D R Alt Space Shift LKM RKM
+@outputs L1c L2c L3c R1c R2c R3c L1d L2d L3d R1d R2d R3d L1l L2l L3l R1l R2l R3l  
+@persist [E O]:entity  [Lw Rw]:array Forse Dsforse Lenght Const Damp [LOW_curtime HIGH_curtime]
+@trigger 
+
+#[
+             ^
+        [L1][F][R1]             F = forward
+        [L2][B][R2]             B = basePlate
+        [L3]   [R3]             L = leftWheels
+                                R = rightWheels
+
+
+
+
+]#
+interval(10)
+
+
+if(changed(0)){
+    
+    E=entity()
+    O=owner()
+    
+    P:propNotSolid(1)
+    
+    Lw=array(L1, L2, L3)
+    Rw=array(R1, R2, R3)
+    
+    Forse = 25000
+    Dsforse = 100
+    
+    Const = 20000
+    Damp = 1000
+    Lenght = 60
+    
+    L1c = Const
+    L2c = Const
+    L3c = Const
+    R1c = Const
+    R2c = Const
+    R3c = Const
+    
+    L1d = Damp
+    L2d = Damp
+    L3d = Damp
+    R1d = Damp
+    R2d = Damp
+    R3d = Damp
+    
+    L1l = Lenght
+    L2l = Lenght
+    L3l = Lenght
+    R1l = Lenght
+    R2l = Lenght
+    R3l = Lenght
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    foreach(K, Wl:entity = Lw){
+        Wl:propInertia(vec(1.8))
+        Wl:propDrag(1)
+        Wl:setPhysProp("jeeptire",1)
+        #W:propSetFriction(1)     
+    }
+    
+    foreach(K, Wl:entity = Rw){
+        Wl:propInertia(vec(1.8))
+        Wl:propDrag(1)
+        Wl:setPhysProp("jeeptire",1)
+        #W:propSetFriction(1)     
+    }
+    
+    
+    timer("HIGH", 1) HIGH_curtime = curtime()
+    
+    exit()
+    
+}  #applyOffsetForce(vector force,vector position)
+
+if(clk("HIGH")) {
+    timer("HIGH", 15)
+    
+    
+    local HIGH_lastCurtime = HIGH_curtime
+    HIGH_curtime = curtime()
+    #local Interval = HIGH_curtime - HIGH_lastCurtime
+    Interval = 1
+    
+    B_f = B:forward()
+    B_u = B:up()
+    B_r = B:right()
+    
+    foreach(K, Wl:entity = Lw){
+        F_force = B_f * Forse * (W-S)
+        R_force = B_r * (clamp(B:velL()[2],-100,100)*Dsforse + (A-D)*Forse/5*(K-2))
+        FR_force = (F_force+R_force) * Interval
+        
+        Wl:applyOffsetForce( FR_force, Wl:pos() + B_u)
+        Wl:applyOffsetForce(-FR_force, Wl:pos() - B_u)
+        
+        Wl:applyAngForce(-Wl:angVel() * (6 + Space * 30) * Interval)
+        #setName(toUnit("km/h",B:vel():length()):toString())
+    }
+    
+    foreach(K, Wl:entity = Rw){
+        F_force = B_f * Forse * (W-S)
+        R_force = B_r * (clamp(B:velL()[2],-100,100)*Dsforse + (A-D)*Forse/5*(K-2))
+        FR_force = (F_force+R_force) * Interval
+        
+        Wl:applyOffsetForce( FR_force, Wl:pos() + B_u)
+        Wl:applyOffsetForce(-FR_force, Wl:pos() - B_u)
+        
+        Wl:applyAngForce(-Wl:angVel() * (6 + Space * 30) * Interval)
+        #print(K)
+    }
+    #clKeyPress(number key)
+    B:applyAngForce(-B:angVel()*10)
+    
+    if(changed(LKM)){
+        L1l = Lenght + (20 * LKM)
+        L2l = Lenght + (20 * LKM)
+        L3l = Lenght + (20 * LKM)      
+    }
+    
+    
+    if(changed(RKM)){
+        R1l = Lenght + (20 * RKM)
+        R2l = Lenght + (20 * RKM)
+        R3l = Lenght + (20 * RKM)   
+    }
+    
+    
+    
+    exit()
+}
+if(duped()|dupefinished()){reset()}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

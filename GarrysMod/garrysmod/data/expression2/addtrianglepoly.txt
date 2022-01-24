@@ -1,0 +1,115 @@
+@name addTrianglePoly
+@inputs 
+@outputs 
+@persist End EndI StartI I Ccount
+
+if(first()) {
+    runOnFile(1)
+    runOnTick(1)
+    function number forver() {
+    End=0
+    StartI = EndI+1
+    for(I=StartI,EndI+10) {
+        if(!End) {
+            if(fileRead():sub(I,I)==";"){End=1 EndI=I}
+        }
+    }
+    return fileRead():sub(StartI,EndI-1):toNumber()
+    }
+function holoClip([ID Index]:number, LocalPos:vector, LocalAng:angle, Offset:number) {
+    holoClipEnabled(ID, Index, 1)
+    holoClip(ID, Index, LocalPos + vec(Offset,0,0):rotate(LocalAng), vec(1,0,0):rotate(LocalAng), 0)
+}
+function entity addTrianglePoly(Index,[Vertex2 Vertex1 Vertex3]:vector) {
+    local Extend = 0.03
+    
+    local Edge1 = Vertex2-Vertex1
+    local Edge2 = Vertex3-Vertex2
+    local Poly_Normal = Edge2:cross(Edge1)
+    local Holo_Angles = quat(Edge1,Poly_Normal):toAngle()
+    
+    local Vertex2_local = toLocal(Vertex2,ang(),Vertex1,Holo_Angles)
+    local Vertex3_local = toLocal(Vertex3,ang(),Vertex1,Holo_Angles)
+    
+    local Array = array(0,Vertex2_local[1],Vertex3_local[1])
+    local Min_X = Array:min()
+    local Max_X = Array:max()
+    
+    local Holo_Size = vec(abs(Min_X-Max_X)/2,abs(Vertex3_local[2])/2,1)
+    local Holo_OffsetPos = vec((Min_X+Max_X)/2,Vertex3_local[2]/2,0)
+    
+    local Holo_Id = Index
+    local Holo_Pos = toWorld(Holo_OffsetPos,ang(),Vertex1,Holo_Angles)
+    local Holo_Entity = holoCreate(Holo_Id,Holo_Pos,Holo_Size/6 +Extend,Holo_Angles,vec(200),"plane")
+    holoDisableShading(Holo_Id,1)
+    holoShadow(Holo_Id,0)
+    holoParent(Holo_Id,entity())
+    holoClipEnabled(Holo_Id, 1, 1)
+    holoClipEnabled(Holo_Id, 2, 1)
+    local Clip_Dir = Vertex3_local:rotate(0,90,0):normalized()
+    holoClip(Holo_Id, 1, -Holo_OffsetPos-Clip_Dir*Extend, Clip_Dir, 0)
+    local Clip_Dir = (Vertex2_local-Vertex3_local):rotate(0,90,0):normalized()
+    holoClip(Holo_Id, 2, Vertex2_local-Holo_OffsetPos-Clip_Dir*Extend, Clip_Dir, 0)
+    
+    #holoCreate(12, select(Array:minIndex(),Vertex1,Vertex2,Vertex3),vec(-0.3),ang(),vec(240,160,240),"icosphere") holoMaterial(12,"lights/white")
+    #holoCreate(13, select(Array:maxIndex(),Vertex1,Vertex2,Vertex3),vec(-0.3),ang(),vec(240,160, 96),"icosphere") holoMaterial(13,"lights/white")
+    return Holo_Entity
+}
+}
+while(holoCanCreate()&perf()&I<1000) {
+local V1 = vec(forver(),forver(),forver())
+local V2 = vec(forver(),forver(),forver())
+local V3 = vec(forver(),forver(),forver())
+Vertex1 = entity():toWorld(V1)
+Vertex2 = entity():toWorld(V2)
+Vertex3 = entity():toWorld(V3)
+addTrianglePoly(I,Vertex1,Vertex2,Vertex3)
+I++
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

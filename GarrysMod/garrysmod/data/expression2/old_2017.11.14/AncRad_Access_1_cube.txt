@@ -1,0 +1,12 @@
+@name AncRad_Access_1_cube
+@persist C A:angle
+
+Size = 3
+
+while(holoCanCreate() & (Size ^ 3 > C)) {
+    C++
+    A = ang(0,0,0)
+    holoCreate(C, (C==1?entity() : holoEntity(C-1)):toWorld(vec(18):rotate(A)))
+    holoParent(C, entity())
+    
+}

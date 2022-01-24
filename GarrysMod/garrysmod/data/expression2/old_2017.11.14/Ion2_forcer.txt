@@ -1,0 +1,481 @@
+@name Ion2_forcer
+
+@inputs 
+@outputs OPS CPU Pitch
+@persist [E Forcer O]:entity [Ion]:table
+
+@trigger none
+@model models/sprops/rectangles/size_2/rect_12x18x3.mdl
+
+
+
+#include "Holos2"
+if(changed(0)) {
+        runOnLast(1)
+    ##############
+    #
+    #
+    #
+    ##############
+    holos2Interval(1)
+    ##############
+    #
+    #
+    #
+    ##############
+    E = entity()
+    O = owner()
+    
+    #E:propPhysicalMaterial("weapon")
+    E:setAlpha(0)
+    E:setMass(5)
+    E:propFreeze(0)
+    E:propNotSolid(0)
+    ##############
+    #
+    #
+    #
+    ##############
+    Ion["setVelMode"            , number] = 1
+    Ion["forcer/hide"           , number] = 1
+    Ion["swep lockTime constant", number] = 1
+    Ion["swep interval"         , number] = 100
+    Ion["animations interval"   , number] = 75
+    Ion["physics interval"      , number] = 10
+    ##############
+    #
+    #
+    #
+    ##############
+    function toChest() {
+        local CHESTID = Holos2["CHEST id", number]
+        local CHEST   = holoEntity(CHESTID)
+        
+        local RTID = Holos2["RT id", number]
+        
+        holoParent(RTID, CHEST)
+        holoPos(   RTID, CHEST:toWorld(vec( -7.5 , 0 , 0 )))
+        holoAng(   RTID, CHEST:toWorld(ang()))
+        holoAng(RTID, holoEntity(RTID):toWorld(ang( -85 , 0 , 0 )))
+        
+        E:propFreeze(1)
+        E:propNotSolid(1)
+        
+        Ion["sewp status", string] = "chest"
+        Ion["swep lockTime", number] = curtime() + Ion["swep lockTime constant", number]
+    }
+    #
+    #
+    #
+    function down() {
+        local Vel = Ion["user", entity]:vel()
+        local E2ID = Holos2["E2 id", number]
+        local E2   = Holos2["E2 e" , entity]
+        
+        local RTID = Holos2["RT id", number]
+        local RT   = Holos2["RT e" , entity]
+        
+        
+        E:setPos(RT:pos())
+        E:setAng(RT:angles())
+        E:propNotSolid(0)
+        E:propFreeze(0)
+        E:setVel(Vel)
+        
+        
+        holoParent(RTID, E2ID)
+        holoPos(   RTID, E2:pos())
+        holoAng(   RTID, E2:angles())
+        
+        Ion["user", entity] = noentity()
+        Ion["sewp status", string] = "down"
+        Ion["swep lockTime", number] = curtime() + Ion["swep lockTime constant", number]
+    }
+    #
+    #
+    #
+    function getUser(P:entity) {
+        local User = Ion["user", entity] = P
+        local CHESTID = Holos2["CHEST id", number]
+        
+        Holos2["CHEST e" , entity] = holoCreate(CHESTID, User:attachmentPos("chest"), vec(), User:attachmentAng("chest"))
+        holoParentAttachment(CHESTID, User, "chest")
+        
+        
+        toChest()
+    }
+    #
+    #
+    #
+    function checkPlayer(P:entity) {
+        if(P:keyUse()) {
+            if(P:shootPos():distance(P:aimPos()) < 80) {
+                if(P:aimEntity() == E) {
+                    
+                    getUser(P)
+                    
+                }
+            }
+        }
+    }
+    ##############
+    #
+    #
+    #
+    ##############
+    #set("chell", vec( 0.0 , 7.0 , -8.0 ), vec( 0.0 , 0.0 , 0.0 ), ang( 80 , 90 , 0 ), vec( 200 ), 255, "cube", "", vec(), E, "", "")
+    
+    holo("E2", vec( 5.0 , 0.0 , -1.0 ), vec( 0.0 , 0.0 , 0.0 ), ang( 0 , 0 , 0 ), vec( 200 ), 255, "cube", "", "")
+    setHolo(E)
+    holo("CHEST", vec( 0.0 , 0.0 , 0.0 ), vec( 0.0 ), ang( 0 , 0 , 0 ), vec( 0 , 0 , 255 ), 255, "cube", "", "")
+    
+    holo("RT", vec( 0.0 , 0.0 , 0.0 ), vec( 0.0 ), ang( 0 , 0 , 0 ), vec( 200 ), 255, "cube", "", "E2")
+    holo("base", vec( -2.0 , 0.0 , 1.0 ), vec( 0.0 ), ang( 80 , 0 , 0 ), vec( 255 , 0 , 0 ), 255, "cube", "", "RT")
+    
+    
+    local M1 = "phoenix_storms/OfficeWindow_1-1"
+    local C1 = vec(255)
+    local A = 0
+    local Ang = ang()
+    local V = vec()
+    for(C = 1, 4) {
+            if(C == 1) {V = vec( 1.1 , -2.5 ,  3.0 ) Ang = ang( -80 ,  20 , 0 ) A =    0  M =  1}
+        elseif(C == 2) {V = vec( 1.1 ,  2.5 ,  3.0 ) Ang = ang( -80 , -20 , 0 ) A =    0  M = -1}
+        elseif(C == 3) {V = vec( 0.9 ,  1.4 , -0.0 ) Ang = ang( -70 ,  -7 , 0 ) A =  2.5  M =  1}
+        elseif(C == 4) {V = vec( 0.9 , -1.4 , -0.0 ) Ang = ang( -70 ,   7 , 0 ) A = -2.5  M = -1}
+        
+        #local F = C - 1
+        local N1 = "fly " + C
+        local N2 = N1 + " " + "axis " + C
+        holo(N1, V, vec( 0.3 ) * 0, Ang, vec( 255 , 0 , 0 ), 255, "cube", "", "base")
+        holo(N2, vec( 0.0 ,  0.0 , 0.0 ), vec( 0.2 , 0.2 , 1.0 ) * 0, ang( 0 , A , 0 ), vec( 200 ), 255, "cube", "", N1)
+        
+        
+        Z = 0.1
+        R = 1.5
+        holo("", vec( 0.0 ,  0.0 , Z ), vec( R , R , Z ), ang( 0 , 0 , 0 ), C1, 255, "hq_cylinder", M1, N1)
+        
+        Z2 = 0.3
+        holo("", vec( 0.0 ,  0.0 , Z2 + Z * 2 ), vec( R , R , Z2 ), ang( 0 , 0 , 0 ), C1, 255, "hq_tube_thin", M1, N1)
+        
+        R1 = R - 0.15
+        Z3 = Z2
+        holo("", vec( 0.0 ,  0.0 , Z3 + Z * 2 ), vec( R1 , R1 , Z3 ), ang( 0 , 0 , 0 ), C1 / 2, 255, "hq_cylinder", M1, N2)
+        holo("", vec( 0.0 ,  0.0 , 1.1 ), vec( R , R , 0.4 ), ang( 0 , 0 , 0 ), C1, 255, "hq_cylinder", M1, N2)
+        
+        
+        Len = 8
+        NN1 = "_" + C
+        holo(NN1, vec( -Len / 2 - 1 ,  -0.45 * M , 1.2 ), vec( Len , 1.0 , 0.2 ), ang( 0 , 0 , 0 ), C1, 255, "rcube_thick", M1, N2)
+        setClip(-Len * 0.66, ang( 0 , 0 , 0 ))
+        setClip(-Len * 0.66, ang( 0 , 180 , 0 ))
+        
+        NN2 = "__" + C
+        holo(NN2, vec( -10.24 , -0.45 * M , 1.2 ), vec( 3 , 0.7 , 0.2 ), ang( 0 , -45 * M , 0 ), C1, 255, "rcube_thick", M1, N2)
+        setClip(0, ang( 0 , -135 * M , 0 ))
+    }
+    
+    holo("", vec( 1.4 ,  0.0 , 0.5 ), vec( 0.8 , 0.8 , 0.8 ), ang( -135 , 0 , 45 ), C1 / 2, 255, "models/gibs/scanner_gib02.mdl", "", "base")
+    setTimer("set1", 1)
+    
+    function set1() {
+        local M = 1
+        for(C = 1,4) {
+            local N1 = "fly " + C
+            local N2 = N1 + " " + "axis " + C
+            for(C_ = 1, 8) {
+                NNN = C + "light " + C_
+                holo(NNN, vec( -10 + C_ / 2 , -0.45 * M , 1.2 ), vec( 0.15 , 0.5 , 0.25 ), ang( 0 , 0 , 0 ), vec( 0 , 0 , 0 ), 255, "rcube_thick", "lights/white", N2)
+            }
+            M = -M
+        }
+        setTimer("swep", 1)
+        setTimer("animations", 1)
+        setHolos2Interval(0)
+    }
+    
+    
+    
+}
+#
+#
+#
+##############
+if(clk("set1")) {
+    set1()
+    if(owner():keyUse() | 0) {
+        getUser(owner())
+    }
+}
+#
+#
+#
+##############
+if(clk("swep")) {
+        timer("swep", Ion["swep interval", number])
+    
+    if(changed(0)) {
+        holos2Interval(500)
+    }
+    
+    #local User = Ion["user", entity]
+    local Stat = Ion["sewp status", string]
+    
+    if(Stat == "down") {
+        if(Ion["swep lockTime", number] < curtime()) {
+            findIncludeClass("player")
+            findInSphere(E:pos(), 150)
+            local Find = findToArray()
+            
+            foreach(C, Player:entity = Find) {
+                
+                checkPlayer(Player)
+                
+            }
+        }
+    }
+    #
+    elseif(Stat == "chest") {
+        local User = Ion["user", entity]
+        
+        
+        local KeyUse = User:keyUse()
+        local OpenClose = changed(KeyUse) & KeyUse & !(User:keyAttack1() & User:weapon():type() == "weapon_physgun")
+        
+        if(changed(OpenClose) & OpenClose) {
+            if(abs(Ion["A", number] - Ion["open", number]) < 0.05) {
+                Ion["open", number] = !Ion["open", number]
+            }
+        }
+        
+        if(Ion["swep lockTime", number] < curtime()) {
+            if(User:keyReload() & OpenClose) {
+                down()
+                Ion["open", number] = 0
+            }
+        }
+    } else {Ion["sewp status", string] = "down"}
+}
+#
+#
+#
+##############
+if(clk("animations")) {
+        timer("animations", Ion["animations interval", number])
+    
+    local LastCurtime = Ion["animations curtime", number]
+    local Curtime = Ion["animations curtime", number] = curtime()
+    local AnimationsLoop = (Curtime - LastCurtime) / 0.015
+    ##############
+    #
+    #
+    #
+    ##############
+    local Open = Ion["open", number]
+    local Real = Ion["A", number]
+    
+    local DIF = Open - Real
+    local Apply = abs(DIF) > 0.01
+    if(Apply) {
+        Real = Ion["A", number] = Real + clamp(DIF / 20 ,-0.02,0.02) * AnimationsLoop
+        
+        for(C = 1,4) {
+            local N = "fly " + C
+            local Need = select(C, 140, -140, -40, 40)
+            local Mul = sin(Real * 90) ^ 2
+            
+            
+            holoAng(Holos2[N + " axis " + C + " id", number], Holos2[N + " e", entity]:toWorld(ang( 0 , Need * Mul , 0 )))
+            #
+            #
+            #
+            for(C_ = 1, 8) {
+                local N = C + "light " + C_ + " id"
+                holoColor(Holos2[N, number],vec( 0 , 50 , 255 ) * Mul)
+            }
+        }
+    }
+    ##############
+    #
+    #
+    #
+    ##############
+    if(changed(Apply)) {
+        if(Ion["A", number] > 0.98) {
+            timer("physics", 1)
+        } else {
+            stoptimer("physics")
+            soundPitch("wind", 0)
+            soundPitch("fly1", 0)
+            soundPitch("fly2", 0)
+        }
+    }
+    
+    
+    
+}
+#
+#
+#
+##############
+if(clk("physics")) {
+        timer("physics", Ion["physics interval", number])
+    
+    
+    local LastCurtime = Ion["physics curtime", number]
+    local Curtime = Ion["physics curtime", number] = curtime()
+    local PhysicsLoop = clamp(Curtime - LastCurtime ,0.006,1) / 0.015 #print(4, "physicsLoop = " + floor(PhysicsLoop))
+    ##############
+    #
+    #
+    #
+    ##############
+    local Base = Holos2["base e", entity]
+    local User = Ion["user", entity]
+    local Water = Base:isUnderWater()
+    #local Water_changed = changed(Water)
+    ##############
+    #
+    #
+    #
+    ##############
+    if(changed(User)) {
+        
+        Base:soundPlay("wind", 0, "ambient/wind/wind_rooftop1.wav"          ) soundPitch("wind", 0) soundVolume("wind", 0)
+        Base:soundPlay("fly1", 0, "ambient/levels/caves/cave_howl_loop1.wav") soundPitch("fly1", 0) soundVolume("fly1", 0)
+        Base:soundPlay("fly2", 0, "ambient/machines/lab_loop1.wav"          ) soundPitch("fly2", 0) soundVolume("fly2", 0)
+        PhysicsLoop = 0
+    }
+    ##############
+    #
+    #
+    #
+    ##############
+    if(!Water) {
+        
+        local Vel = User:vel()
+        local Yaw = User:eyeAngles():yaw()
+        
+        local KeyW = User:keyForward()
+        local KeyA = User:keyLeft()
+        local KeyS = User:keyBack()
+        local KeyD = User:keyRight()
+        local KeyDuck = User:keyDuck()
+        local KeySpace = User:keyJump()
+        local KeyShift = User:keySprint()
+        
+        if(KeyDuck) {
+            local Move = Ion["move", vector]
+            local NeedMove = vec( KeyW - KeyS , KeyA - KeyD , KeySpace - KeyShift ):rotate( 0 , Yaw , 0 ) * 600
+            local NeedMove = vec( 0 , 0 , 11.3 ) - (Vel - NeedMove) / 7
+            Ion["move", vector] = Move + (NeedMove - Move) / 6 * PhysicsLoop
+            Acc = clamp(Move ,-vec(50), vec(50))
+        } else {
+            local VL = Vel:length()
+            local Mul = 5 + clamp(VL / 100 ,0,40)
+            local Norm = vec( KeyW - KeyS , KeyA - KeyD , KeySpace ):rotate( 0 , Yaw , 0 )
+            Acc = Norm * vec( Mul , Mul , clamp(19.8 + VL / 50 ,10,35) )
+            if(!KeyShift) {Acc = Acc + vec( 0 , 0 , clamp(-Vel[3] / 20 ,0,25) )}
+        }
+        
+        if(Ion["setVelMode", number]) {
+            #ifdef entity:setVel(vector)
+                User:setVel(Acc)
+            #else
+                Ion["setVelMode", number] = 1
+            #endif
+        }
+        else {
+            if(Forcer) {
+                
+                local Hide = Ion["forcer/hide", number]
+                if(changed(Hide)) {
+                    if(Hide) {
+                        
+                    }
+                    else {
+                        
+                    }
+                }
+            }
+            elseif(findCanQuery()) {
+                findClearWhiteList()
+                findClearBlackList()
+                findIncludeClass("gmod_wire_forcer")
+                if(findClosest(O:pos())) {
+                    foreach(C, F:entity = findToArray()) {
+                        if(F:owner() == O) {
+                            Forcer = F
+                            break
+                        }
+                    }
+                }
+            }
+        }
+        Length = Acc:length()
+    }
+    ##############
+    #
+    #
+    #
+    ##############
+    local Pitch = Ion["sounds pitch", number]
+    Pitch = Ion["sounds pitch", number] = Pitch + clamp((Length - Pitch) / 10 ,-1,1) * PhysicsLoop
+    soundPitch("wind", Pitch * 5.0) soundVolume("wind", Pitch / 100)
+    soundPitch("fly1", Pitch * 5.0) soundVolume("fly1", Pitch / 100)
+    
+    
+    
+    
+}
+##############
+#
+#
+#
+##############
+OPS = ops()
+CPU = cpuUsage() * 1000000
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

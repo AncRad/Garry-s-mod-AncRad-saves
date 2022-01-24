@@ -1,0 +1,132 @@
+@name Point Zone [By L8n] (Moderated by Yamir and Deathhere)
+@inputs 
+@outputs 
+@persist A Dir R:array BanList:table P:entity Ban:entity
+@trigger 
+interval(1)
+
+
+
+
+if(first()){
+    BanList[findPlayerBySteamID("STEAM_0:0:107390545"):name(),string]="ban"
+    BanList[findPlayerBySteamID(""):name(),string]="ban"
+}
+
+
+Dist=300
+
+findInSphere(entity():pos(),Dist)
+findIncludeClass("player")
+P:setPos(R[1,entity]:pos()-vec(0,0,30))
+R=findToArray()
+    if (R:count() <= 0) {
+    holoColor(2, vec(255,20,20))
+    holoColor(3, vec(255,20,20))
+    holoColor(4, vec(255,20,20))
+    holoColor(5, vec(255,20,20))
+    holoColor(6, vec(255,20,20))
+    stoptimer("pay")
+    } 
+if(R:count() == 1) {
+    holoColor(2, vec(20,255,20))
+    holoColor(3, vec(20,255,20))
+    holoColor(4, vec(20,255,20))
+    holoColor(5, vec(20,255,20))
+    holoColor(6, vec(20,255,20))
+    #concmd("say [c 255,255,255] Player [b]"+find():name()+"[/b][c 255,255,255] started holding a point")
+    timer("pay", 10000)
+}
+if(R:count() >= 2)  {
+    holoColor(2,vec(255,130,20))
+    holoColor(3,vec(255,130,20))
+    holoColor(4,vec(255,130,20))
+    holoColor(5,vec(255,130,20))
+    holoColor(6,vec(255,130,20))
+    stoptimer("pay")
+    } 
+#}
+    if(first()){
+    Ban=propSpawn("models/hunter/misc/shell2x2.mdl",1)
+    Ban:setPos(vec(1,1,1))
+    HH = holoCreate(2)
+    
+    holoModel(2,"models/hunter/tubes/tube4x4x05.mdl")
+    holoParent(2, entity())
+    holoPos(2, entity():pos()+vec(0,0,0))
+    holoMaterial(2,"expression 2/cog_prop")
+    holoColor(2,vec(255,20,20))
+    holoScaleUnits(2,vec(Dist,Dist,0.0001)*2.1)
+    
+    holoCreate(3)
+    holoScaleUnits(3,vec(Dist,Dist,0.1)*2)
+    holoModel(3,"hq_cylinder")
+    
+    timer("holo1",100)
+}
+    if(first()){
+        A = 0
+        Dir =211 
+
+       
+    }else{
+        
+        A = A + Dir
+       
+        
+        if(A > 360){Dir = 3.5}        
+     
+      
+      
+ holoAng(2, entity():angles() + ang(0, A, 0) )
+ holoAng(6, entity():angles() + ang(180, A, 0) )
+ 
+}
+if(clk("pay")){
+    if(BanList[R[1,entity]:name(),string]=="ban"){
+    #concmd("say [c 180,220,20] [POINTZONE] [c 255,255,255] Player [b]"+find():name()+"[/b][c 255,255,255] in BAN list and didnt took points")
+    print("Player [c 100,100,255]"+find():name()+"[c 255,255,255] in [c 255,100,100]BAN [c 255,255,255]list")
+    }else{
+    if(R[1,entity]:inGodMode()==1){
+    print("Player [c 100,100,255]"+find():name()+"[c 255,255,255] in [c 255,100,100]GOD [c 255,255,255]mode")
+    #concmd("say [c 180,220,20] [POINTZONE] [c 255,255,255] Player [b]"+find():name()+"[/b][c 255,255,255] in GOD mode")
+    }else{
+    if(R[1,entity]:inNoclip()==1){  
+    print("Player [c 100,100,255]"+find():name()+"[c 255,255,255] in [c 255,100,100]NOCLIP")
+    #concmd("say [c 180,220,20] [POINTZONE] [c 255,255,255] Player [b]"+find():name()+"[/b][c 255,255,255] in NOCLIP")     
+    }else{#  
+    if (R[1, entity]:isValid()) {R[1, entity]:psGive(5)}
+    print("Giving points to [c 100,100,255]"+find():name()+" ")
+    concmd("say [c 180,220,20] [POINTZONE] [c 255,255,255] Player [b]"+find():name()+"[/b][c 255,255,255] received 5 points for deducing point area")
+}}}}
+
+if(BanList[R[1,entity]:name(),string]=="Ban"){
+    Ban:setPos(R[1,entity]:toWorld(-vec(0,0,30)))
+}
+
+   
+if(clk("holo1")){
+    holoCreate(4)
+    holoModel(4,"hq_sphere")
+    holoScale(4,vec(Dist,Dist,Dist)/6)
+    
+    holoCreate(5)
+    holoModel(5,"hq_sphere")
+    holoScale(5,vec(-Dist,-Dist,-Dist)/6) 
+     
+    holoColor(4, vec(255,20,20))
+    holoColor(5, vec(255,20,20))
+    
+    holoAlpha(4,150)
+    holoAlpha(5,150)
+    
+    holoCreate(6)
+    holoModel(6,"models/sprops/misc/alphanum/alphanum_arrow_b.mdl")
+    holoScale(6,vec(8,8,19))
+    holoPos(6,entity():toWorld(vec(0,0,500)))
+    holoMaterial(6,"models/debug/debugwhite")
+    timer("holo2",1000)
+}
+if(clk("holo2")){
+    
+}

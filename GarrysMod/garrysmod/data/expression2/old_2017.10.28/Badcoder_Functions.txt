@@ -1,0 +1,65 @@
+@name Badcoder Functions
+#@outputs Help:angle DifA:angle
+@persist H_ID C_ID 
+
+    function entity holo( Pos:vector, Scale:vector, Ang:angle, Model:string, Material:string, Color:vector, Alpha, Parent:entity ) 
+    {
+        H_ID++
+        holoCreate(H_ID, Parent:toWorld(Pos), Scale, Parent:toWorld(Ang), Color, Model)
+        holoEntity(H_ID):setModel(Model)
+        #holoModel(H_ID, Model)
+        holoAlpha(H_ID, Alpha)
+        holoParent(H_ID, Parent)
+        holoMaterial(H_ID, Material)  
+        return holoEntity(H_ID)
+    }
+    function entity holo( Pos:vector, Scale:vector, Model:string, Color:vector, Alpha ) 
+    {
+        H_ID++
+        holoCreate(H_ID, Pos, Scale)
+        holoEntity(H_ID):setModel(Model)
+        holoColor(H_ID, Color)
+        #holoModel(H_ID, Model)
+        holoAlpha(H_ID, Alpha)
+        return holoEntity(H_ID)
+    }
+    
+    function clip( Origin:vector, Normal:vector ) 
+    {
+        C_ID = 1 + C_ID * (!changed(H_ID))
+        holoClipEnabled( H_ID, C_ID , 1 )
+        holoClip( H_ID , C_ID , Origin , Normal , 0)
+    }
+    
+#[    function angle angv(Pitch, Yaw, Roll) {return ang(vec(Pitch, Yaw, Roll))}
+    function angle angv(Num) {return ang(vec(Num))}]#
+    
+    function number toNum(Number, Req_Num, D)
+    {
+        local Dif = Req_Num - Number   
+        if ( abs(Dif) < D ) {return Dif}
+        elseif ( Dif <= 0 ) {return -D}
+        else {return D}
+    }
+    function vector toVec(Vector:vector, Req_Vec:vector, D)
+    {
+        local DifV = Req_Vec - Vector
+        if ( DifV:length() > 0.1 )
+        {
+            if ( DifV:length() < D ) {return DifV}
+            else {return DifV:normalized()*D}
+        } 
+        else {return vec(0)}
+    }
+    function angle toAng(Angle:angle, Req_Ang:angle, D)
+    {
+        local DifA = angnorm(Req_Ang - Angle)       
+        if ( vec(DifA):length() > 0.1 )
+        {
+            if ( vec(DifA):length() < D ) {return DifA}
+            else {return ang(vec(DifA):normalized()*D)}
+        }
+        else {return ang(vec(0))}
+    }
+
+#Help = ang(vec(50))

@@ -1,0 +1,196 @@
+@name effect_turbineFlames_v01
+
+#EQFv01_
+@persist [Q]:table [Q_interval Q_perf]:number
+@persist [Q_list]:array [Q_holoIndex]:number
+
+if(!changed(0) & changed(0)) {
+    printColor("[",vec(255,50,0),entity():getName():explode("\n")[1, string],vec(255),"] ","Повторный вызов библиотеки \"",vec(),"effect_turbineFlames_v01",vec(255),"\"")
+}
+
+
+if(entity():getName() == "effect_turbineFlames_v01") {
+    #include "old_2017.10.28/AddHolo"
+}
+
+
+
+Q_interval = 50
+Q_perf = 80
+
+function number entity:effect_turbineFlames(Effect_n:string, LocalPos:vector, LocalAng:angle, [Radius Lenght]:number, Color:vector, NeedParts:number) {
+    if(!Effect_n) {
+        printColor("[",vec(255,50,0),entity():getName():explode("\n")[1, string],vec(255),"] ","Эффекту \"",vec(),"turbineFlames",vec(255),"\" следует указать имя")
+        return 0
+    }
+    if(Q:exists(Effect_n)) {
+        printColor("[",vec(255,50,0),entity():getName():explode("\n")[1, string],vec(255),"] ","Повторная попытка создать эффект \"",vec(),Effect_n,vec(255),"\"")
+        return 0
+    }
+    
+    Q_list:pushString(Effect_n)
+    Q[Effect_n, table] = table(
+         "LocalTO"     = This
+        ,"LocalPos"    = LocalPos
+        ,"LocalAng"    = LocalAng
+        ,"Radius"      = Radius
+        ,"Lenght"      = Lenght
+        ,"Color"       = Color
+        ,"NeedParts" = NeedParts
+        
+        ,"real_multiplier"  = 0
+        ,"clamp"       = 0
+        ,"holoID"      = array()
+    )
+    return 1
+}
+
+
+function effect_turbineFlames(Effect_name:string, Need_multiplier:number) {
+    Q[Effect_name, table]["need_multiplier", number] = clamp(Need_multiplier,0,1)
+}
+function effect_turbineFlames(Effect_name:string, Color:vector) {
+    Q[Effect_name, table]["Color", vector] = clamp(Color,0,255)
+}
+function effect_turbineFlames(Effect_name:string, Need_multiplier:number, Color:vector) {
+    Q[Effect_name, table]["need_multiplier", number] = clamp(Need_multiplier,0,1)
+    Q[Effect_name, table]["Color"          , vector] = clamp(Color,0,255)
+}
+
+#function effect_turbineFlames_clamping(Effect_name:string, Clamp:number) {
+#    Q[Effect_name + "/clamp", number] = Clamp
+#}
+
+function effect_turbineFlames() {
+    if(clk("effect_turbineFlames")) {
+            timer("effect_turbineFlames", Q_interval)
+        
+        local Perf = 100 while(perf(Perf)) {Perf--} Perf = min(Perf+Q_perf,95)
+        
+        local Count = Q_list:count()
+        local C = 0
+        while(perf(Perf) & C < Count) {
+            C++
+            local Effect_name = Q_list[C, string]
+            local Effect_table = Q[Effect_name, table]
+            
+            local Effect_rt_e = Effect_table["RT/entity", entity]
+            local Effect_Parts       = Effect_table["holoID", array]
+            local Effect_Parts_count = Effect_Parts:count()
+            local Effect_Parts_need  = Effect_table["NeedParts", number]
+            
+            while(Effect_Parts_count != Effect_Parts_need & perf(Perf-2) & holoCanCreate()) {
+                while(!!holoEntity(Q_holoIndex)) {Q_holoIndex++}
+                
+                if(!Effect_rt_e) {
+                    local LocalTO = Effect_table:removeEntity("LocalTO")
+                    local Pos = LocalTO:toWorld(Effect_table:removeVector("LocalPos"))
+                    local Ang = LocalTO:toWorld(Effect_table:removeAngle("LocalAng"))
+                    Effect_rt_e = Effect_table["RT/entity", entity] = holoCreate(Q_holoIndex,Pos,vec(),Ang,vec(),"tetra")
+                    holoParent(Q_holoIndex,LocalTO)
+                    continue
+                }
+                Effect_Parts_count++
+                Effect_table["holoID", array]:pushNumber(Q_holoIndex)
+                holoCreate(Q_holoIndex, Effect_rt_e:pos(),vec(),Effect_rt_e:toWorld(ang(0,360/Effect_Parts_need*(Effect_Parts_count - 1),0)),vec(),"hq_sphere")
+                holoAlpha(Q_holoIndex, 254)
+                holoMaterial(Q_holoIndex, "models/roller/rollermine_glow")
+                holoClipEnabled(Q_holoIndex, 1, 1)
+                holoClip(Q_holoIndex,1,vec(),vec(0,0,1),0)
+                holoParent(Q_holoIndex, Effect_rt_e)
+                holoRenderFX(Q_holoIndex, 11)
+            }
+            
+            local Radius = Effect_table["Radius", number]
+            
+            local Effect_real_multiplier = Effect_table["real_multiplier", number]
+            local Effect_need_multiplier = Effect_table["need_multiplier", number]
+            if(Effect_real_multiplier != Effect_need_multiplier) {
+                Effect_table["real_multiplier", number] = Effect_real_multiplier = Effect_need_multiplier
+                
+                local Lenght = Effect_table["Lenght", number]
+                local Color = Effect_table["Color", vector] * Effect_real_multiplier^0.6
+                foreach(C, ID:number = Effect_Parts) {
+                    holoScale(ID, vec(Radius,Radius,Lenght * Effect_real_multiplier))
+                    holoColor(ID, Color)
+                }
+            }
+            
+            local Random = Radius-Radius / 3 * Effect_real_multiplier^0.6
+            foreach(Part, ID:number = Effect_Parts) {
+                local A = 360/Effect_Parts_need*(Part - 1)
+                holoPos(ID, Effect_rt_e:toWorld(vec(random(Radius,Random),0,0):rotate(0,A,0)))
+            }
+        }
+        #[
+        if(Clamp | Clamp_changed) {
+            local R = rangerOffset(Lenght, Base_e:pos(), Base_e:up()) 
+            local R_h = R:hit() & Clamp_changed
+            if(changed(R_h) | R_h) {
+                local R_hn = R:hitNormal()
+                local R_p = R:pos()
+                local R_lp = Base_e:toLocal(R_p)
+                
+                if(R_h) {
+                    foreach(C, Part_i:number = PartList) {
+                        
+                        holoClip(Part_i, 2, R_p, R_hn, 1)
+                    }
+                }
+                
+                if(changed(R_h)) {
+                    foreach(C, Part_i:number = PartList) {
+                        
+                        holoClipEnabled(Part_i, 2, R_h)
+                    }
+                }
+            }
+        }
+        ]#
+        exit()
+    }
+}
+#[
+if(Effect_01_001) {
+    #include "old_2017.10.28/AddHolo"
+    
+    
+    if(changed(0)) {
+        E = entity()
+        O = owner()
+        
+        
+        E:effect01("test", vec(), 7, 50, ang(), vec(50,150,255), 20)
+    }
+    
+    local Mul = 1
+    local Color_m = Mul^5
+    local Color = vec(50,5,255)*Color_m+vec(255,50,0)*(1-Color_m)
+    effect01("test", Mul)
+    #effect01("test", Color)
+    
+    setName("effect_turbineFlames_v01\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage() * 1e6) + "\n" + Q["test" + "/needNumberParts", number] + "/" + Q["test" + "/numberParts", number])
+}
+]#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

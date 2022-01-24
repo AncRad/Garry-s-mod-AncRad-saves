@@ -1,0 +1,87 @@
+@name tricopter
+
+@inputs 
+@outputs 
+@persist [E O]:entity [Q]:table
+
+@trigger none
+
+
+
+#include "HoloAdd"
+if(changed(0)) {
+    
+    E = entity()
+    O = owner()
+    
+    function vector cyl([Rad Height]:number) {
+        return vec(Rad,Rad,Height)
+    }
+    
+    local Color1    = vec(150)
+    local Material1 = ""
+    
+    holoAdd("rt", vec(0,0,10), cyl(15, -3), ang(), vec(), "hq_cylinder", "models/wireframe", "") holoAddAlpha(100)
+    holoAddINTO(E)
+    
+    holoAdd("base", vec(), vec(), ang(), vec(), "", "", "rt")
+    holoAdd("root1", vec(), vec(), ang(0,-60,0), vec(), "", "", "base")
+    holoAdd("root2", vec(), vec(), ang(0, 60,0), vec(), "", "", "base")
+    holoAdd("root3", vec(), vec(), ang(0,180,0), vec(), "", "", "base")
+    
+    
+    
+    
+    holoAdd("", vec(0,0,0), cyl(3,1), ang(0,0,0), Color1, "hq_tybe_thin", Material1, "base")
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    holoAddTimer("", 1)
+}
+
+if(clk("")) {
+    
+    if(changed(0)) {
+        
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

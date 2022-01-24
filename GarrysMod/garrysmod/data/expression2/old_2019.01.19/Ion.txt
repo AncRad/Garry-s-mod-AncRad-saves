@@ -1,0 +1,130 @@
+@name Ion
+
+@inputs [T1]:entity
+@outputs Debug:string
+
+#- base
+@persist [E]:entity [Gate_name]:string
+
+#- 
+@persist [O]:entity
+
+#- 
+@persist 
+
+
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+
+if(changed(0)) {
+    if(!isSinglePlayer()) {noDuplications()}
+    
+    #- base
+    E = entity()
+    E:setSkin(1)
+    Gate_name = E:getName()
+    
+    #- 
+    O = owner()
+    
+    
+    holoCreate(1,vec(),vec(0.2),ang(),vec(200),"hq_cylinder") holoMaterial(1, "models/wireframe")
+    holoCreate(2,vec(),vec(0.2))
+    holoCreate(3,vec(),vec(0.2))
+    
+    
+    
+    
+    
+    timer("", 1)
+}
+
+
+if(clk("")) {
+        timer("", 50)
+    
+    Debug="============DEBUG============"
+    
+    #local T = 0.5-sin(90 + clamp((curtime()/2)%1,0,1) * 180)/2
+    #local T_ = 1-T
+    
+    local Radius = 50
+    local CP = E:pos()
+    local NV = -(E:pos()-T1:pos()):normalized()
+    
+    local NVA = NV:toAngle()
+    
+    local LNV = toLocal(T1:pos(),ang(),CP,NVA):normalized()
+    if(LNV[1]<0) {
+        LNV = LNV:setX(0):normalized():setX(0.3)
+    }
+    else {
+        Radius = Radius * (1-LNV:normalized()[1]^10)
+        
+        LNV = angnorm(LNV:toAngle()+ang(0,0,0)):forward()
+    }
+    local TP = toWorld(LNV*Radius,ang(),CP,NVA)
+    Debug+="\n" + floor(angnorm(LNV:toAngle()))
+    
+    holoPos(1, CP)
+    holoAng(1, NVA+ang(90,0,0))
+    holoScale(1, vec(1,1,0.001)*-Radius/6)
+    holoPos(2, TP)
+    
+    if(!T1:isPlayerHolding()) {
+        T1:setPos(T1:pos() + (TP-T1:pos())/5)
+    }
+    #holoPos(3, P)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName(Gate_name + "\nOPS: " + ops() + "\nCPU: " + int(cpuUsage()*1e6))
+if(dupefinished()) {selfDestruct()}

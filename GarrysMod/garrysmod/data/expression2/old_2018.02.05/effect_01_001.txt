@@ -1,0 +1,194 @@
+@name effect_01_001
+
+
+
+@persist [Effect01]:table Effect_01_001
+
+
+
+if(changed(0)) {
+    if(entity():getName() == "effect_01_001") {
+        #include "AddHolo"
+        Effect_01_001 = 1
+    }
+    
+    Effect01["interval", number] = 50
+    
+    
+    function number effect01(Effect_n:string, LocalPos:vector, [Radius Lenght]:number, LocalAng:angle, Color:vector, NumberParts:number, INTO:string) {
+        local Effect_i = Effect01[Effect_n + "/effect/id", number]
+        if(Effect_i) {
+            Effect01[Effect_n + "/needNumberParts", number] = NumberParts
+            Effect01[Effect_n + "/radius"         , number] = Radius
+            Effect01[Effect_n + "/lenght"         , number] = Lenght
+            Effect01[Effect_n + "/color"          , vector] = Color
+            Effect01[Effect_n + "/scale"          , number] = 0
+        }
+        else {
+            
+            Effect01["effect01List", array] = Effect01["effect01List", array]:add(array(Effect_n))
+            
+            Effect01[Effect_n + "/needNumberParts", number] = NumberParts
+            Effect01[Effect_n + "/radius"         , number] = Radius
+            Effect01[Effect_n + "/lenght"         , number] = Lenght
+            Effect01[Effect_n + "/color"          , vector] = Color
+            Effect01[Effect_n + "/scale"          , number] = 0
+            Effect01[Effect_n + "/clamp"          , number] = 0
+            
+            local Base_n = "effect01/" + Effect_n + "/base"
+            addHolo(Base_n, LocalPos, vec(), LocalAng, vec(), "tetra", "", INTO)
+            addHoloTimer("effect01")
+        }
+        return Effect_i
+    }
+    function number entity:effect01(Effect_n:string, LocalPos:vector, [Radius Lenght]:number, LocalAng:angle, Color:vector, NumberParts:number) {
+        local ID = effect01(Effect_n, LocalPos, Radius, Lenght, LocalAng, Color, NumberParts, "")
+        addHoloINTO("effect01/" + Effect_n + "/base", This)
+        return ID
+    }
+    
+    function effect01(Effect_n:string, Scale:number) {
+        Effect01[Effect_n + "/scale", number] = clamp(Scale,0,1)
+    }
+    function effect01(Effect_n:string, Color:vector) {
+        Effect01[Effect_n + "/color", vector] = clamp(Color,0,255)
+    }
+    function effect01(Effect_n:string, Scale:number, Color:vector) {
+        Effect01[Effect_n + "/scale", number] = clamp(Scale,0,1)
+        Effect01[Effect_n + "/color", vector] = clamp(Color,0,255)
+    }
+    
+    function effect01_clamping(Effect_n:string, Clamp:number) {
+        Effect01[Effect_n + "/clamp", number] = Clamp
+    }
+}
+
+
+if(Effect_01_001) {
+    #include "AddHolo"
+    
+    
+    if(changed(0)) {
+        E = entity()
+        O = owner()
+        
+        
+        E:effect01("test", vec(), 7, 50, ang(), vec(50,150,255), 20)
+    }
+    
+    local Mul = 1
+    local Color_m = Mul^5
+    local Color = vec(50,5,255)*Color_m+vec(255,50,0)*(1-Color_m)
+    effect01("test", Mul)
+    #effect01("test", Color)
+    
+    setName("effect_01_001\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage() * 1000000) + "\n" + Effect01["test" + "/needNumberParts", number] + "/" + Effect01["test" + "/numberParts", number])
+}
+
+if(clk("effect01")) {
+        timer("effect01", (Effect01["effect01Sleep", number] ? 500 : Effect01["interval", number]))
+    
+    Effect01["effect01Sleep", number] = 1
+    foreach(Number, Effect_n:string = Effect01["effect01List", array]) {
+        
+        local Scale = Effect01[Effect_n + "/scale", number]
+        if(changed(Scale) | (Scale>=0.002)) {
+            Effect01["effect01Sleep", number] = 0
+            
+            local NeedNumberParts = Effect01[Effect_n + "/needNumberParts", number]
+            local NumberParts     = Effect01[Effect_n + "/numberParts"    , number]
+            local Radius          = Effect01[Effect_n + "/radius"         , number]
+            local Lenght          = Effect01[Effect_n + "/lenght"         , number]
+            local Color           = Effect01[Effect_n + "/color"          , vector]
+            local Random          = 0#Effect01[Effect_n + "/random"         , number]
+            local Clamp           = Effect01[Effect_n + "/clamp"          , number]
+            local Clamp_changed   = changed(Clamp)
+            
+            
+            if(NumberParts < NeedNumberParts) {
+                Effect01[Effect_n + "/numberParts", number] = NumberParts = NumberParts + 1
+                local F = NumberParts - 1
+                
+                local Base_n = "effect01/" + Effect_n + "/base"
+                local Part_i = addHolo(Base_n + "/part" + NumberParts, vec(), vec(), ang(0,360/NeedNumberParts*F,0), Color, "hq_sphere", "models/roller/rollermine_glow", Base_n)
+                addHoloClip(ang(-90,0,0), 0)
+                
+                Effect01[Effect_n + "/partList", array] = Effect01[Effect_n + "/partList", array]:add(array(Part_i))
+            }
+            
+            local PartList = Effect01[Effect_n + "/partList", array]
+            
+            local Base_n = "effect01/" + Effect_n + "/base"
+            #local Base_i = AddHolo[Base_n + "/id"    , number]
+            local Base_e = AddHolo[Base_n + "/entity", entity]
+            
+            if(!Random) {
+                Random = -Radius / 3 * Scale^0.6
+            }
+            local Lenght = Lenght * Scale
+            local Color  = Color * Scale^0.6
+            
+            if(Clamp | Clamp_changed) {
+                local R = rangerOffset(Lenght, Base_e:pos(), Base_e:up()) 
+                local R_h = R:hit() & Clamp_changed
+                if(changed(R_h) | R_h) {
+                    local R_hn = R:hitNormal()
+                    local R_p = R:pos()
+                    local R_lp = Base_e:toLocal(R_p)
+                    
+                    if(R_h) {
+                        foreach(C, Part_i:number = PartList) {
+                            
+                            holoClip(Part_i, 2, R_p, R_hn, 1)
+                        }
+                    }
+                    
+                    if(changed(R_h)) {
+                        foreach(C, Part_i:number = PartList) {
+                            
+                            holoClipEnabled(Part_i, 2, R_h)
+                        }
+                    }
+                }
+            }
+            
+            local Size = vec(Radius,Radius,-Lenght*2)/6
+            foreach(C, Part_i:number = PartList) {
+                local F = C - 1
+                
+                local Part_aY = 360/NumberParts*F
+                
+                local LocalPos = vec(random(Random),0,0):rotate(ang(0,Part_aY,0))
+                local Pos = Base_e:toWorld(LocalPos)
+                
+                holoPos(Part_i, Pos)
+                holoColor(Part_i, Color)
+                holoScale(Part_i, Size)
+                holoRenderFX(Part_i, 11)
+                #holoRenderFX(Part_i, floor(curtime()/5)%18)
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

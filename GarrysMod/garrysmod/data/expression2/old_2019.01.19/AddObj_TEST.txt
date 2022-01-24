@@ -1,0 +1,72 @@
+@name AddObj_TEST
+
+@inputs 
+@outputs 
+
+#- base
+@persist [E]:entity [Gate_name]:string
+
+#- 
+@persist [O]:entity
+
+#- 
+@persist 
+
+
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+
+E = entity()
+W = E:isWeldedTo()
+
+T = "#["
+
+
+T+="\n" + "addHolo(\"rt\", vec(), vec(), ang(), vec(255), \"tetra\", \"\", \"\")"
+T+="\n" + "local ParentName = AddObj_lastName"
+
+
+findIncludeClass("prop")
+findInSphere(E:pos(),100)
+foreach(C, P:entity = findToArray()) {
+    if(P:getColor() == vec(255)) { #vec(255,124,124)
+        
+        local LP = floor(W:toLocal(P:pos())    ,2)
+        local LA = floor(W:toLocal(P:angles()) ,1)
+        
+        T+="\n" + "addProp(\"\", vec("+ LP[1] +","+ LP[2] +","+ LP[3] +"), ang("+ LA[1] +","+ LA[2] +","+ LA[3] +"), vec(255), \""+ P:model() +"\", Material1, \"rt\")" + " addObj_INTO(ParentName)"
+        
+    }
+}
+
+
+
+
+E:remoteSetCode(T)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

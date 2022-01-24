@@ -1,0 +1,552 @@
+@name BBB
+
+@inputs 
+@outputs 
+@persist [EGP]:table
+
+
+
+if(changed(0)) {
+    
+    function vector2 v(X, Y) {
+        return vec2(X, Y)
+    }
+    function vector2 v(XY) {
+        return vec2(XY)
+    }
+    function vector2 v() {
+        return vec2()
+    }
+    function vector v(X, Y, Z) {
+        return vec(X, Y, Z)
+    }
+    function vector4 v(R, W, B, A) {
+        return vec4(R, W, B, A)
+    }
+    
+    function string toText000( Number , MaxNumber ) {
+        local Text = ""
+        for(C = 1, MaxNumber - (Number + ""):length()) {Text = Text + "  "}
+        Text = Number + Text
+        
+        return Text
+    }
+    
+    
+    
+    function egpSelect(W:wirelink) {
+        EGP["egp", wirelink] = W
+    }
+    function egpClear() {
+        EGP["egp", wirelink]:egpClear()
+    }
+    
+    function number egpGetID(Name:string) {
+        return EGP[Name + "/id", number]
+    }
+    
+    function number egpRemove(Name:string) {
+        local W = EGP["egp", wirelink]
+        local ID = EGP["id", number] = EGP["id", number] + 1
+        
+        EGP[Name + "/id"  , number] = 0
+        EGP[ID   + "/name", string] = ""
+        
+        W:egpRemove(ID)
+        return ID
+    }
+    
+    function number egpAddBox(Name:string, [Pos Size]:vector2, Type:string) {
+        local W = EGP["egp", wirelink]
+        local ID = EGP["id", number] = EGP["id", number] + 1
+        
+        EGP[Name + "/id"  , number] = EGP["lastID"  , number] = ID
+        EGP[ID   + "/name", string] = EGP["lastName", string] = Name
+        switch(Type) {
+            case ""  , W:egpBox(              ID, Pos, Size) break
+            case "r" , W:egpRoundedBox(       ID, Pos, Size) break
+            case "o" , W:egpBoxOutline(       ID, Pos, Size) break
+            case "ro", W:egpRoundedBoxOutline(ID, Pos, Size) break
+        }
+        return ID
+    }
+    
+    function number egpAddCircle(Name:string, [Pos Size]:vector2, Type:string) {
+        local W = EGP["egp", wirelink]
+        local ID = EGP["id", number] = EGP["id", number] + 1
+        
+        EGP[Name + "/id"  , number] = EGP["lastID"  , number] = ID
+        EGP[ID   + "/name", string] = EGP["lastName", string] = Name
+        
+        switch(Type) {
+            case ""  , W:egpCircle(       ID, Pos, Size) break
+            case "o" , W:egpCircleOutline(ID, Pos, Size) break
+        }
+        return ID
+    }
+    
+    function number egpAddTriangle(Name:string, [Pos1 Pos2 Pos3]:vector2, Type:string) {
+        local W = EGP["egp", wirelink]
+        local ID = EGP["id", number] = EGP["id", number] + 1
+        
+        EGP[Name + "/id"  , number] = EGP["lastID"  , number] = ID
+        EGP[ID   + "/name", string] = EGP["lastName", string] = Name
+        
+        switch(Type) {
+            case ""  , W:egpTriangle(       ID, Pos1, Pos2, Pos3) break
+            case ""  , W:egpTriangleOutline(ID, Pos1, Pos2, Pos3) break
+        }
+        return ID
+    }
+    
+    function number egpAddPoly(Name:string, PosList:array, Type:string) {
+        local W = EGP["egp", wirelink]
+        local ID = EGP["id", number] = EGP["id", number] + 1
+        
+        EGP[Name + "/id"  , number] = EGP["lastID"  , number] = ID
+        EGP[ID   + "/name", string] = EGP["lastName", string] = Name
+        
+        switch(Type) {
+            case "" , W:egpPoly(       ID, PosList) break
+            case "o", W:egpPolyOutline(ID, PosList) break
+        }
+        return ID
+    }
+    
+    
+    function number egpAddLine(Name:string, [Pos1 Pos2]:vector2) {
+        local W = EGP["egp", wirelink]
+        local ID = EGP["id", number] = EGP["id", number] + 1
+        
+        EGP[Name + "/id"  , number] = EGP["lastID"  , number] = ID
+        EGP[ID   + "/name", string] = EGP["lastName", string] = Name
+        
+        W:egpLine(ID, Pos1, Pos2 )
+        return ID
+    }
+    
+    function number egpAddLineStrip(Name:string, PosList:array) {
+        local W = EGP["egp", wirelink]
+        local ID = EGP["id", number] = EGP["id", number] + 1
+        
+        EGP[Name + "/id"  , number] = EGP["lastID"  , number] = ID
+        EGP[ID   + "/name", string] = EGP["lastName", string] = Name
+        
+        W:egpLineStrip(ID, PosList)
+        return ID
+    }
+    
+    
+    function number egpAddWedge(Name:string, [Pos Size]:vector2, Type:string) {
+        local W = EGP["egp", wirelink]
+        local ID = EGP["id", number] = EGP["id", number] + 1
+        
+        EGP[Name + "/id"  , number] = EGP["lastID"  , number] = ID
+        EGP[ID   + "/name", string] = EGP["lastName", string] = Name
+        
+        switch(Type) {
+            case "" , W:egpWedge(        ID , Pos , Size ) break
+            case "o", W:egpWedgeOutline( ID , Pos , Size ) break
+        }
+        return ID
+    }
+    
+    function number egpAddText(Name:string, Text:string, Pos:vector2) {
+        local W = EGP["egp", wirelink]
+        local ID = EGP["id", number] = EGP["id", number] + 1
+        
+        EGP[Name + "/id"  , number] = EGP["lastID"  , number] = ID
+        EGP[ID   + "/name", string] = EGP["lastName", string] = Name
+        
+        W:egpText( ID , Text , Pos )
+        return ID
+    }
+    
+    function number egpAddTextLayout(Name:string, Text:string, [Pos Size]:vector2) {
+        local W = EGP["egp", wirelink]
+        local ID = EGP["id", number] = EGP["id", number] + 1
+        
+        EGP[Name + "/id"     , number] = EGP["lastID"  , number] = ID
+        EGP[ID   + "/name"   , string] = EGP["lastName", string] = Name
+        EGP[Name + "/sizeNum", number] = 20
+        
+        W:egpTextLayout(ID, Text, Pos, Size)
+        W:egpSize(ID, 20)
+        return ID
+    }
+    
+    function number egpAdd3DTracker(Name:string, V:vector) {
+        local W = EGP["egp", wirelink]
+        local ID = EGP["id", number] = EGP["id", number] + 1
+        
+        EGP[Name + "/id"     , number] = EGP["lastID"  , number] = ID
+        EGP[ID   + "/name"   , string] = EGP["lastName", string] = Name
+        
+        W:egp3DTracker(ID, V)
+        return ID
+    }
+    #[
+    wirelink:egpBox(number index,vector2 pos,vector2 size)
+    wirelink:egpBoxOutline(number index,vector2 pos,vector2 size)
+    wirelink:egpRoundedBox(number index,vector2 pos,vector2 size)
+    wirelink:egpRoundedBoxOutline(number index,vector2 pos,vector2 size)
+    
+    wirelink:egpCircle(number index,vector2 pos,vector2 size)
+    wirelink:egpCircleOutline(number index,vector2 pos,vector2 size)
+    
+    wirelink:egpTriangle(number index,vector2 v1,vector2 v2,vector2 v3)
+    wirelink:egpTriangleOutline(number index,vector2 v1,vector2 v2,vector2 v3)
+    
+    wirelink:egpPoly(number index,...)
+    wirelink:egpPoly(number index,array args)
+    wirelink:egpPolyOutline(number index,...)
+    wirelink:egpPolyOutline(number index,array args)
+    
+    wirelink:egpLine(number index,vector2 pos1,vector2 pos2)
+    wirelink:egpLineStrip(number index,array args)
+    wirelink:egpLineStrip(number index,...)
+    
+    wirelink:egpWedge(number index,vector2 pos,vector2 size)
+    wirelink:egpWedgeOutline(number index,vector2 pos,vector2 size)
+    
+    wirelink:egpText(number index,string text,vector2 pos)
+    wirelink:egpTextLayout(number index,string text,vector2 pos,vector2 size)
+    
+    wirelink:egpAddVertices(number index,array args)
+    ]#
+    
+    function egpSetParent([Name1 Name2]:string) {
+        local W = EGP["egp", wirelink]
+        local ID1 = EGP[Name1 + "/id", number]
+        local ID2 = EGP[Name2 + "/id", number]
+        
+        if(ID1 & ID2) {
+            W:egpParent(ID1, ID2)
+        }
+        else {
+            #error
+            print("setParent error " + ID1 + " " + Name1 + " and " + ID2 + " " + Name2)
+        }
+    }
+    function egpSetParent(Name2:string) {
+        local Name1 = EGP["lastName", string]
+        egpSetParent(Name1, Name2)
+    }
+    
+    
+    function egpSetPos(Name:string, Pos:vector2 ) {
+        local W = EGP["egp", wirelink]
+        local ID = EGP[Name + "/id", number]
+        
+        if(ID) {
+            W:egpPos(ID, Pos)
+        }
+        else {
+            print("ERROR egpSetPos " + Name + "  " + ID)
+        }
+    }
+    
+    function egpSetAng(Name:string, Ang:number ) {
+        local W = EGP["egp", wirelink]
+        local ID = EGP[Name + "/id", number]
+        
+        W:egpAngle(ID, Ang)
+    }
+    function egpSetAng(Ang:number) {
+        local Name = EGP["lastName", string]
+        egpSetAng(Name, Ang)
+    }
+    
+    function egpSetSize(Name:string, Size:number) {
+        local W = EGP["egp", wirelink]
+        local ID = EGP[Name + "/id", number]
+        
+        EGP[Name + "/sizeNum", number] = Size
+        
+        W:egpSize(ID, Size)
+    }
+    function egpSetSize(Size:number) {
+        egpSetSize(EGP["lastName", string], Size)
+    }
+    function egpSetSize(Name:string, Size:vector2) {
+        local W = EGP["egp", wirelink]
+        local ID = EGP[Name + "/id", number]
+        
+        W:egpSize(ID, Size)
+    }
+    function egpSetSize(Size:vector2) {
+        egpSetSize(EGP["lastName", string], Size)
+    }
+    
+    
+    function egpSetMaterial([Name Material]:string) {
+        local W = EGP["egp", wirelink]
+        local ID = EGP[Name + "/id", number]
+        
+        W:egpMaterial(ID, Material)
+    }
+    function egpSetMaterial(Material:string) {
+        egpSetParent(EGP["lastName", string], Material)
+    }
+    
+    function egpSetColor(Name:string, Color:vector) {
+        local W = EGP["egp", wirelink]
+        local ID = EGP[Name + "/id", number]
+        
+        W:egpColor(ID, Color)
+    }
+    function egpSetColor(Name:string, [R G B]) {
+        egpSetColor(Name, vec(R,G,B))
+    }
+    function egpSetColor(Name:string, RGB) {
+        egpSetColor(Name, vec(RGB))
+    }
+    function egpSetColor(Color:vector) {
+        egpSetColor(EGP["lastName", string], Color)
+    }
+    function egpSetColor(R, G, B) {
+        egpSetColor(EGP["lastName", string], vec(R, G, B))
+    }
+    function egpSetColor(RGB) {
+        egpSetColor(EGP["lastName", string], vec(RGB))
+    }
+    
+    function egpSetAlpha(Name:string, Alpha:number ) {
+        local W = EGP["egp", wirelink]
+        local ID = EGP[Name + "/id", number]
+        
+        W:egpAlpha( ID , Alpha )
+    }
+    function egpSetAlpha( Alpha:number ) {
+        egpSetAlpha( EGP["lastName", string] , Alpha )
+    }
+    
+    function egpSetText([Name Text]:string) {
+        local W = EGP["egp", wirelink]
+        local ID = EGP[Name + "/id", number]
+        
+        W:egpSetText(ID, Text)
+    }
+    
+    function egpSetAlign(Name:string, H, V) {
+        local W = EGP["egp", wirelink]
+        local ID = EGP[Name + "/id", number]
+        
+        W:egpAlign(ID, H, V)
+    }
+    function egpSetAlign(H, V) {
+        egpSetAlign(EGP["lastName", string], H, V)
+    }
+    
+    function egpSet3DTracker(Name:string, V:vector) {
+        local W = EGP["egp", wirelink]
+        local ID = EGP[Name + "/id", number]
+        
+        W:egp3DTracker(ID, V)
+    }
+    #[
+    wirelink:egpParent(number index,entity parent)
+    wirelink:egpParent(number index,number parentindex)
+    
+    wirelink:egpPos(number index,vector2 pos)
+    wirelink:egpPos(number index,vector pos)
+    
+    wirelink:egpAngle(number index,number angle)
+    wirelink:egpAngle(number index,vector2 worldpos,vector2 axispos,number angle)
+    
+    wirelink:egpMaterial(number index,string material)
+    wirelink:egpMaterialFromScreen(number index,entity gpu)
+    
+    wirelink:egpColor(number index,vector color)
+    wirelink:egpColor(number index,vector4 color)
+    wirelink:egpColor(number index,number r,number g,number b,number a)
+    
+    wirelink:egpAlpha(number index,number a)
+    
+    wirelink:egpSetText(number index,string text)
+    
+    wirelink:egpSize(number index,number size)
+    wirelink:egpSize(number index,vector2 size)
+    
+    wirelink:egpAlign(number index,number halign,number valign)
+    wirelink:egpAlign(number index,number halign)
+    
+    wirelink:egp3DTracker(number index,vector pos)
+    wirelink:egpFidelity(number index,number fidelity)
+    wirelink:egpFont(number index,string font)
+    wirelink:egpFont(number index,string font,number size)
+    wirelink:egpOrder(number index,number order)
+    wirelink:egpOrderAbove(number index,number abovethis)
+    wirelink:egpOrderBelow(number index,number belowthis)
+    wirelink:egpRadius(number index,number radius)
+    ]#
+    
+    function vector2 egpGetPos(Name:string) {
+        local W = EGP["egp", wirelink]
+        local ID = EGP[Name + "/id", number]
+        
+        return W:egpPos(ID)
+    }
+    function vector2 egpGetGlobalPos(Name:string) {
+        local W = EGP["egp", wirelink]
+        local ID = EGP[Name + "/id", number]
+        
+        local Pos = W:egpPos(ID)
+        local Parent = W:egpParent(ID)
+        while(Parent) {
+            Pos = W:egpPos(Parent) + Pos:rotate(-W:egpAngle(Parent))
+            Parent = W:egpParent(Parent)
+        }
+        
+        return Pos
+    }
+    #function vector2 egpGetLocalPos(Name:string, GlobalPos:vector2) {
+    
+    
+    function vector2 egpGetSize(Name:string) {
+        local W = EGP["egp", wirelink]
+        local ID = EGP[Name + "/id", number]
+        
+        return W:egpSize(ID)
+    }
+    function number egpGetSizeNum(Name:string) {
+        local W = EGP["egp", wirelink]
+        local ID = EGP[Name + "/id", number]
+        
+        local Size = W:egpSizeNum(ID)
+        if(Size == -1) {Size = EGP[Name + "/sizeNum", number]}
+        
+        return Size
+    }
+    
+    function number egpGetAng(Name:string) {
+        local W = EGP["egp", wirelink]
+        local ID = EGP[Name + "/id", number]
+        
+        return W:egpAngle(ID)
+    }
+    
+    
+    function string egpGetMaterial(Name:string) {
+        local W = EGP["egp", wirelink]
+        local ID = EGP[Name + "/id", number]
+        
+        return W:egpMaterial(ID)
+    }
+    function vector egpGetColor(Name:string) {
+        local W = EGP["egp", wirelink]
+        local ID = EGP[Name + "/id", number]
+        
+        return W:egpColor(ID)
+    }
+    function number egpGetAlpha(Name:string) {
+        local W = EGP["egp", wirelink]
+        local ID = EGP[Name + "/id", number]
+        
+        return W:egpAlpha(ID)
+    }
+    
+    function number egpGlobalInrange(Name:string, Coord:vector2) {
+        local GPos = egpGetGlobalPos(Name)
+        local Size = egpGetSize(Name) / 2
+        return inrange(Coord - GPos,-Size,Size)
+    }
+    function number egpLocalInrange(Name:string, Coord:vector2) {
+        local Pos = egpGetPos(Name)
+        local Size = egpGetSize(Name) / 2
+        return inrange(Coord - Pos,-Size,Size)
+    }
+    function number egpInrange(Name:string, Coord:vector2) {
+        local Size = egpGetSize(Name) / 2
+        return inrange(Coord,-Size,Size)
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,29 @@
+@name TEST_around_normal_axis_Rotate
+@inputs 
+@outputs 
+@persist O:entity
+@trigger 
+
+
+interval(50)
+
+if(changed(0)) {
+    
+    holoCreate(1, vec(),vec(1),ang(),vec(255),"models/sprops/cylinders/size_5/cylinder_12x6.mdl")
+    holoCreate(2, vec(10,0,0),vec(0.1),ang(),vec(255,0,0)) holoParent(2,1)
+    holoCreate(3, vec(0,10,0),vec(0.1),ang(),vec(0,255,0)) holoParent(3,1)
+    holoCreate(4, vec(0,0,10),vec(0.1),ang(),vec(0,0,255)) holoParent(4,1)
+    
+    O = owner()
+}
+
+holoPos(1,O:aimPos())
+
+
+Norm = O:aimNormal()
+
+
+Norm:rotateAroundAxis(Norm:cross(vec(0.0001,0,1)),90):toAngle()
+
+Ang = ang(  0  ,  0  ,  0  )
+holoAng(1,Ang)

@@ -1,0 +1,192 @@
+@name spider_legs_01_000
+
+@inputs 
+@outputs 
+
+#- base
+@persist [E O]:entity [Gate_name]:string
+
+#- 
+@persist [Q]:table
+
+#- 
+#@persist 
+
+
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+
+#include "AddHolo"
+
+
+
+if(changed(0)) {
+    if(!isSinglePlayer()) {noDuplications()}
+    
+    #- base
+    E = entity()
+    E:setSkin(1)
+    Gate_name = E:getName():explode("\n"):string(1)
+    
+    #- 
+    O = owner()
+    
+    
+    
+    function leg_add(Leg_name:string, Leg_pos:vector, Leg_ang:angle, Leg_INTO:string) {
+        local Lengths = array(8,30,40,35,8)
+        
+        AddHolo_lastName = Leg_INTO
+        
+        addHolo(Leg_name + "/lapa_rt0", Leg_pos, vec(-3), Leg_ang, vec(255), "icosphere2", "", AddHolo_lastName)
+        addHolo(Leg_name + "/lapa_rt1", vec( 0 , 0 , 0 ), vec(-2), ang(0,0,0), vec(255,0,0), "icosphere2", "", AddHolo_lastName)
+        addHolo(Leg_name + "/lapa_rt2", vec( Lengths[1, number] , 0 , 0 ), vec(-2  ), ang(0,0,0), vec(255,0,0), "icosphere2", "", AddHolo_lastName)
+        addHolo(Leg_name + "/lapa_rt3", vec( Lengths[2, number] , 0 , 0 ), vec(-2  ), ang(0,0,0), vec(255,0,0), "icosphere2", "", AddHolo_lastName)
+        addHolo(Leg_name + "/lapa_rt4", vec( Lengths[3, number] , 0 , 0 ), vec(-2  ), ang(0,0,0), vec(255,0,0), "icosphere2", "", AddHolo_lastName)
+        addHolo(Leg_name + "/lapa_rt5", vec( Lengths[4, number] , 0 , 0 ), vec(-2  ), ang(0,0,0), vec(255,0,0), "icosphere2", "", AddHolo_lastName)
+        addHolo(Leg_name + "/lapa_rt6", vec( Lengths[5, number] , 0 , 0 ), vec(-1.5), ang(0,0,0), vec(255,0,0), "icosphere2", "", AddHolo_lastName)
+        
+        local Length = 0 for(C = 2,5) {Length += Lengths[C, number]}
+        addHolo(Leg_name + "/marker", vec(), vec(Length,0.01,0.01), ang(0,0,0), vec(255,150,0), "cube", "models/wireframe", Leg_name + "/lapa_rt2")
+        addHolo_clip(vec(),ang(0,0,0),0)
+        
+        Q[Leg_name + "/lengths", array] = Lengths
+    }
+    
+    function leg_pos(Leg_name:string, [Pos_target Pos_orient]:vector) {
+        
+        local LegI_a = Q[Leg_name + "/indList", array]
+        local LegE_a = Q[Leg_name + "/entList", array]
+        local Lengths = Q[Leg_name + "/lengths", array]
+        
+        if(!LegE_a:count()) {
+            
+            for(C = 0,5) {
+                local RT_n = Leg_name + "/lapa_rt" + C
+                local RT_e = AddHolo[RT_n + "/entity", entity]
+                local RT_i = AddHolo[RT_n + "/index", number]
+                
+                LegI_a[C, number] = RT_i
+                LegE_a[C, entity] = RT_e
+                
+                if(!RT_e | !RT_i) {
+                    return
+                }
+            }
+            Q[Leg_name + "/indList", array] = LegI_a
+            Q[Leg_name + "/entList", array] = LegE_a
+        }
+        
+        
+        local Angles = array(ang(),ang(0,0,0),ang(0,0,0),ang(80,0,0),ang(0,0,0)) #array(ang(30,0,0),ang(-60,0,0),ang(30,0,0),ang(45,0,0),ang(30,0,0))
+        for(C = 1,5) {
+            
+            holoAng(LegI_a[C, number], LegE_a[C-1, entity]:toWorld(Angles[C, angle]))
+        }
+        
+        local M_n = Leg_name + "/marker"
+        local M_i = AddHolo[M_n + "/index", number]
+        local M_e = AddHolo[M_n + "/entity", entity]
+        local A = (LegE_a[5, entity]:toWorld(vec(Lengths[5, number],0,0))-M_e:pos()):toAngle()
+        #holoAng(M_i, A)
+        
+        local A2 = Angles[2, angle][1]
+        local A3 = Angles[3, angle][1]
+        local A4 = Angles[4, angle][1]
+        local A5 = Angles[5, angle][1]
+        local L2 = Lengths[2, number]
+        local L3 = Lengths[3, number]
+        local L4 = Lengths[4, number]
+        local L5 = Lengths[5, number]
+        local Length = L2*cos(A2) + L3*cos(A2+A3) + L4*cos(A2+A3+A4) + L5*cos(A2+A3+A4+A5)
+        holoScale(M_i, vec(Length/6,0.01,0.01))
+    }
+    
+    
+    
+    
+    
+    
+    local INTO_e = E:isWeldedTo()
+    local INTO_BS = abs(INTO_e:boxSize():rotate(0,90,0)/2)
+    addHolo("rt", INTO_e:boxCenter(), vec(), ang(0,90,0), vec(), "cube", "", "")
+    addHolo_INTO(INTO_e)
+    
+    addHolo("base", vec(), vec(5), ang(), vec(255), "models/editor/axis_helper.mdl", "", "rt")
+    
+    leg_add("l1", vec(INTO_BS[1],INTO_BS[2],-INTO_BS[3]), ang(0,90,0), "base")
+    
+    
+    
+    
+    
+    
+    
+    
+    addHolo_timer("")
+    addHolo_start()
+}
+
+
+if(clk("")) {
+        timer("", 50)
+    
+    if(changed(0)) {
+        
+        leg_pos("l1", vec(),vec())
+    }
+    
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName(Gate_name + "\nOPS: " + ops() + "\nCPU: " + int(cpuUsage()*1e6))
+if(dupefinished()) {reset()}

@@ -1,0 +1,170 @@
+@name SWEP_base_01
+@inputs 
+@outputs 
+@persist [Q_user Q_body]:entity [Q_status]:string [Q_userHolo_i Q_rt_i]:number
+@model models/sprops/cylinders/size_5/cylinder_12x3.mdl
+
+
+
+#include "Turret_01_004_model"
+if(changed(0)) {
+    
+    addHolo_start()
+    addHolo_timer("base", "swep", 1)
+    addHolo("user_rt",vec(),vec(),ang(),vec(),"cube","","rt") unshiftHolo()
+    
+    
+    
+    
+    
+}
+
+
+if(clk("swep")) {
+        timer("swep", 50)
+    
+    if(changed(0)) {
+        
+        Q_rt_i = 2
+        Q_userHolo_i = AddHolo["user_rt/index", number]
+        Q_userHolo_i = Q_userHolo_i ? Q_userHolo_i : 100500
+        
+        Q_body = entity()
+        Q_status = "drop"
+        
+        runOnLast(1)
+        
+        
+        function toChest() {
+            
+            local Chest = holoEntity(Q_userHolo_i)
+            if(!holoEntity(Q_userHolo_i)) {
+                Chest = holoCreate(Q_userHolo_i,vec(),vec(-0.4),ang()) holoVisible(Q_userHolo_i, players(), 0) holoVisible(Q_userHolo_i, owner(), 1)
+            }
+            holoPos(Q_userHolo_i, Q_user:attachmentPos("chest"))
+            holoAng(Q_userHolo_i, Q_user:attachmentAng("chest"))
+            holoParentAttachment(Q_userHolo_i, Q_user, "chest")
+            
+            
+            holoPos(Q_rt_i, Chest:toWorld(vec()))
+            holoAng(Q_rt_i, Chest:toWorld(ang()))
+            holoParent(Q_rt_i, Chest)
+            
+            Q_status = "chest"
+        }
+        function toRHand() {
+            
+            local RHand = holoEntity(Q_userHolo_i)
+            if(!holoEntity(Q_userHolo_i)) {
+                RHand = holoCreate(Q_userHolo_i,vec(),vec(-0.4),ang()) holoVisible(Q_userHolo_i, players(), 0) holoVisible(Q_userHolo_i, owner(), 1)
+            }
+            holoPos(Q_userHolo_i, Q_user:attachmentPos("anim_attachment_rh"))
+            holoAng(Q_userHolo_i, Q_user:attachmentAng("anim_attachment_rh"))
+            holoParentAttachment(Q_userHolo_i, Q_user, "anim_attachment_rh")
+            
+            
+            holoPos(Q_rt_i, RHand:toWorld(vec()))
+            holoAng(Q_rt_i, RHand:toWorld(ang()))
+            holoParent(Q_rt_i, RHand)
+            
+            Q_status = "rhand"
+        }
+        function toDrop() {
+            
+            local Q_rt_e = holoEntity(Q_rt_i)
+            Q_body:setPos(Q_rt_e:toWorld(vec()))
+            Q_body:setAng(Q_rt_e:toWorld(ang()))
+            holoParent(Q_rt_i, Q_body)
+            holoPos(Q_rt_i, Q_body:toWorld(vec()))
+            holoAng(Q_rt_i, Q_body:toWorld(ang()))
+            
+            
+            #[
+            holoPos(Q_rt_i, Q_body:toWorld(vec()))
+            holoAng(Q_rt_i, Q_body:toWorld(ang()))
+            holoParent(Q_rt_i, Q_body)
+            ]#
+            
+            Q_status = "drop"
+        }
+        function entity:getUser() {
+            Q_user = This
+            if(This:weapon():type() == "weapon_crowbar") {
+                toRHand()
+            }
+            else {
+                toChest()
+            }
+        }
+        
+        
+        
+        owner():getUser()
+    }
+    
+    if(Q_status == "rhand") {
+        if(Q_user:weapon():type() != "weapon_crowbar") {
+            if(Q_user:keyUse()) {
+                toChest()
+            }
+            else {
+                toDrop()
+            }
+        }
+    }
+    elseif(Q_status == "chest") {
+        local Crow = Q_user:weapon():type() == "weapon_crowbar"
+        if(changed(Crow) & Crow) {
+            if(Q_user:keyUse()) {
+                toRHand()
+            }
+        }
+    }
+    elseif(Q_status == "drop") {
+        
+        local Distance = 52.5 * 1.5
+        findIncludeClass("player")
+        findInSphere(Q_body:pos(), Distance)        
+        foreach(C, P:entity  = findToArray()) {
+            if(P:keyAttack1() & P:keyUse() & P:aimEntity() == Q_body & P:aimPos():distance(P:shootPos()) <= Distance) {
+                if(P:weapon():type() == "weapon_crowbar") {
+                    P:getUser()
+                    break
+                }
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+if(last()) {
+    if(Q_status == "rhand" | Q_status == "chest") {
+        toDrop()
+    }
+}
+setName("SWEP_base\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1e6))

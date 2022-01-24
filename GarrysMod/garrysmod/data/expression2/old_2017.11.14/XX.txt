@@ -1,0 +1,72 @@
+@name XX
+@inputs 
+@outputs 
+@persist 
+@trigger 
+
+
+#
+function number array:getIndex([Value Delimiter]:string) {
+    if(!Delimiter) {Delimiter = "\n#\n"}
+    local Concat = This:concat(Delimiter)
+    local Find = (Delimiter + Concat + Delimiter):find(Delimiter + Value + Delimiter)
+    
+    if(!Find) {return 0}
+    return Concat:left(Find):explode(Delimiter):count()
+}
+function number array:getIndex(Value:string) {
+    return This:getIndex(Value, "")
+}
+#
+#- REMOVE MATCHING VALUE
+#
+function number array:removeValue([Value Delimiter]:string) {
+    local Index = This:getIndex(Value, Delimiter)
+    if(Index) {
+        This:remove(Index)
+    }
+    return Index
+}
+function number array:removeValue(Value:string) {
+    return This:removeValue(Value, "")
+}
+#
+#- ADD IF NOT THIS VALUE
+#
+function number array:addNoAvailableValue([Value Delimiter]:string) {
+    local Index = This:getIndex(Value, Delimiter)
+    if(!Index) {
+        This:pushString(Value)
+        #This = This:add(array(Value))
+    }
+    return !Index
+}
+function number array:addNoAvailableValue(Value:string) {
+    return This:addNoAvailableValue(Value, "")
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

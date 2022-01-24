@@ -1,0 +1,20 @@
+@name test_math_peresechenie_ploskosti_i_pryamoi_02
+@inputs 
+@outputs 
+@persist [O H]:entity
+@trigger 
+
+interval(50)
+
+
+if(changed(0)) {
+    
+    O = owner()
+    E = entity()
+    H = holoCreate(1, E:pos(), vec(100,100,0.01), E:angles(), vec(255), "models/holograms/hq_rcube_thick.mdl") holoParent(1, E) holoMaterial(1, "models/wireframe")
+    
+    holoCreate(2, vec(), vec(3), ang(), vec(255), "models/editor/axis_helper.mdl") holoParent(2,1)
+}
+
+AimPos=rayOBBoxIntersection(O:shootPos(),O:eye(),H:pos(),vec(0,100,100)*6,H:toWorld(ang(90,0,0)))
+holoPos(2, AimPos)

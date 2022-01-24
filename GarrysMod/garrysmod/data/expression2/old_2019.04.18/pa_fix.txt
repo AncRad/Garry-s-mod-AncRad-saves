@@ -1,0 +1,29 @@
+@name pa_fix
+
+@inputs 
+@outputs 
+@persist [O]:entity
+
+
+if(O:keyPressed("mouse_4") & O:keyPressed("lshift")) {
+    local Aim_e = O:aimEntity()
+    
+    if(Aim_e:owner() == O & Aim_e:type() == "prop_physics") {
+        if(propCanSpawn()) {
+            local Prop = propSpawn(Aim_e, Aim_e:pos(), Aim_e:angles(), 1)
+            Prop:setColor(Aim_e:getColor4())
+            Prop:setMaterial(Aim_e:getMaterial())
+            printColor(vec(255),"[",vec(255,70,0),"pa_fix",vec(255),"] ", "prop spawned ", vec(30), Prop:creationID())
+        }
+        else {
+            printColor(vec(255),"[",vec(255,70,0),"pa_fix",vec(255),"] prop ", vec(255,50,0), "can't ", vec(255), "spawn")
+        }
+    }
+}
+
+if(changed(0)) {
+    
+    O = owner()
+    runOnKeys(O, 1)
+    exit()
+}

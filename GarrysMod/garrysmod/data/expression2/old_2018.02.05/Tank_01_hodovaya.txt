@@ -1,0 +1,14 @@
+@name Tank_01_hodovaya
+
+@inputs [Base LW_e RW_e]:entity
+@inputs 
+@outputs 
+@persist 
+
+@trigger 
+
+
+
+if(changed(0)) {
+    
+}

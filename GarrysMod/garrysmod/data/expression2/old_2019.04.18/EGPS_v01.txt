@@ -1,0 +1,1208 @@
+@name EGPS_v01
+
+@persist 
+#- element
+@persist [EGPS EGPS_noParent]:table
+@persist [EGPS_w]:wirelink
+@persist [EGPS_freeIndexes]:array [EGPS_egpMaxObjects EGPS_usedIndexCounter EGPS_noNameCounter]:number
+@persist [EGPS_lastName]:string [EGPS_lastIndex]
+#- groups
+@persist [EGPS_groups]:table
+@persist [EGPS_groupOpen]:table
+#- костыль
+@persist [EGPS_cursorPos]:vector2
+################
+
+#- protection from idiot
+if(!changed(0) & changed(0)) {
+    local E2_name = entity():getName()
+    if(E2_name == "EGPS_v01") {
+        printColor(vec(255),"[",vec(255,50,0),E2_name,vec(255),"] Это библиотека, а не код для чипа. Используй ",vec(160,240,240),"#inlude")
+        selfDestruct()
+        exit()
+    }
+    else {
+        printColor(vec(255),"[",vec(255,50,0),E2_name:explode("\n")[1, string],vec(255),"] Повторный вызов библиотеки"," \"",vec(160,240,240),"EGPS_v01",vec(255),"\"")
+    }
+}
+
+EGPS_egpMaxObjects = egpMaxObjects()
+
+
+#######################################################################
+######################                       ##########################
+###################### EXTENDED EXPRESSION 2 ##########################
+######################                       ##########################
+#######################################################################
+################
+#
+#- VECTOR FUNCTIONS
+#
+#
+#- VECTOR 2
+#
+function vector2 v([X Y]:number) {
+    return vec2(X,Y)
+}
+function vector2 v(XY:number) {
+    return vec2(XY)
+}
+function vector2 v() {
+    return vec2()
+}
+#
+#- VECTOR 3
+#
+function vector v([X Y Z]:number) {
+    return vec(X,Y,Z)
+}
+#
+#- VECTOR 4
+#
+function vector4 v([R G B A]:number) {
+    return vec4(R,G,B,A)
+}
+function vector4 v([RG]:vector2, [B A]:number) {
+    return vec4(RG[1],RG[2],B,A)
+}
+function vector4 v([R G]:number, [BA]:vector2) {
+    return vec4(R,G,BA[1],BA[2])
+}
+function vector4 v([V1 V2]:vector2) {
+    return vec4(V1, V2)
+}
+#
+################
+
+
+
+#######################################################################
+######################                       ##########################
+######################     EXTENDED EGP 3    ##########################
+######################                       ##########################
+#######################################################################
+################
+#
+#- EGP SELECT
+#
+function number egpSelect(W:wirelink) {
+    if(!W) {return 0}
+    EGPS_w = W
+    return 1
+}
+function number egpSelect() {
+    local E_WT = entity():isWeldedTo()
+    if(E_WT) {
+        return egpSelect(E_WT:wirelink())
+    }
+    return 0
+}
+#
+#- EGP CLEAR
+#
+function egpClear() {
+    EGPS:clear()
+    EGPS_w:egpClear()
+}
+#
+################
+
+
+
+################
+#
+#- REMOVE ELEMENT
+#
+function egpRemoveElement(E_n:string) {                           #####
+    
+    local E_T = EGPS:removeTable(E_n)
+    local E_i = E_T["index", number]
+    EGPS_w:egpRemove(E_i)
+    EGPS_freeIndexes:pushNumber(E_i)
+}
+#
+################
+
+
+
+################
+#
+#- GROUP
+#
+#- OPEN
+#
+function number egpGroupOpen(G_n:string) {
+    if(!EGPS_groups:exists(G_n)) {
+        EGPS_groups[G_n, table] = table()
+    }
+    EGPS_groupOpen[G_n, table] = EGPS_groups[G_n, table]
+}
+#
+#- CLOSE
+#
+function number egpGroupClose(G_n:string) {
+    EGPS_groupOpen:remove(G_n)
+}
+#
+#- CLEAR
+#
+function number egpGroupClear(G_n:string) {
+    foreach(C, E_n:string = EGPS_groups[G_n, table]) {
+        EGPS[E_n, table]["groups", table]:remove(G_n)
+    }
+    EGPS_groups[G_n, table]:clear()
+}
+#
+#- REMOVE
+#
+function number egpGroupRemove(G_n:string) {
+    foreach(C, E_n:string = EGPS_groups[G_n, table]) {
+        egpRemoveElement(E_n)
+    }
+    EGPS_groups:remove(G_n)
+}
+#
+################
+
+################
+#
+#- EGP ADD
+#
+#
+#- GIVE FREE INDEX
+#
+function number egpGiveFreeIndex(E_n:string) {
+    if(!E_n) {
+        while(EGPS:exists("noName"+EGPS_noNameCounter)) {EGPS_noNameCounter++}
+        E_n = "noName"+EGPS_noNameCounter
+    }
+    local Index = EGPS[E_n, table]["index", number]
+    if(Index) {return Index}
+    if(EGPS_freeIndexes:count()) {
+        return EGPS_freeIndexes:removeNumber(1)
+    }
+    if(EGPS_usedIndexCounter < EGPS_egpMaxObjects) {
+        EGPS_usedIndexCounter++
+        return EGPS_usedIndexCounter
+    }
+    printColor(vec(255,75,0), "[EGPS] ", vec(255,0,0), " Закончились свободные индексы. ", vec(0,100,255), " \"" + E_n + "\"")
+    return 0
+}
+#
+#= EGP ADD ELEMENT
+#
+function table:egpAddElement(E_n:string, E_i:number) {
+    local E_t = table()
+    EGPS[E_n, table] = E_t = This:merge(table(
+         "name"        = E_n
+        ,"index"       = E_i
+        ,"groups"      = table()
+        ,"parents"     = table("coordinateSystem"=table())
+        ,"childs"      = table("coordinateSystem"=table())
+    ))
+    
+    local Groups = E_t["groups", table]
+    foreach(Group_n, Group_T:table = EGPS_groupOpen) {
+        Groups[Group_n, table] = Group_T
+        Group_T[E_n, table] = E_t
+    }
+    
+    EGPS_lastName = E_n
+    EGPS_lastIndex = E_i
+    #EGPS["coordinateSystem/childList", table]:pushTable(E_t)
+}
+#
+#
+#- BOX
+function number egpAddBox(E_n:string, [E_s E_p]:vector2, E_v:number) {
+    local E_i = egpGiveFreeIndex(E_n)
+    
+    if(E_i) {
+        E_v = clamp(int(E_v),0,3)
+        table(
+             "type"         = "box"
+            ,"typeVariable" = E_v
+        ):egpAddElement(E_n, E_i)
+        
+        switch(E_v) {
+            case 0, EGPS_w:egpBox(              E_i,E_p,E_s) break
+            case 1, EGPS_w:egpBoxOutline(       E_i,E_p,E_s) break
+            case 2, EGPS_w:egpRoundedBox(       E_i,E_p,E_s) break
+            case 3, EGPS_w:egpRoundedBoxOutline(E_i,E_p,E_s) break
+        }
+    }
+    return !!E_i
+}
+function number egpAddBox(E_n:string, [E_s E_p]:vector2) {return egpAddBox(E_n,E_s,E_p,0)}
+#
+#
+#- CIRCLE
+function number egpAddCircle(E_n:string, [E_s E_p]:vector2, E_v:number) {
+    local E_i = egpGiveFreeIndex(E_n)
+    
+    if(E_i) {
+        E_v = clamp(int(E_v),0,1)
+        table(
+            "type"         = "circle",
+            "typeVariable" = E_v
+        ):egpAddElement(E_n, E_i)
+        
+        switch(E_v) {
+            case 0, EGPS_w:egpCircle(       E_i,E_p,E_s) break
+            case 1, EGPS_w:egpCircleOutline(E_i,E_p,E_s) break
+        }
+    }
+    return !!E_i
+}
+function number egpAddCircle(E_n:string, [E_s E_p]:vector2) {return egpAddCircle(E_n,E_s,E_p,0)}
+#
+#
+#- TRIANGLE
+function number egpAddTriangle(E_n:string, [E_p1 E_p2 E_p3]:vector2, E_v:number) {
+    local E_i = egpGiveFreeIndex(E_n)
+    
+    if(E_i) {
+        E_v = clamp(int(E_v),0,1)
+        table(
+            "type"         = "triangle",
+            "typeVariable" = E_v
+        ):egpAddElement(E_n, E_i)
+        
+        switch(E_v) {
+            case 0, EGPS_w:egpTriangle(       E_i,E_p1,E_p2,E_p3) break
+            case 1, EGPS_w:egpTriangleOutline(E_i,E_p1,E_p2,E_p3) break
+        }
+    }
+    return !!E_i
+}
+function number egpAddTriangle(E_n:string, [E_p1 E_p2 E_p3]:vector2) {
+    return egpAddTriangle(E_n,E_p1,E_p2,E_p3,0)
+}
+#
+#
+#- WEDGE
+function number egpAddWedge(E_n:string, [E_s E_p]:vector2, E_v:number) {
+    local E_i = egpGiveFreeIndex(E_n)
+    
+    if(E_i) {
+        E_v = clamp(int(E_v),0,1)
+        table(
+            "type"         = "wedge",
+            "typeVariable" = E_v
+        ):egpAddElement(E_n, E_i)
+        
+        switch(E_v) {
+            case 0, EGPS_w:egpWedge(       E_i,E_p,E_s) break
+            case 1, EGPS_w:egpWedgeOutline(E_i,E_p,E_s) break
+        }
+    }
+    return !!E_i
+}
+function number egpAddWedge(E_n:string, [E_s E_p]:vector2) {
+    return egpAddWedge(E_n,E_s,E_p,0)
+}
+#
+#
+#- POLY
+function number egpAddPoly(E_n:string, E_pA:array, E_v:number) {
+    local E_i = egpGiveFreeIndex(E_n)
+    
+    if(E_i) {
+        E_v = clamp(int(E_v),0,1)
+        table(
+            "type"         = "poly",
+            "typeVariable" = E_v
+        ):egpAddElement(E_n, E_i)
+        
+        switch(E_v) {
+            case 0, EGPS_w:egpPoly(       E_i,E_pA) break
+            case 1, EGPS_w:egpPolyOutline(E_i,E_pA) break
+        }
+    }
+    return !!E_i
+}
+function number egpAddPoly(E_n:string, E_pA:array) {
+    return egpAddPoly(E_n,E_pA,0)
+}
+#
+#
+#
+#- TEXT
+function number egpAddText([E_n E_t]:string, E_p:vector2) {
+    local E_i = egpGiveFreeIndex(E_n)
+    
+    if(E_i) {
+        table(
+            "type" = "text"
+        ):egpAddElement(E_n, E_i)
+        
+        EGPS_w:egpText(E_i,E_t,E_p)
+    }
+    return !!E_i
+}
+#- TEXT LAYOUT
+function number egpAddText([E_n E_t]:string, [E_s E_p]:vector2) {
+    local E_i = egpGiveFreeIndex(E_n)
+    
+    if(E_i) {
+        table(
+            "type" = "textLayout"
+        ):egpAddElement(E_n, E_i)
+        
+        EGPS_w:egpTextLayout(E_i,E_t,E_p,E_s)
+    }
+    return !!E_i
+}
+#
+#
+#
+#- LINE
+function number egpAddLine(E_n:string, [E_p1 E_p2]:vector2) {
+    local E_i = egpGiveFreeIndex(E_n)
+    
+    if(E_i) {
+        table(
+            "type" = "line"
+        ):egpAddElement(E_n, E_i)
+        
+        EGPS_w:egpLine(E_i,E_p1,E_p2)
+    }
+    return !!E_i
+}
+#- LINE STRIP
+function number egpAddLine(E_n:string, E_pA:array) {
+    local E_i = egpGiveFreeIndex(E_n)
+    
+    if(E_i) {
+        table(
+            "type" = "lineStrip"
+        ):egpAddElement(E_n, E_i)
+        
+        EGPS_w:egpLineStrip(E_i,E_pA)
+    }
+    return !!E_i
+}
+#
+#
+#
+#- VERTICES
+function number egpAddVertices(E_n:string, E_pA:array) {
+    local E_i = egpGiveFreeIndex(E_n)
+    
+    if(E_i) {
+        table(
+            "type" = "vertices"
+        ):egpAddElement(E_n, E_i)
+        
+        EGPS_w:egpAddVertices(E_i,E_pA)
+    }
+    return !!E_i
+}
+#
+#
+#
+#- 3D TRACKER
+function number egpAdd3DTracker(E_n:string, E_p:vector) {
+    local E_i = egpGiveFreeIndex(E_n)
+    
+    if(E_i) {
+        table(
+            "type" = "3DTracker"
+        ):egpAddElement(E_n, E_i)
+        
+        EGPS_w:egp3DTracker(E_i,E_p)
+    }
+    return !!E_i
+}
+#
+################
+
+
+
+################
+#
+#- SET FUNCTIONS
+#
+#
+#- PARENT
+function number egpSetParent([E_n P_n]:string) {
+    local E_T = EGPS[E_n, table]
+    local E_i = E_T["index", number]
+    
+    if(E_i) {
+        local P_T = EGPS[P_n, table]
+        local P_i = P_T["index", number]
+        if(P_i) {
+            local E_parents = E_T["parents", table]
+            local P_childs = P_T["childs", table]
+            foreach(Parent_type, Parent_T:table = E_parents) {
+                if(Parent_T:exists("index")) {
+                    Parent_T["childs", table][Parent_type, table]:remove(E_n)
+                }
+                else {
+                    EGPS_noParent[Parent_type, table]:remove(E_n)
+                }
+                E_parents[Parent_type, table] = P_T
+                P_childs[Parent_type, table][E_n, table] = E_T
+            }
+            EGPS_w:egpParent(E_i,P_i)
+            return 1
+        }
+    }
+    print("error#egpSetParent#" + E_n + "#to#" + P_n)
+    return 0
+}
+function number egpSetParent(P_n:string) {return egpSetParent(EGPS_lastName, P_n)}
+#- UNPARENT
+function number egpUnParent([E_n]:string) {
+    local E_T = EGPS[E_n, table]
+    local E_i = E_T["index", number]
+    
+    if(E_i) {
+        local E_parents = E_T["parents", table]
+        foreach(Parent_type, Parent_T:table = E_parents) {
+            if(Parent_T:exists("index")) {Parent_T["childs", table][Parent_type, table]:remove(E_n)}
+            E_parents[Parent_type, table]:clear()
+            
+            if(!EGPS_noParent:exists(Parent_type)) {
+                EGPS_noParent[Parent_type, table] = table()
+            }
+            EGPS_noParent[Parent_type, table][E_n, table] = E_T
+        }
+        EGPS_w:egpUnParent(E_i)
+        return 1
+    }
+    print("error#egpUnParent#" + E_n)
+    return 0
+}
+#- CLICK MODE
+function number egpClickMode([E_n ClickType]:string) {
+    if(EGPS:exists(E_n)) {
+        local ClickType = "click#" + ClickType
+        
+        local E_T = EGPS[E_n, table]
+        local P_T = E_T["parents", table]["coordinateSystem", table]
+        
+        local E_T_parents = E_T["parents", table]
+        if(!E_T_parents:exists(ClickType)) {
+            E_T_parents[ClickType, table] = table()
+        }
+        if(P_T:exists("name")) {
+            local P_T_childs = P_T["childs", table]
+            if(!P_T_childs:exists(ClickType)) {
+                P_T_childs[ClickType, table] = table()
+            }
+            P_T_childs[ClickType, table][E_n, table] = E_T
+            E_T_parents[ClickType, table] = P_T
+        }
+        else {
+            if(!EGPS_noParent:exists(ClickType)) {
+                EGPS_noParent[ClickType, table] = table()
+            }
+            EGPS_noParent[ClickType, table][E_n, table] = E_T
+        }
+        return 1
+    }
+    print("error#egpClickMode#" + E_n)
+    return 0
+}
+function egpClickMode([ClickType]:string) {
+    egpClickMode(EGPS_lastName,ClickType)
+}
+function egpClickMode() {
+    egpClickMode(EGPS_lastName,"")
+}
+#
+#
+#- POS
+function number egpSetPos(E_n:string, E_p:vector2) {
+    local E_i = EGPS[E_n, table]["index", number]
+    if(E_i) {
+        EGPS_w:egpPos(E_i,E_p)
+        return 1
+    }
+    print("error#egpSetPos#" + E_n)
+    return 0
+}
+function number egpSetPos(E_p:vector2) {
+    return egpSetPos(EGPS_lastName,E_p)
+}
+#
+#
+#- ANG
+function number egpSetAng(E_n:string, E_a:number) {
+    local E_i = EGPS[E_n, table]["index", number]
+    if(E_i) {
+        EGPS_w:egpAngle(E_i,E_a)
+        return 1
+    }
+    print("error#egpSetAng#" + E_n)
+    return 0
+}
+function number egpSetAng(E_a:number) {
+    return egpSetAng(EGPS_lastName,E_a)
+}
+#
+#
+#- SIZE
+function number egpSetSize(E_n:string, E_s:vector2) {
+    local E_i = EGPS[E_n, table]["index", number]
+    if(E_i) {
+        EGPS_w:egpSize(E_i,E_s)
+        return 1
+    }
+    print("error#egpSetSize#" + E_n)
+    return 0
+}
+function number egpSetSize(E_s:vector2) {
+    return egpSetSize(EGPS_lastName,E_s)
+}
+function number egpSetSize(E_n:string, E_s:number) {
+    local E_i = EGPS[E_n, table]["index", number]
+    if(E_i) {
+        EGPS_w:egpSize(E_i,E_s)
+        return 1
+    }
+    print("error#egpSetSizeNum#" + E_n)
+    return 0
+}
+function number egpSetSize(E_s:number) {
+    return egpSetSize(EGPS_lastName,E_s)
+}
+#
+#
+#- MATERIAL
+function number egpSetMaterial(E_n:string, E_m:string) {
+    local E_i = EGPS[E_n, table]["index", number]
+    if(E_i) {
+        EGPS_w:egpMaterial(E_i,E_m)
+        return 1
+    }
+    print("error#egpSetMaterial#" + E_n)
+    return 0
+}
+function number egpSetMaterial(E_m:string) {
+    return egpSetMaterial(EGPS_lastName,E_m)
+}
+#
+#
+#- COLOR
+function number egpSetColor(E_n:string, RGB:vector) {
+    local E_i = EGPS[E_n, table]["index", number]
+    if(E_i) {
+        EGPS_w:egpColor(E_i,RGB)
+        return 1
+    }
+    print("error#egpSetColor#" + E_n)
+    return 0
+}
+function number egpSetColor(RGB:vector) {
+    return egpSetColor(EGPS_lastName, RGB)
+}
+function number egpSetColor(E_n:string, RGB:number) {
+    return egpSetColor(E_n, vec(RGB))
+}
+function number egpSetColor(RGB:number) {
+    return egpSetColor(EGPS_lastName,vec(RGB))
+}
+function number egpSetColor(E_n:string, [R G B]:number) {
+    return egpSetColor(E_n, vec(R,G,B))
+}
+function number egpSetColor([R G B]:number) {
+    return egpSetColor(EGPS_lastName, vec(R,G,B))
+}
+function number egpSetColor(E_n:string) {
+    return egpSetColor(E_n, vec())
+}
+function number egpSetColor() {
+    return egpSetColor(EGPS_lastName, vec())
+}
+#
+#
+#- ALPHA
+function number egpSetAlpha(E_n:string, E_a:number) {
+    local E_i = EGPS[E_n, table]["index", number]
+    if(E_i) {
+        EGPS_w:egpAlpha(E_i,E_a)
+        return 1
+    }
+    print("error#egpSetAlpha#" + E_n)
+    return 0
+}
+function number egpSetAlpha(E_a:number) {
+    return egpSetAlpha(EGPS_lastName, E_a)
+}
+function number egpSetAlpha(E_n:string) {
+    return egpSetAlpha(E_n, 0)
+}
+function number egpSetAlpha() {
+    return egpSetAlpha(EGPS_lastName, 0)
+}
+#
+#
+#- COLOR & ALPHA
+function number egpSetColor(E_n:string, RGBA:vector4) {
+    local E_i = EGPS[E_n, table]["index", number]
+    if(E_i) {
+        EGPS_w:egpColor(E_i,RGBA)
+        return 1
+    }
+    print("error#egpSetColor#" + E_n)
+    return 0
+}
+function number egpSetColor([RGBA]:vector4) {
+    return egpSetColor(EGPS_lastName, RGBA)
+}
+function number egpSetColor(E_n:string, [R G B A]:number) {
+    return egpSetColor(E_n, vec4(R,G,B,A))
+}
+function number egpSetColor([R G B A]:number) {
+    return egpSetColor(EGPS_lastName, vec4(R,G,B,A))
+}
+function number egpSetColor(E_n:string, [RGB A]:number) {
+    return egpSetColor(E_n, vec4(RGB,RGB,RGB,A))
+}
+function number egpSetColor([RGB A]:number) {
+    return egpSetColor(EGPS_lastName, vec4(RGB,RGB,RGB,A))
+}
+function number egpSetColor(E_n:string, RGB:vector, A:number) {
+    egpSetColor(E_n, vec4(RGB[1],RGB[2],RGB[3],A))
+}
+function number egpSetColor(RGB:vector, A:number) {
+    return egpSetColor(EGPS_lastName, vec4(RGB[1],RGB[2],RGB[3],A))
+}
+#
+#
+#- TEXT
+function number egpSetText(E_n:string, E_t:string) {
+    local E_i = EGPS[E_n, table]["index", number]
+    if(E_i) {
+        EGPS_w:egpSetText(E_i,E_t)
+        return 1
+    }
+    print("error#egpSetText#" + E_n)
+    return 0
+}
+function number egpSetText(E_t:string) {
+    return egpSetText(EGPS_lastName, E_t)
+}
+#
+#
+#- ALIGN
+function number egpSetAlign(E_n:string, [E_ah E_av]:number) {
+    local E_i = EGPS[E_n, table]["index", number]
+    if(E_i) {
+        EGPS_w:egpAlign(E_i,E_ah,E_av)
+        return 1
+    }
+    print("error#egpSetAlign#" + E_n)
+    return 0
+}
+function number egpSetAlign([E_ah E_av]:number) {
+    return egpSetAlign(EGPS_lastName, E_ah, E_av)
+}
+function number egpSetAlign(E_hv:vector2) {
+    return egpSetAlign(EGPS_lastName, E_hv[1], E_hv[2])
+}
+#
+#
+#- FONT
+function number egpSetFont([E_n E_f]:string, E_fs:number) {
+    local E_i = EGPS[E_n, table]["index", number]
+    if(E_i) {
+        EGPS_w:egpFont(E_i,E_f,E_fs)
+        return 1
+    }
+    print("error#egpSetFont#" + E_n)
+    return 0
+}
+function number egpSetFont(E_f:string, E_fs:number) {
+    return egpSetFont(EGPS_lastName, E_f, E_fs)
+}
+function number egpSetFont([E_n E_f]:string) {
+    local E_i = EGPS[E_n, table]["index", number]
+    if(E_i) {
+        EGPS_w:egpFont(E_i,E_f)
+        return 1
+    }
+    print("error#egpSetFont#" + E_n)
+    return 0
+}
+function number egpSetFont(E_f:string) {
+    return egpSetFont(EGPS_lastName, E_f)
+}
+#
+#
+#- 3D TRACKER
+function number egpSet3DTracker(E_n:string, E_p:vector) {
+    local E_T = EGPS[E_n, table]
+    local E_i = E_T["index", number]
+    if(E_i) {
+        if(E_T["type", string] == "3DTracker") {
+            
+            EGPS_w:egp3DTracker(E_i,E_p)
+            return 1
+        }
+        print("error#egpSet3DTracker2#" + E_n)
+        return 0
+    }
+    print("error#egpSet3DTracker1#" + E_n)
+    return 0
+}
+function number egpSet3DTracker(E_n:string, E_e:entity) {
+    local E_T = EGPS[E_n, table]
+    local E_i = E_T["index", number]
+    if(E_i) {
+        if(E_T["type", string] == "3DTracker") {
+            
+            EGPS_w:egpParent(E_i,E_e)
+            return 1
+        }
+        print("error#egpSet3DTracker2#" + E_n)
+        return 0
+    }
+    print("error#egpSet3DTracker1#" + E_n)
+    return 0
+}
+function number egpSet3DTracker(E_p:vector) {
+    return egpSet3DTracker(EGPS_lastName, E_p)
+}
+function number egpSet3DTracker(E_e:entity) {
+    return egpSet3DTracker(EGPS_lastName, E_e)
+}
+function number egpSet3DTracker(E_p:vector, E_e:entity) {
+    egpSet3DTracker(EGPS_lastName, E_e)
+    return egpSet3DTracker(EGPS_lastName, E_p)
+}
+function number egpSet3DTracker(E_n:string, E_p:vector, E_e:entity) {
+    egpSet3DTracker(E_n, E_e)
+    return egpSet3DTracker(E_n, E_p)
+}
+#
+#
+#- FIDELITY
+function number egpSetFidelity(E_n:string, E_f:number) {
+    local E_i = EGPS[E_n, table]["index", number]
+    if(E_i) {
+        EGPS_w:egpFidelity(E_i,E_f)
+        return 1
+    }
+    print("error#egpSetFidelity#" + E_n)
+    return 0
+}
+function number egpSetFidelity(E_f:number) {
+    return egpSetFidelity(EGPS_lastName,E_f)
+}
+#
+#
+#- RADIUS
+function number egpSetRadius(E_n:string, E_r:number) {
+    local E_i = EGPS[E_n, table]["index", number]
+    if(E_i) {
+        EGPS_w:egpRadius(E_i,E_r)
+        return 1
+    }
+    print("error#egpSetRadius#" + E_n)
+    return 0
+}
+function number egpSetRadius(E_r:number) {
+    return egpSetRadius(EGPS_lastName,E_r)
+}
+#
+#
+#- ORDER
+function number egpSetOrder([E1_n E2_n]:string, AddOrder:number) {
+    local E1_i = EGPS[E1_n + "/table", table]["index", number]
+    local E2_T = EGPS[E2_n + "/table", table]
+    local E2_i = E2_T["index", number]
+    if(E1_i & E2_i) {
+        local E2_o = E2_T["order", number]
+        if(!E2_o) {E2_o = EGPS_w:egpOrder(E2_i)}
+        
+        local E1_o = E2_o + AddOrder
+        
+        EGPS[E1_n, table]["order", number] = E1_o
+        EGPS_w:egpOrder(E1_i,E1_o)
+        return 1
+    }
+    print("error#egpSetOrder#" + E1_n + "#" + E2_n)
+    return 0
+}
+function number egpSetOrder(E2_n:string, AddOrder:number) {
+    return egpSetOrder(EGPS_lastName,E2_n,AddOrder)
+}
+#
+#
+#- LINE
+function number egpSetLine(E_n:string, E_r:array) {
+    local E_i = EGPS[E_n, table]["index", number]
+    if(E_i) {
+        EGPS_w:egpLineStrip(E_i,E_r)
+        return 1
+    }
+    print("error#egpSetLine#" + E_n)
+    return 0
+}
+function number egpSetRadius(E_r:number) {
+    return egpSetRadius(EGPS_lastName,E_r)
+}
+#
+################
+
+
+
+################
+#
+#- GET FUNCTIONS
+#
+#
+#- INDEX
+#
+function number egpGetIndex(E_n:string) {
+    return EGPS[E_n, table]["index", number]
+}
+#
+#- PARENT
+function string egpGetParent(E_n:string) {
+    local E_i = EGPS[E_n, table]["index", number]
+    if(E_i) {
+        local P_i = EGPS_w:egpParent(E_i)
+        return EGPS[P_i, table]["name", string]
+    }
+    print("error#egpGetParent#" + E_n)
+    return ""
+}
+function table egpGetChild(E_n:string) {
+    if(EGPS:exists(E_n)) {
+        return EGPS[E_n, table]["childs", table]
+    }
+    print("error#egpGetChild#" + E_n)
+    return table()
+}
+function table egpGetChild([E_n Parent_type]:string) {
+    if(EGPS:exists(E_n)) {
+        return EGPS[E_n, table]["childs", table][Parent_type ? Parent_type : "coordinateSystem", table]
+    }
+    print("error#egpGetChild#" + E_n)
+    return table()
+}
+#
+#
+#- POS
+function vector2 egpGetPos(E_n:string) {
+    local E_i = EGPS[E_n, table]["index", number]
+    if(E_i) {
+        return EGPS_w:egpPos(E_i)
+    }
+    print("error#egpGetPos#" + E_n)
+    return vec2()
+}
+function vector2 egpGetGlobalPos(E_n:string) {
+    local E_i = EGPS[E_n, table]["index", number]
+    if(E_i) {
+        local E_p = EGPS_w:egpPos(E_i)
+        local P_i = EGPS_w:egpParent(E_i)
+        while(P_i) {
+            local Next_i = EGPS_w:egpParent(P_i)
+            E_p = EGPS_w:egpPos(P_i) + E_p:rotate(EGPS_w:egpAngle(P_i) * (Next_i ? 1 : -1))
+            P_i = Next_i
+        }
+        return E_p
+    }
+    print("error#egpGetGlobalPos#" + E_n)
+    return vec2()
+}
+#
+#
+#- ANG
+function number egpGetAng(E_n:string) {
+    local E_i = EGPS[E_n, table]["index", number]
+    if(E_i) {
+        return EGPS_w:egpAngle(E_i)
+    }
+    print("error#egpGetAng#" + E_n)
+    return 0
+}
+function number egpGetGlobalAng(E_n:string) {
+    local E_i = EGPS[E_n, table]["index", number]
+    if(E_i) {
+        local E_a = EGPS_w:egpAngle(E_i)
+        local P_i = EGPS_w:egpParent(E_i)
+        while(P_i) {
+            E_a = angnorm(EGPS_w:egpAngle(P_i)-E_a)
+            P_i = EGPS_w:egpParent(P_i)
+        }
+        return E_a
+    }
+    print("error#egpGetGlobalAng#" + E_n)
+    return 0
+}
+#
+#
+#- POS ANG
+function vector egpGetGlobalPosAng(E_n:string) {
+    local E_i = EGPS[E_n, table]["index", number]
+    if(E_i) {
+        local E_p = EGPS_w:egpPos(E_i)
+        local E_a = EGPS_w:egpAngle(E_i)
+        local P_i = EGPS_w:egpParent(E_i)
+        while(P_i) {
+            local Next_i = EGPS_w:egpParent(P_i)
+            local P_a = EGPS_w:egpAngle(P_i)
+            E_p = EGPS_w:egpPos(P_i) + E_p:rotate(P_a * (Next_i ? 1 : -1))
+            E_a = angnorm(P_a-E_a)
+            P_i = Next_i
+        }
+        return vec(E_p,E_a)
+    }
+    print("error#egpGetGlobalPosAng#" + E_n)
+    return vec()
+}
+#
+#
+#- SIZE
+function vector2 egpGetSize(E_n:string) {
+    local E_i = EGPS[E_n, table]["index", number]
+    if(E_i) {
+        return EGPS_w:egpSize(E_i)
+    }
+    print("error#egpGetSize#" + E_n)
+    return vec2()
+}
+function number egpGetSizeNum(E_n:string) {
+    local E_i = EGPS[E_n, table]["index", number]
+    if(E_i) {
+        return EGPS_w:egpSizeNum(E_i)
+    }
+    print("error#egpGetSizeNum#" + E_n)
+    return 0
+}
+#
+#
+#- MATERIAL
+function string egpGetMaterial(E_n:string) {
+    local E_i = EGPS[E_n, table]["index", number]
+    if(E_i) {
+        return EGPS_w:egpMaterial(E_i)
+    }
+    print("error#egpGetMaterial#" + E_n)
+    return ""
+}
+#
+#
+#- COLOR
+function vector egpGetColor(E_n:string) {
+    local E_i = EGPS[E_n, table]["index", number]
+    if(E_i) {
+        return EGPS_w:egpColor(E_i)
+    }
+    print("error#egpGetColor#" + E_n)
+    return vec()
+}
+function vector4 egpGetColor4(E_n:string) {
+    local E_i = EGPS[E_n, table]["index", number]
+    if(E_i) {
+        return EGPS_w:egpColor4(E_i)
+    }
+    print("error#egpGetColor4#" + E_n)
+    return vec4()
+}
+#
+#
+#- ALPHA
+function number egpGetAlpha(E_n:string) {
+    local E_i = EGPS[E_n, table]["index", number]
+    if(E_i) {
+        return EGPS_w:egpAlpha(E_i)
+    }
+    print("error#egpGetAlpha#" + E_n)
+    return 0
+}
+#
+#
+#- FIDELITY
+function number egpGetFidelity(E_n:string) {
+    local E_i = EGPS[E_n, table]["index", number]
+    if(E_i) {
+        return EGPS_w:egpFidelity(E_i)
+    }
+    print("error#egpGetFidelity#" + E_n)
+    return 0
+}
+#
+#
+#- RADIUS
+function number egpGetRadius(E_n:string) {
+    local E_i = EGPS[E_n, table]["index", number]
+    if(E_i) {
+        return EGPS_w:egpRadius(E_i)
+    }
+    print("error#egpGetRadius#" + E_n)
+    return 0
+}
+#
+#
+#- ORDER
+function number egpGetOrder(E_n:string) {
+    local E_T = EGPS[E_n, table]
+    local E_i = E_T["index", number]
+    if(E_i) {
+        local E_o = E_T["order", number]
+        if(!E_o) {E_o = EGPS_w:egpOrder(E_i)}
+        return E_o
+    }
+    print("error#egpGetOrder#" + E_n)
+    return 0
+}
+#
+#
+#- TYPE
+function string egpGetType(E_n:string) {
+    local E_T = EGPS[E_n, table]
+    local E_i = E_T["index", number]
+    if(E_i) {
+        return E_T["type", string]
+    }
+    print("error#egpGetType#" + E_n)
+    return ""
+}
+#
+#
+#- INRANGE
+function number egpGetInrange(E_n:string, Vector2:vector2) {
+    local E_T = EGPS[E_n, table]
+    local E_i = E_T["index", number]
+    if(E_i) {
+        local E_t = E_T["type", string]
+        switch(E_t) {
+            case "box",
+                local E_s = EGPS_w:egpSize(E_i) / 2
+                return inrange(Vector2:rotate(EGPS_w:egpAngle(E_i)),-E_s,E_s)
+            break
+            case "circle",
+                local E_s = EGPS_w:egpSize(E_i)
+                if(E_s[1] != E_s[2]) {
+                    local Vector2_a = Vector2:rotate(EGPS_w:egpAngle(E_i)):toAngle()
+                    return Vector2:length() <= vec2(E_s[1]*cos(Vector2_a),E_s[2]*sin(Vector2_a)):length()
+                }
+                return Vector2:length() <= E_s[1]
+            break
+            case "textLayout",
+                local E_s = EGPS_w:egpSize(E_i)
+                return inrange(Vector2:rotate(EGPS_w:egpAngle(E_i)),vec2(),E_s)
+            break
+            default,
+                print("error#egpGetInrange#" + E_t + "#" + E_n)
+                return 0
+            break
+        }
+    }
+    print("error#egpGetInrange#" + E_n)
+    return 0
+}
+function number egpGlobalInrange(E_n:string, Vector2:vector2) {
+    if(EGPS:exists(E_n)) {
+        local E_T = EGPS[E_n, table]
+        local E_tV = E_T["typeVariable", number]
+        if(0 & (!E_tV | E_tV == 2)) {
+            return EGPS_w:egpObjectContainsPoint(E_T["index", number],Vector2)
+        }
+    }
+    return egpGetInrange(E_n, Vector2 - egpGetGlobalPos(E_n))
+}
+
+function number egpLocalInrange(E_n:string, Vector2:vector2) {
+    return egpGetInrange(E_n, Vector2 - egpGetPos(E_n))
+}
+#
+#
+#
+################
+
+
+
+################
+#
+#- CURSOR
+#
+#
+#- POS
+function vector2 entity:egpGetCursorPos_FOV90(CamAngles:angle) {
+    local Player = This
+    
+    local EyeAngles_a = Player:eyeAngles()
+    local Eye_f       = Player:eye()
+    if(CamAngles) {
+        Eye_f = Eye_f:rotate(angnorm(EyeAngles_a-CamAngles))
+    }
+    if(changed(Eye_f) | changed(EyeAngles_a) | changed(CamAngles)) {
+        #local EgpScrSize = egpScrSize(Player) #vec2(1920,1080) #egpScrSize(Player)
+        
+        local Cos = Eye_f:dot(EyeAngles_a:forward())
+        local CursorV = (toLocal(vec(),EyeAngles_a,Eye_f,ang()) / Cos / vec(1,-1.332,-0.75) + vec(0,1,1)) / 2
+        local Cursor_p = vec2(CursorV[2], CursorV[3])
+        local Cursor_p = round(Cursor_p,4) == vec2(0.5) ? vec2() : Cursor_p
+        EGPS_cursorPos = Cursor_p
+    }
+    return EGPS_cursorPos
+}
+function vector2 entity:egpGetCursorPos_FOV90() {
+    return This:egpGetCursorPos_FOV90(ang())
+}
+#
+#
+#- GET TARGET
+function string egpGetTarget(Cursor_p:vector2, [ClickType Target_n]:string) {
+    local ClickType = "click#" + ClickType
+    
+    local Childs_T = EGPS_noParent[ClickType, table]:clone()
+    if(EGPS:exists(Target_n)) {
+        Childs_T = EGPS[Target_n, table]["childs", table][ClickType, table]:clone()
+    }
+    
+    local Keys = Childs_T:keys()
+    while(Keys:count()) {
+        local Child_n = Keys:removeString(1)
+        if(egpGlobalInrange(Child_n,Cursor_p)) {
+            Target_n = Child_n
+            Childs_T = EGPS[Target_n, table]["childs", table][ClickType, table]:clone()
+            Keys = Childs_T:keys()
+            continue
+        }
+    }
+    return Target_n
+}
+function string egpGetTarget(Cursor_p:vector2, ClickType:string) {
+    return egpGetTarget(Cursor_p, ClickType, "")
+}
+#
+################)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

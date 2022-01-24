@@ -1,0 +1,134 @@
+@name Guidance_system_02_001
+
+@inputs [RootBase RootYaw RootPitch Target]:entity
+@outputs 
+@persist [E O]:entity [Q]:table
+
+
+
+if(changed(0)) {
+    
+    
+    timer("", 1)
+}
+
+if(clk("")) {
+        timer("", 50)
+    
+    if(changed(0)) {
+        
+        Q["lastCurtime", number] = curtime()
+    }
+    local LastCurtime = Q["lastCurtime", number]
+    local Curtime = Q["lastCurtime", number] = curtime()
+    local Interval = Curtime - LastCurtime
+    local Loop = Interval / 0.015625
+    
+    
+    
+    
+    
+    
+    
+    
+    local TargetPos = Target:boxCenterW()
+    
+    
+    #- yaw
+    local RootYaw_root = holoEntity(1)
+    if(!RootYaw_root) {
+        RootYaw_root = holoCreate(1,RootYaw:pos(),vec(),RootYaw:toWorld(ang(0,180,90)))
+        holoParent(1,RootYaw)
+    }
+    
+    local NeedLocalYaw = 0
+    local LastYaw = Q["lastYaw", number]
+    local Yaw = Q["lastYaw", number] = RootYaw_root:angles()[2]
+    local YawVel = Yaw-LastYaw
+    
+    local YF = (-clamp(Yaw,-10,10)-YawVel)*20
+    RootYaw:applyAngForce(ang(YF*1700*3*Loop,0,0))
+    
+    
+    #- pitch
+    local RootPitch_root = holoEntity(2)
+    if(!RootPitch_root) {
+        RootPitch_root = holoCreate(2,RootPitch:pos(),vec(),RootPitch:toWorld(ang(0,180,90)))
+        holoParent(2,RootPitch)
+    }
+    
+    local NeedLocalPitch = 0
+    local LastPitch = Q["lastPitch", number]
+    local Pitch = Q["lastPitch", number] = RootPitch_root:angles()[2]
+    local PitchVel = Pitch-LastPitch
+    
+    local YF = (-clamp(Pitch,-10,10)-PitchVel)*20
+    RootPitch:applyAngForce(ang(0,YF*1700*3*Loop,0))
+    
+    
+    
+    
+    
+    
+    
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName("Guidance_system_02_001\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage() * 1e6))
+if(dupefinished()) {reset()}
+

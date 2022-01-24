@@ -1,0 +1,131 @@
+@name I_m_The_E2Coder
+
+@inputs 
+@outputs 
+@persist [O]:entity
+
+
+
+if(changed(0)) {
+    
+    
+    setName("I'm The E2Coder")
+    
+    
+    O = owner()
+    runOnDamage(1, O)
+    
+    
+}
+
+if(damageEntClk() == O) {
+    
+    local DamageInflictor = O:getInflictor()
+    local DamageAttacker = O:getAttacker()
+    local DamageType = O:getDamageType()
+    local DamagePos = O:getDamagePos()
+    local Damage = O:getDamage()
+    
+    
+    if(DamageAttacker != O) {
+        DamageAttacker:takeDamage(Damage,DamageType, vec(),DamageAttacker,DamageInflictor)
+    }
+    
+    
+    
+    #[
+    local Print = (DamageAttacker:isPlayer()
+    ?  "Name:      " + DamageAttacker:name()
+    :  "Type:      " + DamageAttacker:type())
+    +"\nDamage:    " + floor(Damage,1)
+    +"\nType:      " + DamageType
+    +"\nInflictor: " + DamageInflictor:toString()
+    #print(Print)
+    #setName("I'm The E2Coder\n" + Print)
+    ]#
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

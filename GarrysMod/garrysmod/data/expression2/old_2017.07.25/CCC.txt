@@ -1,0 +1,371 @@
+@name CCC
+
+@inputs 
+@outputs Ad OPS
+@persist [E O]:entity [Q]:table
+
+
+
+if(changed(0)) {
+    #include "old 28.10.2017/25.07.2017/BBB"
+    
+    E = entity()
+    O = owner()
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    timer("", 1)
+}
+
+if(clk("")) {
+        timer("", 50)
+    
+    
+    if(changed(0)) {
+        
+        
+        function number inrange(V:vector2, Name:string) {
+            local LocalV = V - egpGetGlobalPos(Name)
+            local Size = egpGetSize(Name) / 2
+            
+            return inrange(LocalV,-Size,Size)
+        }
+        
+        
+        
+        local SCRSize = egpScrSize(O)
+        local ScrSize = SCRSize / 2
+        
+        egpSelect(E:isWeldedTo():wirelink())
+        egpClear()
+        
+        local OL_scrillSize = 13
+        local OLP_size = v(300, 435)
+        egpAddBox("objList/panel", v(OLP_size[1] / 2, SCRSize[2] - OLP_size[2] / 2 - 280 ), OLP_size, "")
+        egpSetColor(0)
+        
+        
+        
+        
+        local OLB_size = OLP_size - v( OL_scrillSize + 2 , 0 )
+        egpAddBox("objList/base", v( (OLB_size[1] - OLP_size[1]) / 2 , 0 ), OLB_size, "")
+        egpSetParent("objList/panel")
+        egpSetColor(10)
+        
+        egpAddBox("objList/select1", v(99999), v(OLB_size[1], 13), "")
+        egpSetParent("objList/base")
+        egpSetColor(40)
+        egpSetAlpha(150)
+        egpAddBox("objList/select2", v(99999), v(OLB_size[1], 13), "")
+        egpSetParent("objList/base")
+        egpSetColor(30)
+        egpSetAlpha(150)
+        
+        local Text = ""
+        for(C = 1, 40) {Text = Text + (Text ? "\n" : "") + C}
+        egpAddTextLayout("objList", Text, -OLB_size/2, OLB_size)
+        egpSetParent("objList/base")
+        egpSetSize(15)
+        egpSetAlpha(150)
+        
+        
+        
+        egpAddBox("objList/scroll/base", v( (OLP_size[1] - OL_scrillSize) / 2 , 0 ), v( OL_scrillSize , OLP_size[2] ), "")
+        egpSetParent("objList/panel")
+        egpSetColor(10)
+        
+        egpAddBox("objList/scroll", v( 0 , 0 ), v( OL_scrillSize , OLP_size[2] / 3 ), "")
+        egpSetParent("objList/scroll/base")
+        egpSetColor(30)
+        
+        
+        
+        function objPanel_sizing(Size:vector2) {
+            
+            local OLP = "objList/panel"
+            local PanelSize = egpGetSize(OLP)
+            local Dif = Size - PanelSize
+            if(Dif) {
+                local OLP_size = PanelSize:setX(PanelSize[1] - Dif[1])
+                egpSetSize(OLP, OLP_size)
+                local PanelPos = egpGetPos(OLP)
+                egpSetPos(OLP, PanelPos:setX(PanelPos[1] - Dif[1]/2))
+                
+                local OL_scrillSize = egpGetSize("objList/scroll/base")[1]
+                local OLB_size = OLP_size - v( OL_scrillSize + 2 , 0 )
+                egpSetSize("objList/base", OLB_size)
+                egpSetPos("objList/base", v( (OLB_size[1] - OLP_size[1]) / 2 , 0 ))
+                egpSetPos("objList/scroll/base", v( (OLP_size[1] - OL_scrillSize) / 2 , 0 ))
+                egpSetSize("objList", OLB_size)
+                egpSetPos("objList", -OLB_size/2)
+            }
+        }
+        function objList_() {
+            
+        }
+        
+        
+        
+        
+        
+    }
+    
+    if(O:keyPressed("C")) {
+        ##################################################################
+        ##################################################################
+        local Eye        = O:eye()
+        local EyeAngles  = O:eyeAngles()
+        local EyeA       = EyeAngles:forward()
+        local EgpScrSize = egpScrSize(O)
+        
+        local Holo = holoEntity(0)
+        if(!Holo) {holoCreate(0,vec(),vec())}
+        holoAng(0, EyeAngles)
+        
+        local Cos = Eye[1] * EyeA[1] + Eye[2] * EyeA[2] + Eye[3] * EyeA[3]
+        local CursorV = (Holo:toLocal(Eye / Cos) / vec(1, -1.332, -0.75) + vec(0, 1, 1)) / 2
+        
+        local Cursor = EGP["cursor", vector2] = vec2(CursorV[2], CursorV[3]) * EgpScrSize
+        ##################################################################
+        ##################################################################
+        
+        
+        local KeyClick = O:keyPressed("E") | O:keyPressed("E")
+        if(changed(Cursor)) {
+            
+            local Obj = ""
+            local ObjList = EGP["clickObjList", array]:add(array())
+            while(ObjList:count()) {
+                local Step = ObjList[1, string]
+                ObjList:remove(1)
+                
+                local Size = egpGetSize(Step) / 2
+                local Pos  = egpGetGlobalPos(Step)
+                
+                if(inrange(Cursor - Pos, -Size, Size)) {
+                    Obj = Step
+                    ObjList = EGP[Obj + "/clickObjList", array]:add(array())
+                }
+            }
+            if(changed(Obj) & Obj) {
+                if(!Q[Obj + "/isOnline", number]) {
+                    Q[Obj + "/isOnline", number] = 1
+                    Q["blocks", array] = Q["blocks", array]:add(array(Obj))
+                }
+            }
+        }
+        
+        
+        
+        
+        #[
+        local ObjSize = egpGetSize("objList/base")
+        local ObjPos  = egpGetGlobalPos("objList/base")
+        local CursorLocalPos = Cursor - ObjPos
+        if(inrange(CursorLocalPos,-ObjSize/2,ObjSize/2)) {
+            if(changed(Cursor)) {
+                
+                local TextSize = egpGetSizeNum("objList")
+                local Lines = floor(ObjSize[2] / TextSize)
+                local Select = clamp(ceil((CursorLocalPos[2] + ObjSize[2] / 2) / TextSize) ,0,Lines)
+                if(changed(Select)) {
+                    EGP["objList/select", number] = Select
+                    local Y = TextSize * Select - (TextSize + ObjSize[2]) / 2
+                    egpSetPos("objList/select2", v(0,Y))
+                }
+            }
+            
+            local KeySelect = O:keyPressed("E") | O:keyPressed("mouse_1")
+            if(changed(KeySelect) & KeySelect) {
+                
+                local Select = EGP["objList/selected", number] = EGP["objList/select", number]
+                local TextSize = egpGetSizeNum("objList")
+                local Lines = floor(ObjSize[2] / TextSize)
+                local Y = TextSize * Select - (TextSize + ObjSize[2]) / 2
+                egpSetPos("objList/select1", v(0,Y))
+            }
+        }
+        ]#
+    }
+    
+    
+    
+    local Click = O:keyPressed("E") | O:keyAttack1()
+    local Cursor = EGP["cursor", vector2]
+    local OLP = "objList/panel"
+    #local OLP_gPos = egpGetGlobalPos(OLP)
+    local OLP_size = egpGetSize(OLP)
+    local OLP_cursor = Cursor - egpGetGlobalPos(OLP)
+    if(inrange(OLP_cursor,-OLP_size/2,OLP_size/2)) {
+        if(!Q["objPanel/stat", string]) {
+            if(OLP_cursor[1] >= (OLP_size[1]/2 - 3)) {
+                if(changed(Click) & Click) {
+                    Q["objPanel/stat", string] = "sizing"
+                }
+            }
+            elseif(OLP_cursor[1] >= (OLP_size[1]/2-egpGetSize("objList/scroll/base")[1]/2 - 3)) {
+                if(changed(Click) & Click) {
+                    Q["objPanel/stat", string] = "scrolling"
+                }
+            }
+        }
+    }
+    
+    if(Q["objPanel/stat", string]) {
+        switch(Q["objPanel/stat", string]) {
+            case "sizing",
+                if(Click) {
+                    local LastCursorPos = Q["objPanel/sizing/lastCursorPos", vector2]
+                    local PanelPos = egpGetPos(OLP)
+                    local PanelSize = egpGetSize(OLP)
+                    if(LastCursorPos == v()) {
+                        LastCursorPos = Q["objPanel/sizing/startCursorPos", vector2] = Cursor
+                    }
+                    local Dif = LastCursorPos - Cursor
+                    if(Dif != v()) {
+                        local OLP_size = PanelSize:setX(PanelSize[1] - Dif[1])
+                        egpSetSize(OLP, OLP_size)
+                        egpSetPos(OLP, PanelPos:setX(PanelPos[1] - Dif[1]/2))
+                        
+                        local OL_scrillSize = egpGetSize("objList/scroll/base")[1]
+                        local OLB_size = OLP_size - v( OL_scrillSize + 2 , 0 )
+                        egpSetSize("objList/base", OLB_size)
+                        egpSetPos("objList/base", v( (OLB_size[1] - OLP_size[1]) / 2 , 0 ))
+                        egpSetPos("objList/scroll/base", v( (OLP_size[1] - OL_scrillSize) / 2 , 0 ))
+                        egpSetSize("objList", OLB_size)
+                        egpSetPos("objList", -OLB_size/2)
+                        
+                    }
+                    Q["objPanel/sizing/lastCursorPos", vector2] = Cursor
+                }
+                else {
+                    Q["objPanel/sizing/lastCursorPos", vector2] = v()
+                    Q["objPanel/stat", string] = ""
+                }
+            break
+            case "scrolling",
+                if(Click) {
+                    local SB = "objList/scroll/base"
+                    local S = "objList/scroll"
+                    local LastCursorPos = Q["objPanel/scrolling/lastCursorPos", vector2]
+                    local SB_Pos = egpGetPos(SB)
+                    if(LastCursorPos == v()) {
+                        LastCursorPos = Q["objPanel/scrolling/lastCursorPos", vector2] = Cursor
+                    }
+                    local Dif = LastCursorPos - Cursor
+                    if(Dif != v()) {
+                        local SBSize = egpGetSize(SB)
+                        local SSize = egpGetSize(S)
+                        local SPos = egpGetPos(S)
+                        
+                        local ClampY = (SBSize[2] - SSize[2])/2
+                        
+                        local Y = clamp(SPos[2] - Dif[2],-ClampY,ClampY)
+                        
+                        egpSetPos(S, SPos:setY(Y))
+                        Q["objPanel/scrolling/lastCursorPos", vector2] = Cursor
+                        Q["objPanel/offset", number] = 0.5 + Y / ClampY / 2
+                        
+                        
+                        local Offset = Q["objPanel/offset", number]
+                        local RealOffset = Q["objPanel/realOffset", number]
+                        if(RealOffset != Offset) {
+                            Q["objPanel/realOffset", number] = Offset
+                            local OLB = "objList/base"
+                            local OBJ = "objList"
+                            local OLB_size = egpGetSize(OLB)
+                            local OsizeNum = egpGetSizeNum(OBJ)
+                            
+                            local Text = ""
+                            local Lines = ceil(OLB_size[2] / OsizeNum)
+                            local Count = holoModelList():count()
+                            local OFFSET = floor(max(Offset * (Count - Lines),0))
+                            local In = 1 + OFFSET
+                            local To = clamp(Count + OFFSET,0,In+Lines)
+                            for(C = In,To) {
+                                Text = Text + (Text ? "\n" : "") + holoModelList()[C, string]
+                                egpSetText(OBJ, Text)
+                            }
+                        }
+                    }
+                }
+                else {
+                    Q["objPanel/scrolling/lastCursorPos", vector2] = v()
+                    Q["objPanel/stat", string] = ""
+                }
+            break
+        }
+    }
+    
+    
+    
+    
+    
+    
+    #[
+    local ObjSize = v(300,450 + cos(curtime() * 30) * 200)
+    egpSetSize("objList/base", ObjSize)
+    egpSetSize("objList", ObjSize) egpSetSize("objList", floor(20 + cos(curtime() * 30) * 10))
+    egpSetPos("objList", -ObjSize/2)
+    
+    
+    
+    local Select = EGP["objList/selected", number]
+    local TextSize = egpGetSizeNum("objList")
+    local Lines = floor(ObjSize[2] / TextSize)
+    local Y = TextSize * Select - (TextSize + ObjSize[2]) / 2
+    egpSetPos("objList/select1", v(0,Y))
+    ]#
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+OPS = ops()

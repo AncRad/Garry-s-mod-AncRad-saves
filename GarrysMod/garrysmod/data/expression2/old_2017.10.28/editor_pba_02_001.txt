@@ -1,0 +1,720 @@
+@name editor pba 02 001
+
+@inputs 
+@outputs 
+@persist [E O]:entity [Q]:table
+
+@trigger none
+
+
+
+#include "old 28.10.2017/PBA001"
+if(changed(0)) {
+    
+    #include "old 28.10.2017/EGPS"
+    
+    function vector2 cursorPos(Player:entity) {
+        ###########################################################################################
+        ############################################################################################
+        local EyeAngles  = Player:eyeAngles()                                                     ###
+        local Eye        = Player:eye()                                                            ###
+        if(Q["cam/toggle", number]) {                                                               ##
+            Eye = Eye:rotate(angnorm(EyeAngles-Q["cam/ang", angle]))                                ##
+        }                                                                                           ##
+        if(changed(Eye) | changed(EyeAngles)) {                                                     ##
+            local EyeA       = EyeAngles:forward()                                                  ##
+            local EgpScrSize = v(1920,1080) #egpScrSize(Player)                                     ##
+                                                                                                    ##
+            local Holo = holoEntity(454560)                                                         ##
+            if(!Holo) {holoCreate(454560,vec(),vec())}                                              ##
+            holoAng(454560, EyeAngles)                                                              ##
+                                                                                                    ##
+            local Cos = Eye[1] * EyeA[1] + Eye[2] * EyeA[2] + Eye[3] * EyeA[3]                      ##
+            local CursorV = (Holo:toLocal(Eye / Cos) / vec(1, -1.332, -0.75) + vec(0, 1, 1)) / 2    ##
+                                                                                                    ##
+            local Cursor = Q["cursorPos", vector2] = vec2(CursorV[2], CursorV[3]) * EgpScrSize      ##
+            return Cursor                                                                          ###
+        }                                                                                         ###
+        ############################################################################################
+        ###########################################################################################
+    }
+    function number globalInrange(Element_n:string, CursorPos:vector2) {
+        local Element_P = egpGetGlobalPos(Element_n)
+        local Element_s  = egpGetSize(Element_n) / 2
+        local IsCircle = Q[Element_n + "/isCircle", number]
+        if(IsCircle) {
+            return (CursorPos - Element_P):length() < Element_s[1] * 2
+        }
+        else {
+            return inrange(CursorPos - Element_P,-Element_s,Element_s) 
+        }
+    }
+    
+    
+    
+    
+    timer("", 1)
+}
+
+
+if(clk("")) {
+    
+    if(changed(0)) {
+        
+        E = entity()
+        O = owner()
+        
+        O:addPBA()
+        
+        Q["spawnMode", number] = 1
+        
+    }
+    
+    
+    
+    
+    if(Q["spawnMode", number]) {
+            timer("", 50)
+        
+        
+        if(perf(70)) {
+            local Step = Q["spawnStep", number] = Q["spawnStep", number] + 1
+            
+            
+            
+            local Indent   = Q["indent"  , number] = 2
+            local FontSize = Q["fontSize", number] = 15
+            
+            
+            
+            if(Step == 1) {
+                
+                egpSelect(E:isWeldedTo():wirelink())
+                egpClear()
+                egpDrawTopLeft(0)
+                
+                ### BONE PANEL ###
+                local BP = "bonesPanel"
+                local BPB_n = BP + "_base"
+                local BPB_s = v(250,300)
+                local BPB_p = v(BPB_s[1],-BPB_s[2])/2+v(250,1080)
+                egpAddBox(BPB_n, BPB_p, BPB_s, "")
+                egpSetColor(0)
+                Q["cursorTargets", array] = Q["cursorTargets", array]:add(array(BPB_n))
+                
+                
+                
+                local BPPPB_n = BP + "_pointsBase"
+                local BPPPB_s = v(100,BPB_s[2])
+                local BPPPB_p = (BPPPB_s-BPB_s)/2
+                egpAddBox(BPPPB_n, BPPPB_p, BPPPB_s, "")
+                egpSetParent(BPB_n)
+                Q[BPB_n + "/cursorTargets", array] = Q[BPB_n + "/cursorTargets", array]:add(array(BPPPB_n))
+                egpSetColor(10)
+                local BPPPS_n = BP + "_pointsSelect"
+                local BPPPS_s = v(4)
+                local BPPPS_p = v()
+                egpAddCircle(BPPPS_n, BPPPS_p, BPPPS_s, "o")
+                egpSetParent(BPPPB_n)
+                
+                
+                local BPLB_n = BP + "_listBase"
+                local BPLB_s = v(BPB_s[1]-BPPPB_s[1]-Indent,BPB_s[2])
+                local BPLB_p = (BPB_s-BPLB_s)/2
+                egpAddBox(BPLB_n, BPLB_p, BPLB_s, "")
+                egpSetParent(BPB_n)
+                Q[BPB_n + "/cursorTargets", array] = Q[BPB_n + "/cursorTargets", array]:add(array(BPLB_n))
+                egpSetColor(10)
+                local BPLS_n = BP + "_listSelect"
+                local BPLS_s = v(BPLB_s[1],FontSize-Indent)
+                local BPLS_p = v(0,(BPLS_s[2]-BPLB_s[2])/2)
+                egpAddBox(BPLS_n, BPLS_p, BPLS_s, "")
+                egpSetParent(BPLB_n)
+                egpSetColor(30)
+                Q["bonesPanel/select", number] = 0
+                
+                local BPLR_n = BP + "_listRed"
+                local BPLR_s = BPLB_s-v(Indent,0)
+                local BPLR_p = v(Indent,0)-BPLR_s/2
+                egpAddTextLayout(BPLR_n, BPLR_n, BPLR_p, BPLR_s)
+                egpSetParent(BPLB_n)
+                egpSetSize(FontSize)
+                egpSetColor(255,0,0)
+                local BPLG_n = BP + "_listGreen"
+                local BPLG_s = BPLR_s
+                local BPLG_p = v()
+                egpAddTextLayout(BPLG_n, "\n"+BPLG_n, BPLG_p, BPLG_s)
+                egpSetParent(BPLR_n)
+                egpSetSize(FontSize)
+                egpSetColor(0,255,0)
+                local BPLB_n = BP + "_listBlue"
+                local BPLB_s = BPLR_s
+                local BPLB_p = v()
+                egpAddTextLayout(BPLB_n, "\n\n"+BPLB_n, BPLB_p, BPLB_s)
+                egpSetParent(BPLR_n)
+                egpSetSize(FontSize)
+                egpSetColor(0,80,255)
+                local WPLB_n = BP + "_listWhite"
+                local WPLB_s = BPLR_s
+                local WPLB_p = v()
+                egpAddTextLayout(WPLB_n, "\n\n\n"+WPLB_n, WPLB_p, WPLB_s)
+                egpSetParent(BPLR_n)
+                egpSetSize(FontSize)
+                egpSetColor(255)
+                
+                
+                
+                local TRed   = ""
+                local TGreen = ""
+                local TBlue  = ""
+                local TWhite = ""
+                #print("":replace("[", "v("):replace("]", ")"))
+                local BonesPos_a     = array(v(0,0),v(0,-51),v(27,-85),v(-27,-85),v(-37,-36),v(-39,11),v(37,-36),v(39,11),v(18,1),v(18,70),v(0,-111),v(-18,1),v(-18,70),v(-18,150),v(18,150))
+                local BonesColor_a   = array(     2,       2,        1,         3,         3,        3,        1,       1,      1,       1,        2,       3,        3,         3,       1)
+                for(C = 0, BonesPos_a:count()+1) {
+                    local Bones_p = BonesPos_a[C + 1, vector2]
+                    local Text = "bone" + C
+                    
+                    egpAddCircle(BP + "_point" + C, Bones_p - v(0,22), v(3), "")
+                    egpSetParent(BPPPB_n)
+                    
+                    local BonesColor_t = BonesColor_a[C + 1, number]
+                    if(BonesColor_t == 1) {
+                        egpSetColor(255,0,0)
+                        TRed   += Text
+                    }
+                    elseif(BonesColor_t == 2) {
+                        egpSetColor(0,255,0)
+                        TGreen += Text
+                    }
+                    elseif(BonesColor_t == 3) {
+                        egpSetColor(0,0,255)
+                        TBlue  += Text
+                    }
+                    else {
+                        TWhite  += Text
+                        egpSetPos(v(0,140))
+                    }
+                    TRed   += "\n"
+                    TGreen += "\n"
+                    TBlue  += "\n"
+                    TWhite += "\n"
+                }
+                egpSetText("bonesPanel_listRed"  , TRed  )
+                egpSetText("bonesPanel_listGreen", TGreen)
+                egpSetText("bonesPanel_listBlue" , TBlue )
+                egpSetText("bonesPanel_listWhite", TWhite)
+                egpSetParent("bonesPanel_pointsSelect", "bonesPanel_point" + 0)
+                
+                
+            }
+            elseif(Step == 2) {
+                ## TOOL PANEL ##
+                
+                local LENGTH = 800
+                
+                local TP = "toolPanel"
+                local TP_n = TP + "_base"
+                local TP_s = v(LENGTH,LENGTH/3.5+2)
+                local TP_p = v(960,1075-TP_s[2]/2)
+                
+                egpAddBox(TP_n, TP_p, TP_s, "")
+                egpSetColor(150*0)
+                Q["cursorTargets", array] = Q["cursorTargets", array]:add(array(TP_n))
+                
+                
+                local C = Q["toolPanelCreateStep", number] = Q["toolPanelCreateStep", number] + 1
+                Q["spawnStep", number] = Step - (C < 3)
+                    local C1 = C - 1
+                    local C2 = C - 2
+                    
+                    local RotatorType = select(C, "PITCH", "YAW", "ROLL")
+                    local TRB_n = TP + "_toolRotator_" + RotatorType
+                    local TRB_s = v(TP_s[1]/3-Indent, TP_s[1]/3.5-Indent)
+                    local TRB_p = v((TRB_s[1]+Indent)*C2,0)
+                    egpAddBox(TRB_n, TRB_p, TRB_s, "")
+                    egpSetParent(TP_n)
+                    egpSetColor(10)
+                    Q[TRB_n + "/actTag" , string] = C + ""
+                    Q[TRB_n + "/actName", string] = "toolPanel_toolRotator_XXX"
+                    Q[TP_n + "/cursorTargets", array] = Q[TP_n + "/cursorTargets", array]:add(array(TRB_n))
+                    
+                    local TR_n = TRB_n + "_rootFlat"
+                    local TR_s = v(TRB_s[2]/2.5)
+                    local TR_p = (TR_s*2-TRB_s+v(Indent*2))*v(0.5,-0.5)
+                    egpAddCircle(TR_n, TR_p, TR_s, "")
+                    egpSetParent(TRB_n)
+                    egpSetColor()
+                    Q[TR_n + "/isCircle", number] = 1
+                    Q[TRB_n + "/cursorTargets", array] = Q[TRB_n + "/cursorTargets", array]:add(array(TR_n))
+                    Q[TR_n + "/actTag" , string] = C + ""
+                    Q[TR_n + "/actName", string] = "toolPanel_toolRotator_XXX_rootFlat"
+                    
+                    
+                    local Offset = 0
+                    local Height = FontSize/3*4
+                    local Buts   = array("Обнулить")
+                    local Buts_a = array("set0")
+                    local Buts_c = Buts_a:count()
+                    foreach(But_i, But_n:string = Buts_a) {
+                        local F = But_i - 1
+                        
+                        local But = TR_n + "_" + But_n
+                        local ButB_n = But + "Base"
+                        local ButB_s = v(TRB_s[1]/2-TR_p[1],Height)
+                        local ButB_p = v((TRB_s[1]-ButB_s[1])/2-TR_p[1]-Indent,(Height/2-TR_s[1]-Indent)-Offset+(Height+Indent)*F)
+                        egpAddBox(ButB_n, ButB_p, ButB_s, "")
+                        egpSetParent(TR_n)
+                        egpSetColor(255,50,0)
+                        egpAddBox(ButB_n + "_layer1", v(), ButB_s-v(Indent), "")
+                        egpSetParent(ButB_n)
+                        egpSetColor()
+                        
+                        local ButBW_n = ButB_n + "_layer2"
+                        local ButBW_s = TR_s+v(Indent*2.4)
+                        local ButBW_p = v()
+                        local ButBW_a1 = asin((ButB_p[2]-ButB_s[2]/2)/ButBW_s[1])
+                        local ButBW_a2 = asin((ButB_p[2]+ButB_s[2]/2)/ButBW_s[1])
+                        local ButBW_a = ButBW_a1-ButBW_a2
+                        egpAddWedge(ButBW_n, ButBW_p, ButBW_s, "")
+                        egpSetParent(TR_n)
+                        egpSetColor(255,50,0)
+                        egpSetAng(ButBW_a1)
+                        egpSetSize(360+ButBW_a)
+                        
+                        local ButT_a = asin(ButB_p[2]/ButBW_s[1])
+                        local ButT_n = But + "Text"
+                        local ButT_p = v((ButBW_s[1]+Indent+2)*(cos(ButT_a))+sin(abs(ButT_a))*FontSize/2-ButB_s[1]/2,0)
+                        local ButT_t = Buts[But_i, string]
+                        egpAddText(ButT_n, ButT_t, ButT_p)
+                        egpSetParent(ButB_n)
+                        egpSetColor(255,50,0)
+                        egpSetSize(FontSize)
+                        egpSetAlign(0,1)
+                        #egpSetFont("times new roman")
+                        egpSetFont("arial")
+                    }
+                    
+                    
+                    
+                    egpAddCircle(TR_n + "_layer1", v(), TR_s+v(Indent*2), "")
+                    egpSetParent(TR_n)
+                    egpSetColor(10)
+                    egpAddCircle(TR_n + "_layer2", v(), TR_s, "")
+                    egpSetParent(TR_n)
+                    egpSetColor()
+                    egpAddCircle(TR_n + "_layer3", v(), TR_s, "o")
+                    egpSetParent(TR_n)
+                    egpSetColor(255,50,0)
+                    
+                    
+                    #[
+                    
+                    
+                    
+                    local TRBB_n = TR_n + "_buttonSET0_base"
+                    local TRBB_s = v(TR_s[2]-Indent,FontSize)
+                    local TRBB_p = v(TRBB_s[1]/2,0)
+                    egpAddBox(TRBB_n, TRBB_p, TRBB_s, "ro")
+                    egpSetParent(TR_n)
+                    egpSetColor(60)
+                    #egpSetOrderBelow(TR_n + "_layer1")
+                    #egpSetOrderBelow(TR_n)
+                    ]#
+                    
+                    #[
+                    local TRR_n = TR_n + "_root"
+                    local TRR_s = v(3)
+                    local TRR_p = v()
+                    egpAddCircle(TRR_n, TRR_p, TRR_s, "")
+                    egpSetParent(TR_n)
+                    egpSetColor(0)
+                    ]#
+                    #[
+                    local Layer1_n = TRR_n + "_layer1"
+                    local Layer1_s = v(1, TR_s[1]*1.0-Indent)
+                    local Layer1_p = v(0,-Layer1_s[2]*0.5)
+                    egpAddBox(Layer1_n, Layer1_p, Layer1_s, "")
+                    egpSetParent(TRR_n)
+                    egpSetColor(255,50,0)
+                    ]#
+                    
+                ## TOOL PANEL ##
+            }
+            elseif(Step == 3) {
+                
+                for(C = 1, 3) {
+                    local RotatorType = select(C, "PITCH", "YAW", "ROLL")
+                    local TRB_n = "toolPanel" + "_toolRotator_" + RotatorType
+                    local TR_n = TRB_n + "_rootFlat"
+                    
+                    local TRRN_n = TR_n + "_rootNeed"
+                    local TRRN_s = v(2)
+                    local TRRN_p = v()
+                    egpAddCircle(TRRN_n, TRRN_p, TRRN_s, "")
+                    egpSetParent(TR_n)
+                    
+                    local TRRNS_n = TRRN_n + "_strelka"
+                    local TRRNS_s = 1
+                    local TRRNS_U = 60 * TRRNS_s
+                    local TRRNS_D = 30 * TRRNS_s
+                    local TRRNS_LR = 10 * TRRNS_s
+                    local TRRNS_p = array(
+                        v(TRRNS_LR, 5),
+                        v(0,TRRNS_D),
+                        v(-TRRNS_LR,5),
+                        v(0,-TRRNS_U)
+                    )
+                    egpAddPoly(TRRNS_n, TRRNS_p, "o")
+                    egpSetParent(TRRN_n)
+                    egpSetColor(255,50,0)
+                    
+                    local TRRR_n = TR_n + "_rootReal"
+                    local TRRR_s = v(2)
+                    local TRRR_p = v()
+                    egpAddCircle(TRRR_n, TRRR_p, TRRR_s, "")
+                    egpSetParent(TR_n)
+                    
+                    
+                    
+                }
+            }
+            else {
+                egpAddCircle("cursor", v(), v(2), "o")
+                Q["spawnMode", number] = 0
+            }
+        }
+    }
+    else {
+        timer("", 50)
+    }
+    
+    
+    local KeyC2 = O:keyPressed("mouse_left")
+    
+    local KeyC = O:keyPressed("C") | changed(KeyC2) | KeyC2
+    if(KeyC & !O:keyZoom()) {
+        cursorPos(O)
+        local CursorPos = Q["cursorPos", vector2]
+        egpSetPos("cursor", CursorPos)
+        
+        
+        local KeyClick = O:keyPressed("E") | O:keyPressed("mouse_left")
+        if(changed(KeyClick) & KeyClick) {
+            local CursorTarget_a = Q["cursorTargets", array]
+            local CursorTarget_c = CursorTarget_a:count()
+            local CursorTarget_n = 0
+            local CursorTarget = ""
+            
+            while(CursorTarget_c > CursorTarget_n) {
+                CursorTarget_n++
+                local Obj_n = CursorTarget_a[CursorTarget_n, string]
+                if(globalInrange(Obj_n, CursorPos)) {
+                    CursorTarget_n = 0
+                    CursorTarget = Obj_n
+                    CursorTarget_a = Q[CursorTarget + "/cursorTargets", array]
+                    CursorTarget_c = CursorTarget_a:count()
+                }
+            }
+            
+            if(CursorTarget & !Q[CursorTarget + "/lock", number]) {
+                
+                local Act_i = Q["act", number] = Q["act", number] + 1
+                local Act_n = Q[CursorTarget + "/actName", string]
+                
+                if(!Act_n) {
+                    Act_n = CursorTarget
+                }
+                
+                Q[Act_i + "/actName", string] = Act_n
+                Q[Act_i + "/actTag" , string] = Q[CursorTarget + "/actTag", string]
+                Q["acts", array] = Q["acts", array]:add(array(Act_i))
+                
+                hint(CursorTarget, 4)
+            }
+        }
+    }
+    
+    
+    
+    
+    
+    
+    local Clear = array()
+    foreach(Act_C, Act_i:number = Q["acts", array]) {
+        local Act_n = Q[Act_i + "/actName", string]
+        local NoRemove = 0
+        switch(Act_n) {
+            case "bonesPanel_listBase",
+                
+                local FontSize = Q["fontSize", number]
+                local CursorPos = Q["cursorPos", vector2]
+                
+                local BPLB_n = "bonesPanel_listBase"
+                local BPLB_s = egpGetSize(BPLB_n)
+                local BPLB_P = egpGetGlobalPos(BPLB_n)
+                local CursorLocalPos = CursorPos - BPLB_P
+                
+                local Select = floor((CursorLocalPos[2]+BPLB_s[2]/2)/FontSize)
+                
+                
+                local BPLS_n = "bonesPanel_listSelect"
+                local BPLS_p = v(0,(FontSize-BPLB_s[2])/2 + FontSize * Select)
+                egpSetPos(BPLS_n, BPLS_p)
+                
+                Q["select", number] = Select
+                
+                egpSetParent("bonesPanel_pointsSelect", "bonesPanel_point" + Select)
+                
+                NoRemove = 0
+            break
+            case "bonesPanel_pointsBase",
+                
+            break
+            
+            case "toolPanel_toolRotator_XXX",
+                local Frame = ""
+                local Select = Q["select", number]
+                
+                if(!O:keyPressed("lshift")) {
+                    local Rotator_t = Q[Act_i + "/actTag" , string]:toNumber()
+                    local Rotator_n = select(Rotator_t, "PITCH", "YAW", "ROLL")
+                    
+                    
+                    
+                    local RealAng = Q[Frame + "/boneAng/" + Select, angle]
+                    
+                    
+                    if(Rotator_t == 1) {
+                        RealAng = RealAng:setPitch(0)
+                    }
+                    elseif(Rotator_t == 2) {
+                        RealAng = RealAng:setYaw(0)
+                    }
+                    else {
+                        RealAng = RealAng:setRoll(0)
+                    }
+                    Q[Frame + "/boneAng/" + Select, angle] = RealAng
+                    
+                    
+                    local TRRN_n = "toolPanel_toolRotator_" + Rotator_n + "_rootFlat_rootNeed"
+                    egpSetAng(TRRN_n, 0)
+                    #entity:addPBA(PlayerBone_n:number, [NeedAng Delit Clamp]:angle, AnimVariable:string)
+                    O:addPBA(Select, RealAng, ang(5), ang(50), "1")
+                }
+                else {
+                    
+                    egpSetAng("toolPanel_toolRotator_PITCH_rootFlat_rootNeed", 0)
+                    egpSetAng("toolPanel_toolRotator_YAW_rootFlat_rootNeed", 0)
+                    egpSetAng("toolPanel_toolRotator_ROLL_rootFlat_rootNeed", 0)
+                    
+                    Q[Frame + "/boneAng/" + Select, angle] = ang()
+                    O:addPBA(Select, ang(), ang(5), ang(50), "1")
+                }
+                
+            break
+            case "toolPanel_toolRotator_XXX_rootFlat",
+                local KeyClick = O:keyPressed("E") | O:keyPressed("mouse_left")
+                
+                if(KeyClick) {
+                    
+                    local Frame = ""
+                    local Select = Q["select", number]
+                    local Rotator_t = Q[Act_i + "/actTag" , string]:toNumber()
+                    local Rotator_n = select(Rotator_t, "PITCH", "YAW", "ROLL")
+                    
+                    if(changed(Act_i)) {
+                        Q["globalPos", vector2] = egpGetGlobalPos("toolPanel_toolRotator_" + Rotator_n + "_rootFlat")
+                        Q["lastCursorLocalPos", vector2] = Q["cursorPos", vector2] - Q["globalPos", vector2]
+                        Q["startBoneAng", number] = Q[Frame + "/boneAng/" + Select, angle][Rotator_t]
+                        Q["addBoneAng", number] = 0
+                    }
+                    
+                    local RealAng = Q[Frame + "/boneAng/" + Select, angle]
+                    
+                    local LastCursorLocalPos = Q["lastCursorLocalPos", vector2]
+                    local CursorLocalPos = Q["lastCursorLocalPos", vector2] = Q["cursorPos", vector2] - Q["globalPos", vector2]
+                    local StartBoneAng = Q["startBoneAng", number]
+                    
+                    
+                    local AddBoneAngMul = min(CursorLocalPos:length2()/egpGetSize("toolPanel_toolRotator_" + Rotator_n + "_rootFlat"):length2()*9,1)^1.5
+                    local AddAng = angnorm(CursorLocalPos:toAngle() - LastCursorLocalPos:toAngle()) * AddBoneAngMul
+                    if(O:keyPressed("mouse_right")) {
+                        AddAng = AddAng + clamp(angnorm(90+LastCursorLocalPos:toAngle() - RealAng[Rotator_t]) / 1.2,-5,5)
+                    }
+                    
+                    local AddBoneAng = Q["addBoneAng", number]
+                    local AddBoneAng = Q["addBoneAng", number] = angnorm(AddBoneAng + AddAng)
+                    local NewBoneAng = angnorm(StartBoneAng + AddBoneAng)
+                    
+                    
+                    if(Rotator_t == 1) {
+                        RealAng = RealAng:setPitch(NewBoneAng)
+                    }
+                    elseif(Rotator_t == 2) {
+                        RealAng = RealAng:setYaw(NewBoneAng)
+                    }
+                    else {
+                        RealAng = RealAng:setRoll(NewBoneAng)
+                    }
+                    Q[Frame + "/boneAng/" + Select, angle] = RealAng
+                    
+                    local TRRN_n = "toolPanel_toolRotator_" + Rotator_n + "_rootFlat_rootNeed"
+                    egpSetAng(TRRN_n, NewBoneAng)
+                    #entity:addPBA(PlayerBone_n:number, [NeedAng Delit Clamp]:angle, AnimVariable:string)
+                    O:addPBA(Select, RealAng, ang(5), ang(50), "1")
+                }
+                NoRemove = KeyClick
+            break
+        }
+        if(!NoRemove) {
+            Clear = Clear:add(array(Act_C))
+        }
+    }
+    foreach(C, I:number = Clear) {
+        Q["acts", array]:remove(I)
+    }
+    
+    
+    setName("editor pba 02 001\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage() * 1000000) + "\n")
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

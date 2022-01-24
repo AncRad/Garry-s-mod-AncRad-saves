@@ -1,0 +1,91 @@
+@name EGPS_v01_test
+@inputs 
+@outputs Debug:string
+@persist [D N]:number
+@trigger 
+
+
+if(changed(0)) {
+    
+    #include "EGPS_v01"
+    
+    
+    egpSelect()
+    egpClear()
+    
+    local P = v(1920,1080)/2
+    N = 5
+    for(C = 1,N) {
+        local A = 360/N*(C-1)
+        local V = v(400,0):rotate(A)
+        egpAddCircle("a"+C,v(20)*5,P+V,0)
+        egpSetColor(30)
+        egpClickMode()
+        
+        egpAddCircle("b"+C,v(20),randvec2(-50,50),0)
+        egpSetParent("a"+C)
+        egpSetColor(50)
+        egpClickMode()
+    }
+    egpAddCircle("cursor",v(2),v(),0)
+    egpAddText("cursor_text","text",v(100,30),v())
+    egpSetParent("cursor")
+    
+    #printTable(EGPS["b1", table]["parents", table])
+    
+    timer("", 1)
+}
+
+if(clk("")) {
+    timer("", 50)
+    
+function vector2 entity:egpGetCursorPos_FOV90(CamAngles:angle) {
+    local Player = This
+    
+    local EyeAngles  = Player:eyeAngles()
+    local Eye        = Player:eye()
+    if(CamAngles != ang()) {
+        Eye = Eye:rotate(angnorm(EyeAngles-CamAngles))
+    }
+    if(changed(Eye) | changed(EyeAngles)) {
+        local Cos = Eye:dot(EyeAngles:forward())
+        local CursorV = (toLocal(Eye / Cos,ang(),vec(),EyeAngles) / vec(1,-1.332,-0.75) + vec(0,1,1)) / 2
+        local Cursor_p = vec2(CursorV[2], CursorV[3])
+        EGPS_cursorPos = Cursor_p
+    }
+    return EGPS_cursorPos
+}
+function vector2 entity:egpGetCursorPos_FOV90() {
+    return This:egpGetCursorPos_FOV90(ang())
+}
+    Debug="##############"
+    local Cursor_P = owner():egpGetCursorPos_FOV90()*v(1920,1080)
+    egpSetPos("cursor", Cursor_P)
+    egpSetText("cursor_text", egpGetTarget(Cursor_P, ""))
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName("EGPS_v01_test\nOPS: " + ops() + "\nCPU: " + round(cpuUsage()*1e6))

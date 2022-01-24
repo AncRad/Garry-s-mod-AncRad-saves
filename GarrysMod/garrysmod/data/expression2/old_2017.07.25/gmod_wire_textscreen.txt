@@ -1,0 +1,50 @@
+@name gmod_wire_textscreen
+@persist [O E Table]:entity LS:string
+
+
+
+if(changed(0)) {
+    
+    E = entity()
+    O = owner()
+    Table = E:isWeldedTo()
+    runOnChat(1)
+    runOnKeys(O, 1)
+    
+}
+
+if(chatClk(O)) {
+    
+    local NewLS = O:lastSaid()
+    if(NewLS:left(1) == "!") {
+        
+        local S = O:aimEntity()
+        local Ex = NewLS:explode(" ")
+        if(Ex[1, string] == "color" & Ex:count() == 4) {
+            if(S == Table | S:type() == "wire_text_screen") {
+                local Color = vec()
+                Color[1] = Ex[2, string]:toNumber()
+                Color[2] = Ex[3, string]:toNumber()
+                Color[3] = Ex[4, string]:toNumber()
+                
+                S:setColor(Color)
+            }
+        }
+        else {
+            LS = NewLS:right(NewLS:length()-1)
+            if(S:type() == "wire_text_screen") {
+                local S_w = S:wirelink()
+                S_w["String", string] = LS
+            }
+        }
+        hideChat(1)
+    }
+}
+
+if(O:keyPressed("E") & LS) {
+    local S = O:aimEntity() print(S:type())
+    if(S:type() == "gmod_wire_textscreen") {
+        local S_w = S:wirelink()
+        S_w["String", string] = LS
+    }
+}

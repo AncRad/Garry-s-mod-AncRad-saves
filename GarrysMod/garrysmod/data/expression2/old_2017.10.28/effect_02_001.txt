@@ -1,0 +1,84 @@
+@name effect 02 001
+@inputs 
+@outputs 
+@persist [E O]:entity [Q]:table
+
+
+
+if(changed(0)) {
+    
+    Q["part/need", number] = 60
+    
+    
+    timer("create", 1)
+}
+
+
+if(clk("create")) {
+        timer("create", 50)
+    
+    local Need = Q["part/need", number]
+    local Real = Q["part/real", number]
+    if(Need > Real) {
+        local DropTime = Q["prats/dropTime", number]
+        while(holoCanCreate() & (Need > Real)) {
+            Real++
+            Part_i = Real + 1975445
+            local Holo = holoCreate(Part_i, vec(), vec(), ang(), vec(), "cube")
+            if(Holo) {
+                
+                Q[Part_i + "/pos"     , vector] = vec()
+                Q[Part_i + "/vel"     , vector] = vec()
+                Q[Part_i + "/dropTime", number] = DropTime
+                Q["wait", array] = Q["wait", array]:add(array(Part_i))
+            }
+        }
+        Q["part/real", number] = Real
+    }
+    else {
+        stoptimer("create")
+        timer("fly", 1)
+        if(entity():getName() == "effect 02 001") {
+            
+            timer("isNoInclude", 1)
+            print("created " + Real + "/" + Need + " parts")
+            
+            #Q["rangerFilter", array] = Q["rangerFilter", array]:add(array(owner()))
+        }
+    }
+}
+
+if(clk("isNoInclude")) {
+        timer("isNoInclude", 50)
+    
+    
+    
+    
+    
+    
+    setName("effect 02 001" + "\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage() * 1e6))
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

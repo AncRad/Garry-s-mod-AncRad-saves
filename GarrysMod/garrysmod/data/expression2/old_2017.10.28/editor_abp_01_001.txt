@@ -1,0 +1,264 @@
+@name editor abp 01 001
+
+@inputs 
+@outputs 
+@persist [E O]:entity [EABP]:table
+
+@model models/bull/gates/processor.mdl
+
+
+
+#--- loop include
+#include "old 28.10.2017/PBA001"
+
+if(changed(0)) {
+    
+    #--- include
+    #include "old 28.10.2017/EGPS"
+    
+    
+    
+    #--- functions
+    
+    #### chat interface
+    function addLog(Print:array) {
+        EABP["logSistem/log", array] = EABP["logSistem/log", array]:add(array(vec(255)):add(Print))
+    }
+    function addLog(Print:string) {
+        addLog(array(Print))
+    }
+    function addLog(Color:vector, Print:string) {
+        addLog(array(Color, Print))
+    }
+    #
+    #
+    #
+    function addLogBlue(Print:array) {
+        Print = array(vec(150,150,255)):add(Print:add(array(vec(255))))
+        EABP["logSistem/log", array] = EABP["logSistem/log", array]:add(Print)
+    }
+    function addLogBlue(Print:string) {
+        addLogBlue(array(Print))
+    }
+    #
+    function addLogValue(Print:array) {
+        Print = array(vec(255,120,120)):add(Print:add(array(vec(255))))
+        EABP["logSistem/log", array] = EABP["logSistem/log", array]:add(Print)
+    }
+    function addLogValue(Print:string) {
+        addLogValue(array(Print))
+    }
+    #
+    function addLogRed(Print:array) {
+        Print = array(vec(255,60,60)):add(Print:add(array(vec(255))))
+        EABP["logSistem/log", array] = EABP["logSistem/log", array]:add(Print)
+    }
+    function addLogRed(Print:string) {
+        addLogRed(array(Print))
+    }
+    #
+    function addLogGreen(Print:array) {
+        Print = array(vec(60,255,60)):add(Print:add(array(vec(255))))
+        EABP["logSistem/log", array] = EABP["logSistem/log", array]:add(Print)
+    }
+    function addLogGreen(Print:string) {
+        addLogGreen(array(Print))
+    }
+    #
+    #
+    #
+    function addLogEABP(Print:array) {
+        Print = array(vec(30,255,30),(EABP["logSistem/log", array]:count() ? "\n" : "") + "[EABP] ",vec(255)):add(Print)
+        EABP["logSistem/log", array] = EABP["logSistem/log", array]:add(Print)
+    }
+    function addLogEABP(Print:string) {
+        addLogEABP(array(Print))
+    }
+    #
+    function addLogStep(Step:number, Print:array) {
+        addLogEABP("")
+        Print = array(vec(30,255,30),"[Шаг" + Step + "] ",vec(255)):add(Print)
+        EABP["logSistem/log", array] = EABP["logSistem/log", array]:add(Print)
+    }
+    function addLogStep(Step:number, Print:string) {
+        addLogStep(Step, array(Print))
+    }
+    
+    #### egp interface
+    #function vector2 cursorPos() {}
+    
+    #### animate sistem
+    
+    #--- other
+    E = entity() E:setSkin(1)
+    O = owner()
+    
+    addLog(array(vec(0), "##################################"))
+    addLogEABP("")
+    addLogValue("Редактор анимаций костей игрока ")
+    addLog("версии ")
+    addLogValue("4 ")
+    addLog("запущен ")
+    addLogGreen(" успешно")
+    addLog(".")
+    
+    timer("log", 1)
+    timer("egp", 1) EABP["spawnStep", number] = 1
+}
+
+if(clk("egp")) {
+        timer("egp", 100)
+    
+    local Step = EABP["spawnStep", number]
+    switch(Step) {
+        ###############
+        #
+        # 
+        #
+        ###############
+        case 1,
+            
+            
+            local E_wt = E:isWeldedTo()
+            if(E_wt) {
+                if(changed(E_wt)) {
+                    local E_wt_t = E_wt:type()
+                    if(E_wt_t == "gmod_wire_egp_hud") {
+                        
+                        addLogStep(Step, "Соединение с ")
+                        addLogValue("EGP HUD ")
+                        addLogGreen("успешно ")
+                        addLog("установлено. Загружаю ")
+                        addLogValue("EGP интерфейс.")
+                        
+                        local E_wt_w = E_wt:wirelink()
+                        egpSelect(E_wt_w)
+                        egpClear()
+                        EABP["spawnStep", number] = Step + 1
+                    }
+                    elseif((E_wt_t == "gmod_wire_egp") & changed(E_wt_t)) {
+                        addLogStep(Step, "Это \"")
+                        addLogValue("EGP SCREEN ")
+                        addLog(", а нужен \"")
+                        addLogValue("EGP HUD")
+                        addLog("\".")
+                    }
+                    elseif((E_wt_t == "gmod_wire_egp_emitter") & changed(E_wt_t)) {
+                        addLogStep(Step, "Это \"")
+                        addLogValue("EGP EMITTER")
+                        addLog("\", а нужен \"")
+                        addLogValue("EGP HUD")
+                        addLog("\". Лалка ты :>")
+                    }
+                    else {
+                        addLogStep(Step, "Ожидается соединение с \"")
+                        addLogValue("EGP HUD")
+                        addLog("\".")
+                    }
+                }
+            }
+            elseif(changed(0)) {
+                addLogStep(Step, "Ожидается соединение с \"")
+                addLogValue("EGP HUD")
+                addLog("\".")
+            }
+        break
+        ###############
+        #
+        # 
+        #
+        ###############
+        case 2,
+            
+            
+            
+            EABP["spawnStep", number] = Step + 1
+        break
+        ###############
+        #
+        # 
+        #
+        ###############
+        case 3,
+            
+            
+            EABP["spawnStep", number] = 0
+        break
+        ##############################
+        ###############
+        ############### 
+        ###############
+        ##############################
+        default,
+            ###############
+            #
+            # cursor pos
+            #
+            ###############
+            if(O:keyPressed("C")) {
+                local EyeAngles  = O:eyeAngles()
+                local Eye        = O:eye()
+                if(EABP["cam/toggle", number]) {
+                    Eye = Eye:rotate(angnorm(EyeAngles-EABP["cam/ang", angle]))
+                }
+                if(changed(Eye) | changed(EyeAngles)) {
+                    local EyeA       = EyeAngles:forward()
+                    local EgpScrSize = vec2(1920,1080) #egpScrSize(O)
+                    
+                    local Holo = holoEntity(454560)
+                    if(!Holo) {holoCreate(454560,vec(),vec())}
+                    holoAng(454560, EyeAngles)
+                    
+                    local Cos = Eye[1] * EyeA[1] + Eye[2] * EyeA[2] + Eye[3] * EyeA[3]
+                    local CursorV = (Holo:toLocal(Eye / Cos) / vec(1, -1.332, -0.75) + vec(0, 1, 1)) / 2
+                    
+                    local Cursor = vec2(CursorV[2], CursorV[3]) * EgpScrSize
+                    if(round(Cursor) != EgpScrSize/2) {
+                        EABP["cursorPos", vector2] = Cursor
+                        egpAddCircle("cursor", Cursor, v(2), "")
+                    }
+                }
+            }
+            ###############
+            #
+            # 
+            #
+            ###############
+        break
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+if(clk("log")) {
+        timer("log", 350)
+    
+    
+    local Log = EABP["logSistem/log", array]
+    if(Log:count()) {
+        printColor(Log)
+        EABP["logSistem/log", array]:clear()
+    }
+}
+
+setName("editor abp 01 001\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage() * 1e6))
+#editor animation the bones of the player

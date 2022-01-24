@@ -1,0 +1,134 @@
+@name ANCRAD
+
+@inputs 
+@outputs 
+
+#- CODE
+@persist CODE_FirstRun
+
+#- ANCRAD
+@persist ANCRAD:entity
+@persist GT:gtable
+
+
+if(changed(0)) {
+    if(CODE_FirstRun) {reset()}
+    CODE_FirstRun = 1
+    
+    #- ANCRAD
+    ANCRAD = entity():isWeldedTo() ? entity():isWeldedTo() : owner()
+    GT = gTable(owner():steamID() + "/ANCRAD")
+    
+    
+    runOnDamage(1)
+    runOnDamage(1, ANCRAD)
+    
+    
+    function number entity:isGodMode() {
+        local Target_god = 0
+        #ifdef entity:hasGodMode()
+            Target_god += This:hasGodMode()
+        #endif
+        #ifdef entity:inGodMode()
+            Target_god += This:inGodMode()
+        #endif
+        #ifdef entity:playerGod()
+            Target_god += This:playerGod()
+        #endif
+        return !!Target_god
+    }
+}
+
+local Damage_E = damageEntClk()
+if(Damage_E) {
+    if(Damage_E == ANCRAD) {
+        if(ANCRAD:isGodMode() | !ANCRAD:isPlayer()) {
+            local Attacker = ANCRAD:getAttacker()
+            if(Attacker:isPlayer() & !Attacker:isAdmin()) {
+                local Attacker_SID = Attacker:steamID64()
+                Attacker:weapon():remove()
+                Attacker:soundPlay("STOP HIT ME!"+Attacker:id(), 0.7, "buttons/button8.wav")
+                local Counter = 0
+                Counter = GT["hitCounter/"+Attacker_SID, number] = GT["hitCounter/"+Attacker_SID, number] + 1
+                if(Counter >= 5) {
+                    Attacker:ignite(Counter/2)
+                }
+                if(Counter >= 10) {
+                    
+                    if(Counter < 15) {
+                        concmd("ulx slap \"" + Attacker:name() + "\" " + 9e9)
+                    }
+                    else {
+                        Attacker:setPos(randvec(-300,300))
+                        Attacker:setVel(vec(0,0,-9e9))
+                    }
+                }
+                if(Counter >= 15) {
+                    #concmd("ulx shock \"" + Attacker:name() + "\"" + ANCRAD:getDamage() * 2)
+                }
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

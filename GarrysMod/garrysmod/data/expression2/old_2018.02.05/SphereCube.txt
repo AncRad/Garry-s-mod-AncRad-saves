@@ -1,0 +1,52 @@
+@name SphereCube
+@persist [E Ow]:entity
+
+
+@persist Circles HoloInCircle
+@persist Circle  Holo
+@persist Index
+
+timer("", 100)
+
+if(first()){
+    Ow=owner()
+    E=entity()
+    
+    
+    Circles = 20
+    HoloInCircle = 10
+    
+    Circle = 1
+    Holo = 0
+}
+
+
+while((Circles >= Circle) & perf() & holoCanCreate()) {
+    
+    A = 720 / Circles      * Circle
+    B = 360 / HoloInCircle * Holo
+    Pos = vec(sin(A)*cos(B),cos(A)*cos(B),sin(B)) * 50
+    Ang = ang(A,B,0)
+    Index++
+    Holo++
+    holoCreate(Index, E:pos() + Pos, vec(1), Ang)
+    holoParent(Index, E)
+    
+    if(HoloInCircle == Holo) {
+        Circle++
+        Holo = 0
+        if(Circle > Circles) {
+            stoptimer("")
+            break
+        }
+    }
+}
+
+#[
+
+
+for(I = 1,360 & perf()) {
+    for(B = 1,360 & perf()) {
+        holoCreate(I, E:toWorld(vec(sin(I) * cos(B)*100,cos(B)*cos(B)*100,cos(B)*100)))
+        }
+    }

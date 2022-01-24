@@ -1,0 +1,341 @@
+@name HK_phoenix_02
+
+#- base
+@persist [E O]:entity [Q]:table
+
+#- drone
+@inputs [Base]:entity
+@persist [T1 T2 T3 Cam_prop]:entity
+@outputs [F1 F2 F3 F_adaptation]:number
+@outputs [R1 R2 R3]:number
+@persist [Low_time High_time]:number
+
+#- driver
+@inputs [Seat]:entity [Cam]:wirelink
+
+#- developer
+@outputs [Debug]:string
+
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+
+if(changed(0)) {
+    
+    #- base
+    E = entity()
+    O = owner()
+    
+    #- drone
+    if(Base:model()) {
+        foreach(C, Ent:entity = Base:getConstraints()) {
+            local Ent_m = Ent:model()
+            switch(Ent_m) {
+                case "models/mechanics/wheels/wheel_smooth_24f.mdl",
+                    local Ent_pY = Base:toLocal(Ent:massCenter())[2]
+                    if(Ent_pY > 20) {T1 = Ent} elseif(Ent_pY < -20) {T2 = Ent} else {T3 = Ent}
+                break
+                case "models/sprops/cuboids/height06/size_1/cube_6x6x6.mdl",
+                    if(Ent:getColor() == vec(255,75,0)) {Cam_prop = Ent}
+                break
+                default, break
+            }
+        }
+    }
+    else {
+        print("[HK_phoenix] error_001")
+        exit()
+    }
+    
+    #- 
+    E:setSkin(1)
+    Cam_prop:propNotSolid(1)
+    
+    #- 
+    F_adaptation = 1
+    
+    #- code
+    timer("low", 1) Low_time = curtime()
+    timer("high", 1) High_time = curtime()
+    timer("user", 1)
+    exit()
+}
+
+
+setName("HK_phoenix_02\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage() * 1e6) + "\n")
+
+if(clk("high")) {
+        timer("high", 15)
+    
+    local Last_curtime = High_time
+    High_time = curtime()
+    local Interval = High_time-Last_curtime
+    
+    
+    local Base_v = Base:vel()
+     Base_vZ = Base_v[3]
+    
+    local X = 8.0
+    F_adaptation = clamp(F_adaptation -clamp(Base_vZ*2 ,-21.3333*X,21.3333*X)*Interval ,0,6)
+    local F = 808/3*600 * max(F_adaptation - clamp(Base_vZ/5,-0.5,0.5) ,0)
+    
+    T1:applyForce(F1*F*Interval*T1:up())
+    T2:applyForce(F2*F*Interval*T2:up())
+    T3:applyForce(F3*F*Interval*T3:up())
+    
+    T1:applyAngForce(ang((R1-T1:angles()[1]-T1:angVel()[1]/20)*36*600*Interval,0,0))
+    T2:applyAngForce(ang((R2-T2:angles()[1]-T2:angVel()[1]/20)*36*600*Interval,0,0))
+    T3:applyAngForce(ang((R3-T3:angles()[1]-T3:angVel()[1]/20)*36*600*Interval,0,0))
+    exit()
+}
+if(clk("low")) {
+        timer("low", 50)
+    
+    local Last_curtime = Low_time
+    Low_time = curtime()
+    local Interval = Low_time-Last_curtime #0.046875
+    
+    local Base_F = Base:forward()
+    
+    local Base_VL = Base:vel():rotate(0,-acos(Base_F[1])*sign(Base_F[2]),0)
+    
+    local Base_A = Base:angles()
+    
+    local Base_AV = Base:angVel()
+    
+    
+    
+    local XC = clamp(Base_VL[1]/5,-40,40)
+    local YC = 0#sin(clamp(Base_VL[2]/5,-90,90))*60
+    
+    
+    local RXC = sin(clamp((clamp((YC-Base_A[3])*2,-90,90)-Base_AV[3]),-90,90))*0.7
+    local RYC = 0.543 + sin(clamp(Base_A[1]+clamp(Base_AV[1]/4,-180,180),-90,90))
+    local RZC = clamp(Base_AV[2]/5,-25,25)
+    
+    F1 = 1 + RYC/2 + RXC
+    F2 = 1 + RYC/2 - RXC
+    F3 = 1 - RYC/1
+    
+    local R = -XC
+    R1 = R + RZC
+    R2 = R - RZC
+    R3 = R
+    #T1:applyForce(F1*Interval*T1:up())
+    #T2:applyForce(F2*Interval*T2:up())
+    #T3:applyForce(F3*Interval*T3:up())
+    
+    Debug="##########"
+    Debug+="\n"+"" + round(Base_VL)
+    
+    exit()
+}
+
+if(clk("user")) {
+        timer("user", 50)
+    
+    exit()
+}
+
+#[
+
+if(clk("")) {
+        timer("", 1)
+    
+    
+    #####     User
+    local User = Seat:driver()
+    
+    Debug="================\nUser: " + User:name()
+    
+    # cam
+    local EYE = angnorm(Seat:toLocal(User:eyeAngles()) - ang(0,90,0))
+    
+    # keys
+    local W_key = User:keyPressed("w")
+    local A_key = User:keyPressed("a")
+    local S_key = User:keyPressed("s")
+    local D_key = User:keyPressed("d")
+    local Space_key = User:keyPressed("space")
+    local Shift_key = User:keyPressed("lshift")
+    local Alt_key = User:keyPressed("lalt")
+    
+    
+    #####     Camera
+    if(changed(User)) {
+        #ifdef cameraToggle(number, number, entity)
+            cameraToggle(1, User|0, Seat)
+        #else
+            Cam_w["Activated", number] = User|0
+        #endif
+    }
+    if(User) {
+        
+        local CamCam_prop = Q["camCam_prop", entity]
+        if(CamCam_prop) {
+            
+            holoAng(0, EYE)
+        }
+        else {
+            CamCam_prop = Q["camCam_prop", entity] = holoCreate(0, Cam_prop:boxCenterW(), vec(), Cam_prop:angles())
+            holoParent(0, Cam_prop)
+            #ifdef cameraToggle(number, number, entity)
+                cameraCreate(1, CamCam_prop:toWorld(vec(-170,0,45)), CamCam_prop:toWorld(ang(0,0,0)))
+                cameraParent(1, CamCam_prop)
+                cameraToggle(1, User|0, Seat)
+            #else
+                Cam_w["Position" , vector] = CamCam_prop:toWorld(vec(-170,0,45))
+                Cam_w["Angle"    , angle ] = CamCam_prop:toWorld(ang(0,0,0))
+                Cam_w["Parent"   , entity] = CamCam_prop
+                Cam_w["Activated", number] = User|0
+            #endif
+        }
+    }
+    
+    
+    #####     Values
+    local Ang    = Base:angles()
+    local AngVel = Base:angVel()
+    local Vel    = Base:vel()
+    local VelL   = Base:velL()
+    #
+    #
+    local Ang_p = Ang[1]
+    local Ang_y = Ang[2]
+    local Ang_r = Ang[3]
+    local Ang_Critical = abs(Ang_r)>90
+    
+    local AngVel_p = AngVel[1]
+    local AngVel_y = AngVel[2]
+    local AngVel_r = AngVel[3]
+    
+    local Ang_dif = angnorm(EYE[2]-Ang_y)
+    #local Ang_dif_cos = cos(Ang_dif)
+    #local Ang_dif_sin = sin(Ang_dif)
+    #local Ang_dif_cos = abs(Ang_dif_cos)^2*sign(Ang_dif_cos)
+    #local Ang_dif_sin = abs(Ang_dif_sin)^2*sign(Ang_dif_sin)
+    local NeedVel = Q["needVel", vector]
+    local Vec = vec(W_key-S_key,A_key-D_key,Space_key-Alt_key):normalized() * vec(750,350,125) if(Shift_key) {Vec*=vec(2.3,2.3,2)}
+    local NeedVel = NeedVel + (Vec - NeedVel)/1.5 Q["needVel", vector] = NeedVel
+    local NeedVel = NeedVel:rotate(ang(0,Ang_dif,0))
+    #local NeedVel = NeedVel:rotate(ang(0,EYE[2],0))
+    #local NeedVel = vec(NeedVel[1]*Ang_dif_cos+NeedVel[2]*Ang_dif_sin,NeedVel[2]*Ang_dif_cos-NeedVel[1]*Ang_dif_sin,NeedVel[3])
+    #
+    #
+          Vel_z = Vel[3] - NeedVel[3]
+    
+    local VelL_x = VelL[1] - NeedVel[1]
+    local VelL_y = VelL[2] - NeedVel[2]
+    
+    
+    
+    #####     Control
+    # height
+          HC = Q["HC", number]
+    local HC = clamp(HC + clamp( -Vel_z / 10 ,-20,5)  ,0,50) Q["HC", number] = HC
+    local HF = max(HC - clamp(Vel_z / 1,-6,6) ,0)
+    
+    # velocity
+    local VC_x = sin(clamp(VelL_x/4,-90,90)) * 35
+    local VC_y = sin(clamp(VelL_y/4,-90,90)) * 72
+    
+    # rotation
+    
+    local RC_x = 0.00 + sin(clamp( clamp(AngVel_r / 2.5,-90,90)+clamp(Ang_r - VC_y                  ,-90 , 90)      ,-90,90)) * !Ang_Critical
+    local RC_y = 0.46 + sin(clamp(       AngVel_p / 3          +clamp(Ang_p+(Ang_Critical ? 180 : 0),-90 , 90)      ,-90,90))
+    local RC_z =        sin(clamp(      (AngVel_y / 1.8        +clamp(User ? -Ang_dif : 0           ,-120,120))*1.5 ,-90,90)) * 15 * (Ang_Critical ? -1 : 1)
+    
+    
+    #####     forces
+    local F = HF * 408
+    local F = F / 3
+          F1 = F * clamp(1 + RC_y * 0.5 - RC_x,0,3.0)
+          F2 = F * clamp(1 + RC_y * 0.5 + RC_x,0,3.0)
+          F3 = F * clamp(1 - RC_y * 1.0       ,0,3.0)
+    
+    #####     angles
+    local VC_x_mul = 1-abs(RC_z)/15*0.4
+    local R = -VC_x*VC_x_mul
+    local R1 = R + RC_z
+    local R2 = R - RC_z
+    local R3 = R
+    
+    Debug+="\nForces"
+    Debug+="\nHC: " + floor(HC,1)
+    Debug+="\nHF: " + floor(HF,1)
+    
+    Debug+="\n"
+    Debug+="\n" + floor(Ang)
+    
+    #####     Apply
+    for(C = 1, 3) {
+        local T = select(C, T1, T2, T3)
+        local F = select(C, F1, F2, F3)
+        local R = select(C, R1, R2, R3)
+        
+        local AForce = angnorm(R - T:angles()[1]) * 10 - T:angVel()[1] * 0.8
+        #local AForce = (clamp(angnorm(R-T:angles()[1])/90,-1,1)*1500-T:angVel()[1])*1
+        T:applyAngForce(ang(AForce * T:mass(),0,0))
+        
+        T:applyForce(T:up() * F)
+        
+        local Sound = Q["sound"+C, number]
+        local Sound = Sound + (F-Sound)/8 Q["sound"+C, number] = Sound
+        local Vol = Sound/1200
+        local Pit = Sound/7/120*60
+        soundVolume("loop"+C, Vol) soundPitch("loop"+C, Pit)
+    }
+    
+    
+    
+    
+    
+    
+    
+    setName("HK_phoenix_02\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage() * 1e6) + "\n")
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+if(last()) {
+    setName("HK_phoenix_02")
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

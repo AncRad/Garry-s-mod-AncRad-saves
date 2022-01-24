@@ -1,0 +1,808 @@
+@name RC_003
+
+@inputs [Target1 Target2]:entity
+@outputs Debug:string
+
+@persist [E O]:entity [NameDebug]:string [Q]:table  Loop Interval
+
+
+
+#- user
+@persist [User]:entity
+#
+#- ragdoll
+@persist [Ragdoll_e]:entity
+@persist [Chest Pelvic Head   LFoot RFoot   LHand RHand   LShin RShin]:bone
+@persist [FootRadius HandRadius ShinRadius Ragdoll_mass]:number
+
+@persist CV_in_poly
+#
+#- helper
+@persist [Helper]:table
+
+
+
+@trigger none
+@model models/bull/gates/processor.mdl
+
+
+
+if(changed(0)) {
+    
+    ################
+    #
+    function entity helper_point(Point_n:string, [Point_p Point_s]:vector) {
+        local StartHolo_e = Helper[Point_n + "/entity", entity]
+        if(!StartHolo_e) {
+            if(holoCanCreate()) {
+                local StartHolo_i = 0
+                StartHolo_i = Helper[Point_n + "/index" , number] = Helper["indexCounter", number] = max(Helper["indexCounter", number] + 1 ,2281448)
+                StartHolo_e = Helper[Point_n + "/entity", entity] = holoCreate(StartHolo_i, Point_p, Point_s, ang(), vec(255), "models/editor/axis_helper.mdl")
+            } else {return noentity()}
+        } elseif(Point_p) {holoPos(Helper[Point_n + "/index", number], Point_p)}
+        return StartHolo_e
+    }
+    function entity helper_beam([Beam_n PointStart_n PointEnd_n]:string, [Helper_color]:vector, Width:number) {
+        local PointStart_e = Helper[PointStart_n + "/entity", entity]
+        local PointEnd_e   = Helper[PointEnd_n   + "/entity", entity]
+        if(PointStart_e & PointEnd_e & !Helper[Beam_n + "/beam/entity", entity]) {
+            local Helper_e = PointStart_e:drawBeam("trails/physbeam",PointStart_e:pos(),PointEnd_e:pos(),Helper_color,255,Width)
+            Helper_e:setBeamEndEnt(PointEnd_e)
+            Helper[Beam_n + "/beam/entity", entity] = Helper_e
+            return Helper_e
+        }
+        else {
+            return noentity()
+        }
+    }
+    #
+    ################
+    
+    #ifdef runOnLast(number,entity)
+    #else
+        function runOnLast(Num:number,Ent:entity) {}
+    #endif
+    
+    
+    function entity entity:playerragdoll() {
+        #ifdef entity:playerRagdoll()
+            if(!This:playerIsRagdoll()) {
+                return This:playerRagdoll()
+            }
+        #endif
+        return noentity()
+    }
+    function entity:playerUnragdoll() {
+        #ifdef entity:playerRagdoll()
+            if(This:playerIsRagdoll()) {
+                local EyeAngles = This:eyeAngles()
+                This:playerRagdoll()
+                This:setEyeAngles(EyeAngles:setRoll(0))
+            }
+        #else
+        #endif
+    }
+    function number entity:getUser() {
+        User:playerUnragdoll()
+        
+        if(This:isPlayer()) {
+            User = This
+            NameDebug = "Player: " + User:name()
+            timer("ragdoll", 1)
+            return 1
+        }
+        elseif(This:type() == "prop_ragdoll") {
+            NameDebug = "Ragdoll (" + This:owner():name() + ")"
+            Ragdoll_e = This
+            User = noentity()
+            timer("ragdoll", 1)
+            return 1
+        }
+        return 0
+    }
+    ################
+    #
+    function angle bone:getAngles() {
+        switch(This:index()) {
+            case  0,return toWorldAng(vec(),ang( -90,   0, -90),vec(),angnorm(This:angles()))#
+            case  1,return toWorldAng(vec(),ang(   0,  90,  90),vec(),angnorm(This:angles()))#
+            case  2,return toWorldAng(vec(),ang(   0,   0,   0),vec(),angnorm(This:angles()))
+            case  3,return toWorldAng(vec(),ang(   0, -90,  90),vec(),angnorm(This:angles()))#
+            case  4,return toWorldAng(vec(),ang(   0,   0,   0),vec(),angnorm(This:angles()))
+            case  5,return toWorldAng(vec(),ang(   0,   0,   0),vec(),angnorm(This:angles()))
+            case  6,return toWorldAng(vec(),ang(   0,   0,   0),vec(),angnorm(This:angles()))
+            case  7,return toWorldAng(vec(),ang(   0,   0,   0),vec(),angnorm(This:angles()))
+            case  8,return toWorldAng(vec(),ang(   0,   0,   0),vec(),angnorm(This:angles()))
+            case  9,return toWorldAng(vec(),ang(   0,   0,   0),vec(),angnorm(This:angles()))
+            case 10,return toWorldAng(vec(),ang(   0, -90, -90),vec(),angnorm(This:angles()))#
+            case 11,return toWorldAng(vec(),ang(   0, -90,  90),vec(),angnorm(This:angles()))#
+            case 12,return toWorldAng(vec(),ang(   0, -90,  90),vec(),angnorm(This:angles()))#
+            case 13,return toWorldAng(vec(),ang(   0,   0,   0),vec(),angnorm(This:angles()))
+            case 14,return toWorldAng(vec(),ang(   0,   0,   0),vec(),angnorm(This:angles()))
+            default,return toWorldAng(vec(),ang(   0,   0,   0),vec(),angnorm(This:angles()))#
+        }
+    }
+    function vector bone:toworld(VEC:vector) {
+        switch(This:index()) {
+            case  0,return This:toWorld(VEC:rotate(   0,   0,   0))
+            case  1,return This:toWorld(VEC:rotate(   0,  90,  90))#
+            case  2,return This:toWorld(VEC:rotate(   0,   0,   0))
+            case  3,return This:toWorld(VEC:rotate(   0,   0,   0))
+            case  4,return This:toWorld(VEC:rotate(   0,   0,   0))
+            case  5,return This:toWorld(VEC:rotate(   0,   0,   0))
+            case  6,return This:toWorld(VEC:rotate(   0,   0,   0))
+            case  7,return This:toWorld(VEC:rotate(   0,   0,   0))
+            case  8,return This:toWorld(VEC:rotate(   0,   0,   0))
+            case  9,return This:toWorld(VEC:rotate(   0,   0,   0))
+            case 10,return This:toWorld(VEC:rotate(   0,   0,   0))
+            case 11,return This:toWorld(VEC:rotate(   0,   0,   0))
+            case 12,return This:toWorld(VEC:rotate(   0,   0,   0))
+            case 13,return This:toWorld(VEC:rotate(   0,   0,   0))
+            case 14,return This:toWorld(VEC:rotate(   0,   0,   0))
+            default,return This:toWorld(VEC:rotate(   0,   0,   0))#
+        }
+    }
+    function ranger bone:footRanger(StartPos:vector) {
+        return rangerOffsetHull(select(1, 7.0,9),StartPos,vec(0,0,-1),vec(3.5,3.5,0.1))
+    }
+    
+    function table func(POS:vector, [Count]:number, [ArYaw ArPos Radius]:array, [CenterPos]:vector) {
+        local CenterPos2 = vec2(CenterPos)
+        local POS2 = vec2(POS-CenterPos)
+        
+        Debug+="\n=====pointInPolygonTest====="
+        
+        
+        local POS2a = POS2:toAngle()
+        foreach(C1, Y1:number = ArYaw) {
+            local C2 = C1 == Count ? 1 : C1 + 1
+            local Y2 = angnorm(ArYaw[C2, number] - Y1)
+            
+            if(inrange(angnorm(POS2a-Y1),0,Y2) | Count < 3) {
+                #Debug+="\nsector: " + C1 + "#" + C2
+                
+                local P1 = ArPos[C1,vector2]-CenterPos2
+                local P2 = ArPos[C2,vector2]-CenterPos2
+                
+                local P1P2 = P1-P2
+                local P1P2_yaw = P1P2:toAngle()
+                local P1P2_L = P1P2:length()
+                
+                local FCP1 = POS2-P1
+                local FCP1_l = FCP1:rotate(-P1P2_yaw)
+                
+                local P1_r = Radius[C1, number] Debug+= "\n" + Radius:concat(", ")
+                local P2_r = Radius[C2, number]
+                local P1P2_r = P2_r-P1_r
+                local LengthProcent = -FCP1_l[1]/P1P2_L
+                local P_r = P1_r + P1P2_r*clamp(LengthProcent,0,1)
+                
+                local OK = 0
+                   if(Count == 2) {OK = abs(FCP1_l[2]) < P_r & inrange(LengthProcent,0,1)}
+                elseif(Count  > 2) {OK =     FCP1_l[2]  < P_r & inrange(LengthProcent,0,1)}
+                if(OK) {
+                    
+                    Debug+="\nOK"
+                    
+                    return table("ok"=1,"clampPos" = POS:setZ(CenterPos[3]))
+                }
+                else {
+                    
+                    if(inrange(LengthProcent,0,1)) {
+                        
+                        POS = vec(P1+CenterPos2+vec2(clamp(FCP1_l[1],-P1P2_L,0),P_r*sign(FCP1_l[2])):rotate(P1P2_yaw),CenterPos[3])
+                        Distance = abs(FCP1_l[2])-P_r
+                        
+                        Debug+="\nNOPE"
+                        Debug+="\nDISTANCE: " + Distance
+                        return table("ok"=0,"clampPos" = POS,"distance" = Distance)
+                        
+                    }
+                    else {
+                        if(FCP1:length() <= P1_r | POS2:distance(P2) < P2_r) {
+                            
+                            Debug+="\nOK"
+                            
+                            return table("ok"=1,"clampPos" = POS:setZ(CenterPos[3]))
+                        }
+                        else {
+                            
+                            
+                            local P   = LengthProcent > 0 ? P2   : P1
+                            local P_r = LengthProcent > 0 ? P2_r : P1_r
+                            local FCP_LP = POS2-P
+                            POS = vec(P+CenterPos2+FCP_LP:normalized()*P_r,CenterPos[3])
+                            Distance = FCP_LP:length()-P_r
+                            
+                            Debug+="\nNOPE"
+                            Debug+="\nDISTANCE: " + Distance
+                            return table("ok"=0,"clampPos" = POS,"distance" = Distance)
+                            
+                        }
+                    }
+                }
+                break
+            }
+        }
+    }
+    function number bone:footForceTo(Target_p:vector) {
+        local Out = 0
+        
+        local Foot = This
+        local Select = Foot:index() == 13 ? 1 : 2
+        
+        local Bedro  = Ragdoll_e:bone(select(Select, 11,  8))
+        local Golen  = Ragdoll_e:bone(select(Select, 12,  9))
+        
+        local Bedro_p = Bedro:pos()
+        local Foot_MC = Foot:massCenter()
+        
+        local DIF = (Target_p-Bedro_p)
+        local Dist = DIF:length()
+        local DistClamped = clamp(Dist,0,33.5+25)
+        Out = Dist != DistClamped
+        #Target_p = Bedro_p + DIF:normalized() * DistClamped
+        Target_p = Target_p+vec(0,0,clamp((Foot_MC-Target_p):setZ(0):length()/10,0,1)^2*10)
+        local DIF = Target_p-Bedro_p
+        local NeedDist = clamp(DIF:length(),15,35)
+        local Target_p = Bedro_p + DIF:normalized() * NeedDist
+        helper_point(Select + " ", Target_p, vec(0.6))
+        
+        
+        local G = 3
+        local Bedro_m = Bedro:mass()
+        local Golen_m = Golen:mass()
+        local Foot_m = Foot:mass()
+        
+        
+        local Force = clamp((-Pelvic:vel()*0-Foot:vel()*2+clamp((Target_p-Foot_MC)*10,-300,300))*10.0,-50,50) + vec(0,0,G)
+        local Force = Force * Loop * Foot_m
+        Foot:applyOffsetForce(  Force,Foot_MC)
+        #Pelvic:applyOffsetForce(-Force/2,Foot_MC)
+        #Chest:applyOffsetForce(-Force/2,Foot_MC)
+        
+        local Force = vec(0,0,G * Loop * Bedro_m)
+        local Bedro_MC = Bedro:massCenter()
+        Bedro:applyOffsetForce(  Force,Bedro_MC)
+        #Pelvic:applyOffsetForce(-Force,Bedro_MC)
+        local Force = vec(0,0,G * Loop * Golen_m)
+        local Golen_MC = Golen:massCenter()
+        Golen:applyOffsetForce(  Force,Golen_MC)
+        #Pelvic:applyOffsetForce(-Force,Golen_MC)
+        
+        local Koleno_Yaw = toLocalAng(vec(),Bedro:angles(),vec(),Golen:angles())[2] # [17;-131] recomended -20
+        local YawF = (-Koleno_Yaw-clamp(acos(clamp(NeedDist/35,0,1))*2,5,130))*10
+        local Ang = ang(0,YawF,0)*Bedro_m*Loop
+        Bedro:applyAngForce(Ang)
+        local Ang = ang(0,-YawF,0)*Golen_m*Loop
+        Golen:applyAngForce(Ang)
+        
+        return Out
+    }
+    #
+    ################
+    
+    
+    
+    ################
+    ################
+    ##
+    ##
+    E = entity() E:setSkin(1)
+    O = owner()
+    ##
+    runOnLast(1)
+    ##
+    ##
+    ################
+    ################
+    
+    ################
+    #
+    #- 
+    #
+    !E:isWeldedTo():getUser() & O:getUser()
+    #
+    timer("user", 1)
+    #
+    ################
+}
+
+if(clk("user")) {
+        timer("user", User ? 50 : 500)
+    
+    
+    local Key_ragdoll = User:keyPressed("R")
+    if(changed(Key_ragdoll) & Key_ragdoll) {
+        if(User:playerIsRagdoll()) {
+            User:playerUnragdoll()
+            Ragdoll_e = noentity()
+            stoptimer("ragdoll")
+        }
+        else {
+            Ragdoll_e = User:playerragdoll()
+            runOnLast(1, Ragdoll_e)
+            timer("ragdoll", 50)
+        }
+    }
+}
+
+
+if(clk("ragdoll")) {
+        timer("ragdoll", Ragdoll_e ? 30 : 500)
+    
+    if(Ragdoll_e) {
+        if(changed(Ragdoll_e)) {
+            Q["lastCurtime", number] = curtime()
+            
+            #if(!User) {Ragdoll_e:setMaterial("models/wireframe") Ragdoll_e:setAlpha(30)}
+        }
+        
+        local LastCurtime = Q["lastCurtime", number]
+        local Curtime = curtime()
+        Q["lastCurtime", number] = Curtime
+         Interval = Curtime - LastCurtime
+         Loop = Interval / 0.015625
+        
+        
+        Debug="\nInterval: " + Interval*1e3 + "\nLoop: " + Loop
+        
+        
+        if(changed(Ragdoll_e)) {
+            FootRadius = 10
+            HandRadius = 2.5
+            ShinRadius = 3
+            
+            Chest  = Ragdoll_e:bone(1)
+            Pelvic = Ragdoll_e:bone(0)
+            Head   = Ragdoll_e:bone(10)
+            
+            LFoot  = Ragdoll_e:bone(13)
+            RFoot  = Ragdoll_e:bone(14)
+            Q["radius/" + 13, number] = FootRadius
+            Q["radius/" + 14, number] = FootRadius
+            
+            
+            LHand  = Ragdoll_e:bone(5)
+            RHand  = Ragdoll_e:bone(7)
+            Q["radius/" + 5, number] = HandRadius
+            Q["radius/" + 7, number] = HandRadius
+            
+            LShin  = Ragdoll_e:bone(12)
+            RShin  = Ragdoll_e:bone(9)
+            Q["radius/" + 12, number] = ShinRadius
+            Q["radius/" +  9, number] = ShinRadius
+            
+            Ragdoll_mass = 0
+            foreach(C, B:bone = Ragdoll_e:bones()) {
+                Ragdoll_mass+=B:mass()
+            }
+            rangerPersist(1)
+            rangerFilter(Ragdoll_e)
+        }
+        
+        
+        local Distance = 0
+        
+        #step 1
+        local Radius = array()
+        local ArPos = array()
+        local CenterPos = vec()
+        local LoverZ = 9e9
+        foreach(C, Bone_b:bone = array(LFoot,RFoot  , LShin,RShin , LHand,RHand)) { #
+            
+            local Bone_r = Q["radius/" + Bone_b:index(), number]
+            
+            
+            local StartPos = Bone_b:massCenter()
+            if(Bone_b == LShin | Bone_b == RShin) {
+                StartPos-=Bone_b:forward()*7
+            }
+            local R = Bone_b:footRanger(StartPos)
+            
+            local Contact = R:hit() | Bone_b:isFrozen()
+            
+            local Pos = R:pos()
+            if(Contact) {
+                ArPos:pushVector(Pos)
+                Radius:pushNumber(Bone_r)
+                CenterPos+=Pos
+                if(Pos[3]<LoverZ) {
+                    LoverZ=Pos[3]
+                }
+                #Bone_b:applyForce(Bone_b:mass()*Loop*(vec(0,0,-0)-Bone_b:vel()/8))
+            }
+            
+            local ID = 228+Bone_b:index() if(!holoEntity(ID)) {holoCreate(ID,vec(),vec(Bone_r/6),ang(),vec(),"cplane") holoMaterial(ID, "models/wireframe") holoParent(ID, Ragdoll_e)} holoPos(ID, Pos+vec(0,0,1)) holoColor(ID, Contact ? vec(0,100,255) : vec()) holoScale(ID,vec(Bone_r/6))
+        }
+        local Count = ArPos:count()
+        
+        Debug+="\nCount: " + Count
+        
+        
+        if(Count) {
+            CenterPos = (CenterPos/Count):setZ(LoverZ)
+            local CenterPos2 = vec2(CenterPos)
+            
+            #step 2
+            local ArYaw = array()
+            foreach(C, Pos:vector = ArPos) {
+                
+                local Pos2 = vec2(Pos-CenterPos)
+                ArYaw:pushNumber(Pos2:toAngle())
+                ArPos[C, vector2] = vec2(Pos)
+            }
+            #step 3
+            if(Count > 2) {
+                local Prior = array()
+                local ArPos_ = array()
+                local ArYaw_ = array()
+                local Radius_ = array()
+                
+                foreach(C1, N1:number = ArYaw) {
+                    for(C2 = C1, Count){
+                        local N2 = ArYaw[C2, number]
+                        
+                        if(N2 < N1){
+                            Prior[C1, number] = Prior[C1, number]+1
+                        }
+                        else {
+                            Prior[C2, number] = Prior[C2, number]+1
+                        }
+                    }
+                }
+                foreach(C, P:number = Prior){
+                    ArYaw_[P, number] = ArYaw[C, number]
+                    ArPos_[P, vector2] = ArPos[C, vector2]
+                    Radius_[P, number] = Radius[C, number]
+                }
+                ArYaw = ArYaw_
+                ArPos = ArPos_
+                Radius = Radius_
+            }
+            #step 4
+            if(Count > 3) {
+                local C = 0
+                local OK = 0
+                while(OK < Count) {
+                    C = C==Count ? 1 : C+1
+                    OK++
+                    
+                    local P1 = ArPos[C==1 ? Count : C-1,vector2]-CenterPos2
+                    local P2 = ArPos[C,vector2]-CenterPos2
+                    local P3 = ArPos[C==Count ? 1 : C+1,vector2]-CenterPos2
+                    
+                    local P3P1_yaw = (P1-P3):toAngle()
+                    local P2P3_local = (P2-P3):rotate(-P3P1_yaw)
+                    
+                    if(P2P3_local[2] < 0) {
+                        ArYaw:remove(C)
+                        ArPos:remove(C)
+                        Radius:remove(C)
+                        C--
+                        OK=0
+                        Count--
+                    }
+                }
+            }
+            #step 5
+            
+            
+            #func(POS:vector, [Count]:number, [ArYaw ArPos Radius]:array, [CenterPos]:vector) able("ok"=0,"clampPos" = POS,"distance" = Distance)
+            
+            local Move = vec(User:keyPressed("W")-User:keyPressed("S"),User:keyPressed("A")-User:keyPressed("D"),0):rotate(0,User:eyeAngles()[2],0)*300
+            
+            
+            local Chest_v = Chest:vel()
+            local Chest_P = Chest:pos()
+            
+            local NeedVel = clamp((CenterPos-Chest_P)*10,-500,500)+Move
+            local Force = clamp(Chest_v-NeedVel,-20,20):setZ(0)
+            local ForceCenter = Chest_P:setZ(CenterPos[3])+Force             helper_point("0",ForceCenter,vec(1))
+            local Dat = func(ForceCenter,Count,ArYaw,ArPos,Radius,CenterPos)
+            local ForceCenter = Dat["clampPos", vector]                      helper_point("1",Dat["clampPos", vector],vec(1)) helper_beam("01","0","1", vec(255), 2)
+            
+            local DIF = Chest_P-ForceCenter
+            local DIR = DIF:normalized()
+            local COS = max(DIR[3],0)
+            local Force = DIR * (8+clamp((clamp(1-DIF[3]/30,-1,1)*150-Chest_v[3])/100,-1,1)*3) / max(COS,0.7) * clamp(COS,0,1)^10 #(8.7+clamp((clamp(1-DIF[3]/45,-1,1)*150-Chest_v[3])/100,-1,1)*9) / max(COS,0.5) * clamp(COS*1.3,0,1)
+            Chest:applyForce(Force*Ragdoll_mass*Loop)
+            
+            Debug+="\n" + (DIF[3]):toString()
+            
+            foreach(C, R:number = Radius) {Radius[C,number]=R*0.8}
+            CV_in_poly = func(Chest_P+Chest_v/5,Count,ArYaw,ArPos,Radius,CenterPos)["ok", number]
+            
+            
+            #Q["Target_p" + C, vector]
+            #[
+            
+            local Force = (Dat["clampPos", vector] - Chest_P):setZ(0)
+            
+            local DIF = vec(0,0,Chest_P[3]-CenterPos[3])+Force
+            local DIR = DIF:normalized()
+            local COS = max(DIR[3],0)
+            local Force = DIR * (8.7+clamp((clamp(1-DIF[3]/45,-1,1)*150-Chest_v[3])/100,-1,1)*9) / max(COS,0.5) * clamp(COS*1.3,0,1)
+            Chest:applyForce(Force*Ragdoll_mass*Loop)
+            
+            Debug+="\n" + (DIF[3]):toString()
+            ]#
+        }
+        
+        foreach(C, Foot:bone = array(LFoot,RFoot)) {
+            local ID = Foot:index()
+            
+            Debug+="\n=========" + ID
+            local Status = Q["foot/status" + ID, string] Debug+="\nStatus: " + Status
+            if(Status == "stay") {
+                local TargetPos = Q["foot/targetPos" + ID, vector]
+                if(TargetPos:distance(Foot:massCenter()) > FootRadius) {
+                    local Foot_MC = Foot:massCenter()
+                    local DIF = TargetPos - Foot_MC
+                    TargetPos = Foot_MC + DIF:normalized() * clamp(DIF:length(),0,FootRadius)
+                    Q["foot/targetPos" + ID, vector] = TargetPos
+                }
+                Foot:footForceTo(TargetPos)
+            }
+            elseif(Status == "move") {
+                local TargetPos = Q["foot/targetPos" + ID, vector]
+                if(TargetPos:distance(Foot:massCenter()) < FootRadius/3) {
+                    Q["foot/status" + ID, string] = "stay"
+                }
+                Foot:footForceTo(TargetPos)
+            }
+            else {
+                Q["foot/status" + ID, string] = "stay"
+                Q["foot/targetPos" + ID, vector] = Foot:massCenter()
+            }
+        }
+        
+        
+        Debug+="\n=========Legs========="
+        
+        if(!CV_in_poly) {
+            
+            local Chest_p = Chest:pos()
+            local Chest_v = Chest:vel()
+            
+            local Vec = Chest_v:setZ(0)
+            local Yaw = vec2(Vec):toAngle()
+            local Vec = Vec:normalized() * clamp(Vec:length()/2 ,0,25)
+            
+            local NewStepPos = Chest_p + (User & 0 ? User:eyeAngles():forward() * 15 : Vec)
+            
+            local LFoot_p = LFoot:massCenter()
+            local RFoot_p = RFoot:massCenter()
+            
+            local LDist = LFoot_p:distance(NewStepPos)
+            local RDist = RFoot_p:distance(NewStepPos)
+            local Invert = !(LDist > RDist)
+            local Near_i = Invert ? 14 : 13
+            local Far_i  = Invert ? 13 : 14
+            
+            Debug+="\n" + Near_i + "  " + Far_i
+            
+            
+            
+            
+            Q["foot/status"+Near_i, string] = "move"
+            Q["foot/targetPos"+Near_i, vector] = rangerOffsetHull(55+150,NewStepPos + vec(0,8 * sign(!Invert-0.1),0):rotate(0,Yaw,0),vec(0,0,-1),vec(3.5,3.5,0.1)):pos()
+            Q["foot/status"+Far_i , string] = "move"
+            Q["foot/targetPos"+Far_i, vector] = rangerOffsetHull(4.7+10,Invert ? LFoot_p : RFoot_p,vec(0,0,-1),vec(3.5,3.5,0.1)):pos()
+        }
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        #helper_point("D", Ragdoll_e:bone():pos(), vec(1))
+        
+        if(O:keyPressed("C") | 0) {
+            local Key1 = O:keyPressed("1")
+            foreach(C, Key:string = array("1","2")) {
+                local KeyC = O:keyPressed(Key)
+                if(changed(KeyC) & KeyC) {
+                    Q["Target_p" + C, vector] = O:aimPos() + vec(0,0,2)
+                }
+            }
+        }
+        
+        
+        local EyeAngles = clamp(User:eyeAngles(),-ang(80,9e9,80),ang(80,9e9,80))
+        
+        
+        local CFV = 75
+        local CFR = 100
+        local MFV = 1/5
+        local MFR = 10
+        
+        # CHEST CHEST CHEST CHEST CHEST CHEST CHEST CHEST CHEST CHEST CHEST CHEST CHEST CHEST
+        local RC_forward = -Chest:right()
+        local RC_rotateAngle = angnorm(RC_forward:toAngle():setRoll(asin(Chest:up()[3])) - EyeAngles:setPitch(0)) #*ang(1,1,Contact)
+        #interpertation: ang(roll pitch yaw)
+        local RC_rotateForce = clamp((-ang(RC_rotateAngle[3],RC_rotateAngle[1],RC_rotateAngle[2]))*MFR,-CFR,CFR) - clamp(Chest:angVel()*MFV,-CFV,CFV)
+        Chest:applyAngForce(Chest:mass()*RC_rotateForce*Loop)
+        # CHEST CHEST CHEST CHEST CHEST CHEST CHEST CHEST CHEST CHEST CHEST CHEST CHEST CHEST
+        #
+        #
+        #
+        # PELVIC PELVIC PELVIC PELVIC PELVIC PELVIC PELVIC PELVIC PELVIC PELVIC PELVIC PELVIC
+        local RP_forward = Pelvic:up()
+        local RP_rotateAngle = angnorm(RP_forward:toAngle():setRoll(asin(-Pelvic:forward()[3])) - EyeAngles:setPitch(0)) #*ang(1,1,Contact)
+        Angle = RP_rotateAngle
+        #interpertation: ang(yaw roll pitch)
+        local RP_rotateForce = clamp((-ang(RP_rotateAngle[2],RP_rotateAngle[3],RP_rotateAngle[1]))*MFR,-CFR,CFR) - clamp(Pelvic:angVel()*MFV,-CFV,CFV)
+        Pelvic:applyAngForce(Pelvic:mass()*RP_rotateForce*Loop)
+        # PELVIC PELVIC PELVIC PELVIC PELVIC PELVIC PELVIC PELVIC PELVIC PELVIC PELVIC PELVIC
+        #
+        #
+        #
+        # HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD
+        local RH_forward = Head:right()
+        local RH_rotateAngle = angnorm(RH_forward:toAngle():setRoll(asin(Head:up()[3])) - EyeAngles)
+        #interpertation: ang(roll -pitch yaw)
+        local RH_rotateForce = clamp((-ang(RH_rotateAngle[3],-RH_rotateAngle[1],RH_rotateAngle[2]))*MFR,-CFR,CFR) - clamp(Head:angVel()*MFV,-CFV,CFV)
+        Head:applyAngForce(Head:mass()*RH_rotateForce*Loop)
+        # HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD HEAD
+        
+        if(User:keyPressed("mouse_left")) {
+            
+            local Hand_p = LHand:massCenter()
+            
+            local Z = CenterPos[3]
+            if(!Z) {Z = Chest:pos()[3]}
+            
+            local TP = Chest:pos():setZ(Z)+vec(30,13,-2):rotate(0,EyeAngles[2],0)
+            local TP = TP + vec(0,0,clamp(vec2(TP-Hand_p):length()/10,0,1)^2*15)
+            
+            local V = clamp(clamp((TP-Hand_p)*5,-75,75),-75,75) + (Chest:vel()-LHand:vel())/2
+            LHand:applyOffsetForce(LHand:mass()*Loop*V,LHand:massCenter())
+            Chest:applyOffsetForce(-LHand:mass()*Loop*V,LHand:massCenter())
+        }
+        if(User:keyPressed("mouse_right")) {
+            
+            local Hand_p = RHand:massCenter()
+            
+            local Z = CenterPos[3]
+            if(!Z) {Z = Chest:pos()[3]}
+            
+            local TP = Chest:pos():setZ(Z)+vec(30,-13,-2):rotate(0,EyeAngles[2],0)
+            local TP = TP + vec(0,0,clamp(vec2(TP-Hand_p):length()/10,0,1)^2*15)
+            
+            local V = clamp(clamp((TP-RHand:massCenter())*5,-75,75),-75,75) + (Chest:vel()-RHand:vel())/2
+            RHand:applyOffsetForce(RHand:mass()*Loop*V,RHand:massCenter())
+            Chest:applyOffsetForce(-RHand:mass()*Loop*V,RHand:massCenter())
+        }
+        #[
+        if(1) {
+        if(Target_p:distance(Foot_MC) >= FootRadius) {
+        if(CV_in_poly) {
+        Target_p = Foot_MC
+        Debug+="\nCV_in_poly"
+        }
+        else {
+        local Vel = Chest:vel()
+        Target_p = Chest:pos():setZ(CenterPos[3]) + Vel:normalized() * clamp(Vel:length(),0,20)
+        local R = rangerOffset(10,Foot_MC,vec(0,0,-1))
+        if(R:hit()) {
+        Target_p = R:pos()
+        Debug+="\nhit"
+        }
+        else {
+        Target_p = Foot_MC
+        Debug+="\n!hit"
+        }
+        }
+        Q["Target_p" + C, vector] = Target_p
+        }
+        }
+        else {
+        local DIF = Target_p-Bedro_p
+        local NeedDist = clamp(DIF:length(),15,35)
+        local Target_p = Bedro_p + DIF:normalized() * NeedDist
+        Q["Target_p" + C, vector] = Target_p
+        }
+        
+        
+        
+        }
+        else {
+        
+        local Foot  = Ragdoll_e:bone(select(C, 13, 14))
+        local Foot_MC = Foot:massCenter()
+        local Force = clamp((Pelvic:vel()-Foot:vel())*2.0,-10,10)
+        local Force = Force * Loop * Foot:mass()
+        Foot:applyOffsetForce(  Force,Foot_MC)
+        Pelvic:applyOffsetForce(-Force,Foot_MC)
+        }
+        }
+        ]#
+        #helper_point("stopa", Foot_p, vec(0.6))
+        #helper_point("bedro", Bedro_p, vec(0.6))
+        #helper_beam("leg","bedro","stopa", vec(255), 2)
+        #helper_point("target1", Target1_p, vec(1))
+        #helper_beam("target1","target1","stopa", vec(255,255,200), 2)
+        
+        #Dist = floor(Bedro_p:distance(Foot_p),1) # [14.9;36.6] recomended 35.7
+        #Max = Q["max", number] Q["max", number] = Max = (Max ? (Max < Dist ? Dist : Max) : -9e9)
+        #Min = Q["min", number] Q["min", number] = Min = (Min ? (Min > Dist ? Dist : Min) :  9e9)
+        #Debug+="\nMax: " + Max + " Min: " + Min + " Dist: " + Dist
+        #Debug+="\nKoleno_Yaw: " + floor(Koleno_Yaw)
+        
+        
+        #helper_point(Point_n:string, [Point_p Point_s]:vector)
+        #helper_beam([Beam_n PointStart_n PointEnd_n]:string, [Helper_color]:vector, Width:number)
+    }
+}
+
+
+
+
+
+
+
+#[
+
+
+
+if(last() | last(Ragdoll_e)) {
+    User:playerUnragdoll()
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName("RC_003" + (NameDebug ? "\n" + NameDebug : "") + "\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1e6))
+

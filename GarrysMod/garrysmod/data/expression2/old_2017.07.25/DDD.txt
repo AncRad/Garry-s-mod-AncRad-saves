@@ -1,0 +1,466 @@
+@name DDD
+
+@inputs 
+@outputs Dd Ddd Dddd OPS
+@persist [E O]:entity [Q]:table
+
+
+
+if(changed(0)) {
+    
+    #include "old 28.10.2017/25.07.2017/BBB"
+    
+    E = entity()
+    O = owner()
+    
+    
+    #### structure
+    Q["prop", array] = array("prop/coordinates","prop/visualization","prop/physicalProperties","prop/collision") #,"prop/bodyGroups","prop/constructions"
+    
+    Q["prop/coordinates"       , array] = array("coordinatSistem","position","angles")
+    Q["prop/visualization"     , array] = array("model","material","color","alpha","skin")
+    Q["prop/physicalProperties", array] = array("mass","gravity","physicalMaterial") #,"bouncy"
+    Q["prop/collision"         , array] = array("noCollideWorld","noCollideAll","propNoSolid")
+    ####
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    function string toText000( Number , MaxNumber ) {
+        local Text = ""
+        for(C = 1, MaxNumber - (Number + ""):length()) {Text = Text + "  "}
+        Text = Number + Text
+        
+        return Text
+    }
+    
+    
+    egpSelect(E:isWeldedTo():wirelink())
+    egpClear()
+    
+    
+    
+    ########### I N F O   create ###########
+    local SCR = egpScrSize(O)
+    local IFS = 16
+    
+    #base
+    local IB = "info/base"
+    local IB_s = v( 300 , 400 )
+    local IB_p = v( IB_s[1] / 2 , SCR[2] - IB_s[2]/2 ) + v( 500 , -1 )
+    egpAddBox(IB, IB_p, IB_s, "")
+    egpSetColor(0)
+    
+    #title
+    local IT = "info/title"
+    egpAddBox(IT, v(), v(), "")
+    egpSetParent(IB)
+    egpSetColor(10)
+    local ITN = "info/title/name"
+    egpAddText(ITN, "name", v())
+    egpSetParent(IT)
+    egpSetAlign(0,1)
+    
+    #scroll
+    local ISB = "info/scroll/base"
+    egpAddBox(ISB, v(), v( 15 , 0 ), "")
+    egpSetParent(IB)
+    egpSetColor(10)
+    local IS = "info/scroll"
+    egpAddBox(IS, v(), v(), "")
+    egpSetParent(ISB)
+    egpSetColor(20)
+    
+    #listing
+    local IL = "info/list"
+    egpAddBox(IL, v(), v(), "")
+    egpSetParent(IB)
+    egpSetColor(10)
+    local ILS = "info/list/selector"
+    egpAddBox(ILS, v(0,IFS/2), v(), "")
+    egpSetColor(20)
+    egpSetParent(IL)
+    local ILs = "info/list/select"
+    egpAddBox(ILs, v(0,-IFS/2), v(), "")
+    egpSetColor(60)
+    egpSetParent(IL)
+    local ILT1 = "info/list/text1"
+    egpAddTextLayout(ILT1, "text1", v(), v())
+    egpSetParent(IL)
+    egpSetSize(IFS)
+    local ILT2 = "info/list/text2"
+    egpAddTextLayout(ILT2, "text2", v(), v())
+    egpSetParent(IL)
+    egpSetSize(IFS)
+    
+    Q["info/fontSize", number] = IFS
+    ########### I N F O   create ###########
+    
+    
+    function info_sizing(NewSize:vector2) {
+        local IB = "info/base"
+        local RealSize = egpGetSize(IB)
+        
+        if(RealSize != NewSize) {
+            local MinSize = v(200,100)
+            local MaxSize = v(2000)
+            NewSize = clamp(NewSize ,MinSize,MaxSize)
+            local Dif = NewSize - RealSize
+            
+            ## I N F O   sizing ##
+            #base
+            egpSetSize(IB, NewSize)
+            egpSetPos(IB, egpGetPos(IB) + Dif * v(0.5, -0.5))
+            
+            #title
+            local IFS = Q["info/fontSize", number]
+            local IT = "info/title"
+            local IT_s = v( NewSize[1] , IFS )
+            local IT_p = v( 0 , (IT_s[2] - NewSize[2]) / 2 )
+            egpSetSize(IT, IT_s)
+            egpSetPos(IT, IT_p)
+            local ITN = "info/title/name"
+            local ITN_p = v( 2-IT_s[1]/2 , 0 )
+            egpSetPos(ITN, ITN_p)
+            
+            #scroll
+            local ISB = "info/scroll/base"
+            local ISB_s = v(egpGetSize(ISB)[1], NewSize[2] - IT_s[2] - 2)
+            local ISB_p = (NewSize - ISB_s)/2
+            egpSetSize(ISB, ISB_s)
+            egpSetPos(ISB, ISB_p)
+            local IS = "info/scroll"
+            local IS_s = ISB_s * v(1, 0.3)
+            local IS_p = v(0, (IS_s[2] - ISB_s[2])/2)
+            egpSetSize(IS, IS_s)
+            egpSetPos(IS, IS_p)
+            
+            #listing
+            local IL = "info/list"
+            local IL_s = NewSize - v(ISB_s[1] + 2 ,  IT_s[2] + 2 )
+            local IL_p = (IL_s - NewSize) / v( 2 , -2 )
+            egpSetSize(IL, IL_s)
+            egpSetPos(IL, IL_p)
+            local ILS = "info/list/select"
+            local ILs = "info/list/selector"
+            local ILS_s = v(IL_s[1], IFS - 2)
+            egpSetSize(ILS, ILS_s)
+            egpSetSize(ILs, ILS_s)
+            
+            local ILT1 = "info/list/text1"
+            local ILT2 = "info/list/text2"
+            local ILT2_offset = 7.5
+            local ILT2_s = IL_s - v(IFS * ILT2_offset,0)
+            egpSetSize(ILT1, IL_s)
+            egpSetSize(ILT2, ILT2_s)
+            egpSetPos(ILT1, -IL_s/2)
+            egpSetPos(ILT2, -IL_s/2+v(IFS * ILT2_offset,0))
+            
+            ## I N F O   sizing ##
+        }
+    }
+    
+    function info_listing() {
+        local IL = "info/list"
+        local ILS = "info/list/selector"
+        local ILT1 = "info/list/text1"
+        local ILT2 = "info/list/text2"
+        
+        local IL_s = egpGetSize(IL)
+        local IFS = Q["info/fontSize", number]
+        
+        local Lines = floor(IL_s[2] / IFS)
+        
+        local Obj = E
+        local Type = "prop"
+        local TA = Q[Type, array]
+        
+        local Ar1 = array("type")
+        local Ar2 = array(Type)
+        
+        local Schet = 0
+        local Razdel = ""
+        local RazdelA = array()
+        local RazdelN = 0
+        local ParamN = 0
+        while(1) {
+            
+            if(RazdelA:count() == ParamN | RazdelN == 0) {
+                ParamN = 0
+                RazdelN++
+                
+                Razdel = TA[RazdelN, string]
+                if(!Razdel) {break}
+                RazdelA = Q[Razdel, array]
+                Ar1:pushString("    " + Razdel)
+                Ar2:pushString("")
+            }
+            else {
+                ParamN++
+                local Param = RazdelA[ParamN, string]
+                Ar1:pushString(Param)
+                
+                local String = "---"
+                switch(Param) {
+                    ############## coordinates
+                    case "coordinatSistem",
+                        
+                    break
+                    case "position",
+                        String = floor(Obj:pos(),2):toString()
+                    break
+                    case "angles",
+                        String = floor(Obj:angles()):toString()
+                    break
+                    ############## visualization
+                    case "model",
+                        String = Obj:model()
+                    break
+                    case "material",
+                        String = Obj:getMaterial()
+                    break
+                    case "color",
+                        String = Obj:getColor():toString()
+                    break
+                    case "alpha",
+                        String = Obj:getAlpha():toString()
+                    break
+                    case "skin",
+                        
+                    break
+                    ############# physicalProperties
+                    case "mass",
+                        String = Obj:mass():toString()
+                    break
+                    case "gravity",
+                        String = Obj:gravity():toString()
+                    break
+                    case "bouncy",
+                        
+                    break
+                    ############# collision
+                    case "noCollideWorld",
+                        String = "false"
+                    break
+                    case "noCollideAll",
+                        String = "false"
+                    break
+                    case "propNoSolid",
+                        String = "false"
+                    break
+                }
+                Ar2:pushString(String)
+            }
+        }
+        
+        local Offset = max(ceil(Q["info/offset", number] * (Ar1:count() - Lines)),0)
+        local Text1 = ""
+        local Text2 = ""
+        local In = 1 + Offset
+        local To = min(Ar1:count(),Lines) + Offset
+        for(C = In, To) {
+            Text1+= (Text1?"\n" : "") + Ar1[C, string]
+            Text2+= (Text2?"\n" : "") + Ar2[C, string]
+        }
+        egpSetText(ILT1, Text1)
+        egpSetText(ILT2, Text2)
+        
+        local Select = Q["info/select", number]
+        local ILs = "info/list/selector"
+        if(inrange(Select,In,To)) {
+            local ILs_py = IL_s[2]/2 + (Select - Offset) * IFS
+            local ILs_p = v(0, ILs_py)
+            egpSetPos(ILs, ILs_p)
+        }
+        else {
+            egpSetPos(ILs, v(9999))
+        }
+    }
+    
+    
+    info_sizing(v(450, 300))
+    info_listing()
+    
+    timer("", 1)
+}
+
+
+if(clk("")) {
+        timer("", 50)
+    
+    if(changed(0)) {
+        
+        
+    }
+    
+    
+    local KeyC = O:keyPressed("C")
+    local KeyClick = (O:keyPressed("E") | O:keyAttack1()) & KeyC
+    
+    if(KeyC | changed(KeyC)) {
+        ##################################################################
+        ##################################################################
+        local Eye        = O:eye()
+        local EyeAngles  = O:eyeAngles()
+        
+        if(changed(Eye) | changed(EyeAngles)) {
+            local EyeA       = EyeAngles:forward()
+            local EgpScrSize = egpScrSize(O)
+            local Holo = holoEntity(0)
+            if(!Holo) {holoCreate(0,vec(),vec())}
+            holoAng(0, EyeAngles)
+            
+            local Cos = Eye[1] * EyeA[1] + Eye[2] * EyeA[2] + Eye[3] * EyeA[3]
+            local CursorV = (Holo:toLocal(Eye / Cos) / vec(1, -1.332, -0.75) + vec(0, 1, 1)) / 2
+            
+            local Cursor = EGP["cursor", vector2] = vec2(CursorV[2], CursorV[3]) * EgpScrSize
+        }
+        ##################################################################
+        ##################################################################
+        local Cursor = EGP["cursor", vector2]
+        
+        
+        
+        if(!Q["cursor/fall/lock", number]) {
+            local IB = "info/base"
+            local I_IB = egpLocalInrange(IB, Cursor)
+            if(changed(I_IB) | I_IB) {
+                local IS = "info/scroll"
+                local I_IS = egpGlobalInrange(IS, Cursor)
+                if(changed(I_IS) | I_IS) {
+                    if(I_IS) {
+                        if(KeyClick) {
+                            egpSetColor(IS, 40)
+                            Q["cursor/fall/lock", number] = 1
+                            
+                            local ActID = Q["actID", number] = Q["actID", number] + 1
+                            Q["act/" + ActID + "/type", string] = "infoScroll"
+                            Q["act", array] = Q["act", array]:add(array( ActID ))
+                        }
+                        else {
+                            egpSetColor(IS, 30)
+                        }
+                    }
+                    else {
+                        egpSetColor(IS, 20)
+                    }
+                }
+                else {
+                    local IL = "info/list"
+                    local I_IL = egpGlobalInrange(IL, Cursor)
+                    if(changed(I_IL) | I_IL) {
+                        if(I_IL) {
+                            
+                        }
+                        else {
+                            local ILs = "info/list/select"
+                            egpSetPos(ILs, v(999999))
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    local Cursor = EGP["cursor", vector2]
+    
+    local Clear = array()
+    foreach(C_, ActID:number = Q["act", array]) {
+        local ActType = Q["act/" + ActID + "/type", string]
+        switch(ActType) {
+            case "infoScroll",
+                local IS = "info/scroll"
+                if(KeyClick) {
+                    ## scroll
+                    local CursorStartPosY = Q["act/" + ActID + "/cursorStartPosY", number]
+                    if(!CursorStartPosY) {
+                        CursorStartPosY = Q["act/" + ActID + "/cursorStartPosY", number] = Cursor[2]
+                        Q["act/" + ActID + "/scrolStartPosY", number] = egpGetPos(IS)[2]
+                    }
+                    local ISB = "info/scroll/base"
+                    local ISB_sy = egpGetSize(ISB)[2]
+                    local IS_sy = egpGetSize(IS)[2]
+                    local IS_spy = Q["act/" + ActID + "/scrolStartPosY", number]
+                    local Clamp = (ISB_sy - IS_sy) / 2
+                    local Dif = Cursor[2] - CursorStartPosY
+                    local Y = clamp(IS_spy + Dif,-Clamp,Clamp)
+                    egpSetPos(IS, v(0, Y))
+                    
+                    Q["info/offset", number] = 0.5 + Y / Clamp / 2
+                    ## listing
+                    info_listing()
+                }
+                else {
+                    egpSetColor(IS, 20)
+                    Q["cursor/fall/lock", number] = 0
+                    Clear = Clear:add(array(C_))
+                }
+            break
+            case "",
+                
+            break
+        }
+    }
+    foreach(C, I:number = Clear) {
+        Q["act", array]:remove(I)
+    }
+    
+    
+    
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+OPS = ops()

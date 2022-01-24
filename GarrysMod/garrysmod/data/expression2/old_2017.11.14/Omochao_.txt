@@ -1,0 +1,532 @@
+@name Omochao 
+
+@outputs V_Power Req_Ang:angle Req_Pos:vector
+@outputs T_Active T_Stalk T_ActDelay #Timers
+@outputs D_toPos D_toTar D_toEye # Distances
+@outputs D_toGround D_toUp D_toForward # Rangers
+@outputs [Target EyeTar LastTarget Attacker]:entity TarWeapon:array  Scare # Players and reputation
+#@outputs Help_A:angle Help_V:vector Help_S:string Help_E:entity Help # Debug
+@outputs Ops Cpu # Perfomance
+
+#@persist First
+@persist [E]:entity Timer Coef MCoef Curtime Loop Interval V_ChaoVel:vector [A_ChaoVel]:angle EyeToChao
+@persist Path_Number Path:array # Zapominanie puti
+@persist T_Particle T_Path # Timers
+#@persist Buf Buf2 Buf3 Buf_Ang:angle Buf_Vec:vector Buf_R:array # Buffers for optimization
+@persist [Buf_Pos_Chao Buf_Tar_Chao Buf_Eye_Chao]:vector # Buffers for optimization
+@persist [Rep]:gtable [Cam B_0 Chao]:entity
+#@model models/props_junk/MetalBucket01a.mdl
+
+    #Coef = V_Power = T_Active = Timer = 0
+    #Chao = B_0 = noentity()
+    #Buf_Eye_Chao = V_ChaoVel = Buf_Tar_Chao = vec()
+
+if (first())
+{ 
+    Interval = 40
+    Coef = Interval/100
+    #MCoef = Coef^0.95*Chao:mass()
+    #"hq_sphere"
+    #vo/npc/female01/startle01.wav
+    
+    #include "Badcoder_Functions"
+    #include "Omochao/Model"
+    #include "Omochao/Sounds"
+    #include "Omochao/Animations"
+    
+    E = entity() E:setAlpha(0)
+    omoCreate() 
+    omoLoadSounds()
+    
+    Rep = gTable("Omochao_Reputation", 1)
+   
+    function entity findPlayer()
+    {
+        findByClass("Player")
+        findDisallowClass("Prop")
+        findDisallowClass("Npc")
+        return findClosest(Chao:pos())   
+    }
+    function array findSomebody()
+    {
+        findInSphere(Target:pos(), 400)
+        findIncludeClass("Player")
+        findIncludeClass("Prop")
+        findIncludeClass("Npc")
+        return findToArray()   
+    }
+    function entity:addRep(Reputation)
+    {
+        if ( This:isPlayer() || This:isNPC() ) 
+            { Rep[This:name(), number] = clamp(Rep[This:name(), number] + Reputation, -2000, 2000) }
+        elseif ( This:type() == "entity_flame" ) 
+            { Rep[This:type(), number] = clamp(Rep[This:type(), number] + Reputation, -2000, 2000) }
+        else { Rep[This:model(), number] = clamp(Rep[This:model(), number] + Reputation, -2000, 2000) }
+    }
+    function number getRep(T:entity)
+    {
+        if ( T:isPlayer() || T:isNPC() )  
+            { return Rep[T:name(), number] }
+        elseif ( T:type() == "entity_flame" ) 
+            { return Rep[T:type(), number] }
+        else { return Rep[T:model(), number] }
+    }
+       
+    Path[1,vector] = Chao:pos()
+    Path_Number = 1  
+}
+LastCurtime = Curtime
+Curtime = curtime()
+Loop = (Curtime - LastCurtime) / 0.015625
+MCoef = Loop*Chao:mass()
+interval(Interval)
+
+if (!Chao:isValid()) 
+{
+    for (I = 1, 3) {soundStop(I)}
+    E:propDelete()
+}
+if (Chao:isFrozen())
+    {Chao:propFreeze(0)}
+Ops = ops()
+Cpu = cpuUsage()*1000000
+
+soundPitch(1,V_Power*0.8)
+
+#Help = vec(EyeToChao):length()
+#Help_S = Target:weapon():type():explode("_")[1, string]
+#Help_E = Chao:getViewEntity()
+
+    Buf_Pos_Chao = Req_Pos - Chao:pos()
+D_toPos = (Buf_Pos_Chao):length()
+    Buf_Tar_Chao = Target:pos() - Chao:pos()
+D_toTar = (Buf_Tar_Chao):length()
+
+
+#Anim_Speed = 1000000
+
+
+#Help = toAng(Chao:toLocal(B_lLeg_0:angles()), A_lLeg_0, Anim_Speed)
+
+Timer += Coef
+Chao_Damage = Chao:getDamage()
+
+if (Chao_Damage > 0) 
+{ 
+    Chao_Damage *= 5
+        local Buf_E = Chao:getAttacker()  
+    if (Buf_E:isValid()) 
+    {
+        Attacker = Buf_E
+        Attacker:addRep(clamp(T_Damage/2-Chao_Damage, -500, -15))
+    }                    
+    T_Active -= Chao_Damage
+    if (T_Active < -600 ) {T_Active = -600}
+    #T_Stalk -= Chao_Damage
+    T_Particle = 0 
+    T_Damage = 0
+    T_ActDelay = 0
+    if (Attacker:isValid()) {EyeTar = Attacker}
+    Scare = clamp( Scare + clamp(-getRep(Attacker), 50, 600), 0, 1200 )
+}
+else
+    { T_ActDelay += Coef }
+
+if (T_Active > 0) # Chao rabotayet
+{      
+        Buf_Eye_Chao = EyeTar:pos() - Chao:pos()
+    D_toEye = (Buf_Eye_Chao):length()
+    
+    if (D_toPos > 200) {D_toGround = rangerOffset( 100, Chao:toWorld(vec(0,0,-10)), vec(0,0,-1) ):distance()} else {D_toGround = 100}
+    D_toUp = rangerOffset( 100, Chao:toWorld(vec(0,0,10)), vec(0,0,1) ):distance()
+    D_toForward = rangerOffset( 200, Chao:toWorld(vec(0,10,0)), Chao:forward()*vec(1,1,0) ):distance()
+    #I_tarVisible = !rangerOffset( D_toTar-30, Chao:toWorld(vec(0,10,0)), Target:pos()+vec(0,0,40) - Chao:pos() ):hit()
+    
+    EyeToChao = vec(heading(Target:pos()+vec(0,0,65), Target:eyeAngles(), Chao:pos())):length()
+    EyeToChao2 = vec(heading(EyeTar:pos()+vec(0,0,65), EyeTar:eyeAngles(), Chao:pos())):length()
+    
+    TarWeapon = EyeTar:weapon():type():explode("_")
+    
+    Scare = clamp( Scare - Coef, 0, 1200 )
+    
+    V_ChaoVel = Chao:vel()
+    A_ChaoVel = Chao:angVel()
+    
+    V_Power = clamp( 100 + clamp( (Buf_Pos_Chao):z()*1.5, 70-D_toGround, 100), 0.5*T_Active, (2*D_toUp/100)*T_Active )
+    holoAng( B_vent_N, B_vent:toWorld( ang(0,(-V_Power)*1.5*Coef,0) ) ) #  Kruchenie vinta
+    
+    if (T_Damage == 0) # Aw!
+    {
+        say(S_Damage, randint(6), 125)
+        if (!I_Died) {I_Damage = 1}
+    }
+    elseif (T_Damage > 15 && I_Damage) # Hurts!
+    {
+        say(S_Damage_2, randint(1+(Attacker:isPlayer())), 125)
+        I_Damage = 0
+    }
+    T_Damage += Coef
+    
+    if (Chao:isPlayerHolding()) # Poiman
+    {
+        if (T_Poiman == 0) # Vzdoh
+        { 
+            say(S_Poiman, randint(2), 125)
+            Target = findPlayer()
+            if (T_Stalk < 150) {T_Stalk = 150}
+            I_Poiman = 1 
+            I_Whoops = 0
+            T_Whoops = Coef*2
+        } 
+        elseif (I_Died && T_Poiman > 10) # Byl mertv
+        {           
+            if (Target == Attacker)
+            {
+                Target:addRep(100) 
+                I_Damage = 1  
+            }
+            else
+            {
+                Target:addRep(500)
+                say(S_Thanks, randint(3), 125+random(25))
+                Scare = 100
+            }
+            I_Died = 0 
+            T_Poiman = 1     
+        }
+        elseif (T_Poiman > 20)
+        {
+            if ( (T_Poiman > 100 || getRep(Target) < 400) && I_Poiman == 1 )
+            {
+                say("vo/npc/female01/getdown02.wav", 125 + random(25))
+                I_Poiman = 0
+            }
+            elseif (getRep(Target) < 30)
+            {
+                say(S_Poiman_2, randint(2), 125 + random(25))
+                T_Poiman = 1 
+                Target:addRep(-2) 
+                T_Scare = 100
+            }
+            elseif (T_Poiman > 140)
+            {
+                I_Poiman = 1
+                T_Poiman = 100
+                Target:addRep(-5)
+            }                              
+        }         
+        T_Poiman += Coef  
+                
+        
+        if (getRep(Target) < 400 || T_Poiman > 100) { omoAnim( "In hands panic" ) } else { omoAnim( "In hands" ) }                
+    }
+    else
+    {
+        T_Poiman = I_Died = 0
+        
+        if (D_toTar < 75) {T_Whoops = 0}  
+        elseif (T_Whoops == Coef) # Whoops!
+            { say(S_Whoops, randint(2), 125 + random(25)) }
+        elseif (T_Whoops > 10 && T_Whoops < 60 && I_Whoops == 1 && getRep(Target) > -50) # Sorry!
+        {
+            say(S_Whoops_2, randint(4), 125 + random(25))
+            I_Whoops = 0
+        }
+        elseif (T_Whoops > 60) {I_Whoops = 1}
+        T_Whoops += Coef
+        
+        #omoAnim( "" )
+        if ( Scare > 0 ) # Napugan
+        {     
+            if (!EyeTar:isValid()) { EyeTar = Target }
+            
+                local Buf3 = clamp( Scare - getRep(EyeTar), 300, 1200)
+            if (D_toEye < Buf3-50) # Slishkom blizko
+            {
+                Req_Pos = Target:pos() + vec(0,0,clamp(D_toPos*0.5 - 200, 0, 200)) + Target:vel():normalized()*D_toTar - (Buf_Eye_Chao):normalized()*vec(Buf3,Buf3,0)+vec(0,0,Buf3) - V_ChaoVel*0.6
+                Req_Ang = ang( clamp(Chao:toLocal(Req_Pos - V_ChaoVel*0.8):x()*0.2,-30,0.3*(D_toForward-100)), ((-Buf_Eye_Chao):toAngle(Chao:up())):yaw(), -clamp(Chao:toLocal(Req_Pos - V_ChaoVel*0.8):y()*0.2,-30,30) ) #   
+                
+                if ( getRep(EyeTar) < -50 && EyeTar == Attacker && T_Scare > 30 )
+                {
+                    say(S_Scare_2, randint(3), 125 + random(25))
+                    T_Scare = 0
+                }        
+            }
+            else
+            {
+                Req_Ang = ang( clamp(Chao:toLocal(Req_Pos - V_ChaoVel*0.8):x()*0.2,-30,0.3*(D_toForward-100)), ((Buf_Tar_Chao):toAngle(Chao:up())):yaw(), -clamp(Chao:toLocal(Req_Pos - V_ChaoVel*0.8):y()*0.2,-30,30) ) #   
+                if (D_toEye > Buf3+1000) # Slishkom daleko
+                {
+                    #Obych
+                    #Req_Pos = Target:pos() + vec(0,0,clamp(D_toPos*0.5 - 200, 0, 200)) + Target:vel():normalized()*D_toTar - (Buf_Eye_Chao):normalized()*(Buf3) - V_ChaoVel*0.6
+                    Req_Pos = Target:pos() + vec(0,0,45 + clamp(D_toTar*0.5 - 200, 0, 200) + sin(Timer*20)*4) + Target:vel():normalized()*D_toTar - (Buf_Tar_Chao):normalized()*vec(120,120,0) - V_ChaoVel*0.6
+                }
+                else # Norm
+                {
+                    if ( EyeToChao2 < 12 && (TarWeapon[1, string] == "weapon" && TarWeapon[2, string] != "physgun" || TarWeapon[1, string] == "m9k") && EyeTar == Attacker )
+                    {
+                        if (Scare < 100) {Scare = 100}
+                        
+                        Req_Pos = Chao:pos() - V_ChaoVel*0.6 + vec(sin(Timer*10)*300, cos(Timer*10)*300, sin(Timer*60)*100)
+                        if (T_Scare > 30)
+                        {
+                            say(S_Scare_2, randint(3), 125 + random(25))
+                            T_Scare = 0
+                        }
+                    }
+                    else
+                    { Req_Pos = Chao:pos() - V_ChaoVel*0.6 }
+                 }
+            }
+            
+            T_Scare += Coef
+            if ( T_ActDelay > 20 ) {T_Active = clamp(T_Active + Coef*5, 0, 100)}
+            if (T_Stalk > 200 && Target == Attacker) { T_Stalk = 200 }
+        }
+        elseif (T_Stalk <= 0) # Vremya presledovaniya isteklo, vozvrat na bazu
+        {
+            Target = findPlayer()
+            I_Hi = T_Hi = I_Afk = T_Afk = 0
+            
+            if (D_toPos < 100) 
+            {
+                T_Active = clamp(T_Active - Coef*2, 0, 100)
+                if (Path_Number > 1) {Path_Number--}
+            }
+            elseif ( T_ActDelay > 20 ) {T_Active = clamp(T_Active + Coef*5, 0, 100)}
+            
+            if (D_toTar < 100 && Target != LastTarget)  # Igrok podoshel  
+               {T_Stalk = 300} 
+            
+                local Buf2 = sin(Timer*15)*5
+            A_head = ang(Buf2, clamp(B_0:toLocal(Buf_Pos_Chao:toAngle(Chao:up())):yaw(),-80,80), 0)
+                Buf = clamp(Chao:toLocal(Chao:pos() + $V_ChaoVel):x()*9, -80, 80)
+                local Buf2 = Buf2 - 70
+            A_lArm = ang(Buf, 0, -Buf2)
+            A_rArm = ang(Buf, 0, Buf2)
+                  
+            Req_Pos = Path[Path_Number, vector] + ( (Path_Number == 1) ? vec(0,0,40) : vec(0) ) - V_ChaoVel*0.8
+            Req_Ang = ang( clamp(Chao:toLocal(Req_Pos - V_ChaoVel*0.8):x()*0.2,-30,0.3*(D_toForward-100)), ((Buf_Pos_Chao):toAngle(Chao:up())):yaw(), -clamp(Chao:toLocal(Req_Pos - V_ChaoVel*0.8):y()*0.2,-30,30) )        
+        }
+        else # Presledovanie igroka
+        {
+            LastTarget = Target
+            if (T_Active == 100) 
+            {      
+                if ( (Chao:pos()-Path[Path_Number, vector]):length() > 100 ) # Postroenie marshruta
+                {
+                    Path_Number++ 
+                    Path[Path_Number, vector] = Chao:pos()       
+                }
+                
+                T_Stalk -= Coef
+                    
+                if (D_toTar < 250)
+                {
+                    T_EyeTar += Coef
+                    if ( T_EyeTar > 50 ) # Smena tochki vzglyada
+                    {
+                        I_Eye++
+                        T_EyeTar = 20
+                            local Buf_R = findSomebody()
+                        while ( (Buf_R[I_Eye, entity]:pos() - Chao:pos()):length() < 20 || Buf_R[I_Eye, entity]:isWeapon() ) { I_Eye++ }
+                        
+                        if ( Buf_R[I_Eye, entity]:isValid() )
+                        { 
+                            EyeTar = Buf_R[I_Eye, entity] 
+                            if ( EyeTar:isPlayer() && I_Hi == 1 && (!Rep:toTable():exists(EyeTar:name()) || getRep(EyeTar) > getRep(Target)) )
+                            {
+                                Target = EyeTar
+                                T_Stalk = 300
+                                I_Hi = 0
+                            }
+                            elseif ( getRep(EyeTar) < -100 && EyeTar != Target )
+                            { 
+                                say(S_Scare, randint(3), 125 + random(25))
+                                Scare = -getRep(EyeTar)/3
+                            }
+                        }
+                        else
+                        { 
+                            EyeTar = Target
+                            I_Eye = 0
+                        }
+                    }
+                    
+                    if ( Target:vel() == vec(0) && getRep(Target) >= 0 && I_Afk == 0 && I_Hi == 1)
+                    {
+                        if ( T_Afk < 70 )
+                            { T_Afk += Coef }
+                        else
+                        { 
+                            say( "vo/npc/female01/getgoingsoon.wav", 125 + random(25) ) 
+                            I_Afk = 1
+                        }
+                    }
+                                            
+                    if (EyeToChao < 10)
+                    {
+                        if (T_Look < 30) { EyeTar = Target }
+                            
+                        if ( (TarWeapon[1, string] == "weapon" && TarWeapon[2, string] != "physgun" || TarWeapon[1, string] == "m9k") && (getRep(EyeTar) < -100) )
+                        {
+                            say(S_Scare, randint(3), 125 + random(25))
+                            EyeTar:addRep(-20)
+                            #EyeTar = Target
+                            Scare = 100
+                        }
+                        elseif (T_Hi > 17 && I_Hi == 0) # Privet!
+                        {
+                            Target:addRep(20)
+                            say(S_Hi, randint(2), 135 + random(25))
+                            T_Stalk += 300
+                            T_Hi = 0
+                            I_Hi = 1
+                        }
+                        elseif (T_Hi < 30 && I_Hi == 1)
+                        {
+                            A_lArm = ang(0, 0, 70 - sin(Timer*15)*5)
+                            A_rArm = ang(-0, 30, -100 + sin(Timer*30)*10)
+                        }
+                        else
+                        {
+                            T_Look += Coef
+                            if (T_Look > 100)
+                            {
+                                say("vo/npc/female01/vquestion01.wav", 135 + random(25)) # Stop looking!
+                                T_Look = 0
+                            }
+                                    
+                                #Buf = clamp(Chao:toLocal(Chao:pos() + $V_ChaoVel):x()*9, -80, 80)
+                                local Buf2 = 70 - sin(Timer*15)*5
+                            A_lArm = ang(Buf, 0, Buf2)
+                            A_rArm = ang(Buf, 0, -Buf2)        
+                        }
+                        Target:addRep(Coef*0.05)
+                    }
+                    else
+                    {
+                        T_Look = 0
+                            
+                        if (I_Hi == 0 && getRep(Target) > 80 && T_Stalk > 150)
+                        {
+                            if (T_Hi > 30)
+                            {
+                                say(S_Behind, randint(2), 125 + random(25)) # Look at me!
+                                T_Hi = 0
+                            }
+                                #Buf = clamp(Chao:toLocal(Chao:pos() + $V_ChaoVel):x()*9, -80, 80)
+                                local Buf2 = 100 - sin(Timer*60)*15
+                            A_lArm = ang(Buf, 0, Buf2)
+                            A_rArm = ang(Buf, 0, -Buf2)
+                        } 
+                        else
+                        {
+                                #Buf = clamp(Chao:toLocal(Chao:pos() + $V_ChaoVel):x()*9, -80, 80)
+                                local Buf2 = 70 - sin(Timer*15)*5
+                            A_lArm = ang(Buf, 0, Buf2)
+                            A_rArm = ang(Buf, 0, -Buf2)   
+                        }
+                                  
+                    }
+                    T_Hi += Coef
+                }
+                else
+                {
+                    T_EyeTar = 0
+                    EyeTar = Target
+                        #Buf = clamp(Chao:toLocal(Chao:pos() + $V_ChaoVel):x()*9, -80, 80)
+                        local Buf2 = 70 - sin(Timer*15)*5
+                    A_lArm = ang(Buf, 0, Buf2)
+                    A_rArm = ang(Buf, 0, -Buf2)
+                }
+                    local Buf = clamp(200-getRep(EyeTar),150,300)     
+                Req_Pos = EyeTar:pos() + vec(0,0,45 + clamp(D_toEye*0.5 - 200, 0, 200) + sin(Timer*20)*4) + Target:vel():normalized()*D_toTar - (Buf_Eye_Chao):normalized()*vec(Buf,Buf,0) - V_ChaoVel*0.6
+                Req_Ang = ang( clamp(Chao:toLocal(Req_Pos - V_ChaoVel*0.8):x()*0.2,-30,0.3*(D_toForward-100)), ((Buf_Tar_Chao):toAngle(Chao:up())):yaw(), -clamp(Chao:toLocal(Req_Pos - V_ChaoVel*0.8):y()*0.2,-30,30) ) #   
+            }
+            # else {T_Active = clamp(T_Active + Coef*5, 0, 100)}
+            
+            if ( T_ActDelay > 20 ) {T_Active = clamp(T_Active + Coef*5, 0, 100)}
+            A_head = ang(sin(Timer*15)*5, clamp(B_0:toLocal((Buf_Eye_Chao):toAngle(Chao:up())):yaw(),-80,80), 0)   
+        }
+        
+        #Chao:applyOffsetForce( B_head:up()*V_Power*0.8*MCoef, Chao:massCenter() )
+        Chao:applyForce( B_head:up()*V_Power*0.095*MCoef )
+        Chao:applyAngForce( Chao:toLocal( Req_Ang-A_ChaoVel*ang(0.14,0.7,0.14) )*ang(0.6,0.05,0.6)*MCoef )
+    }
+}
+elseif (T_Active == 0) # Poisk igroka dlya presledovaniya
+{
+    Anim_Speed = 6*Coef
+        local Buf_Ang = toAng(B_0:angles(), A_0, Anim_Speed)
+    if (Buf_Ang != ang(0)) { holoAng( B_0_N, B_0:toWorld(Buf_Ang) ) }
+    V_0 = vec(0,0,-2.5)
+    A_0 = ang(-55,Chao:angles():yaw(),0)
+    A_head = ang(15, 0, 0)
+        local Buf_Ang = ang(-60, 0, 0)
+    A_lLeg_0 = Buf_Ang
+    A_rLeg_0 = Buf_Ang
+    A_lLeg_1 = ang(30, 20, 30)
+    A_rLeg_1 = ang(30, -20, -30) 
+        local Buf_Ang = ang(0, 50, 80) 
+    A_lArm = Buf_Ang 
+    A_rArm = -Buf_Ang 
+        
+    Target = findPlayer()
+    EyeTar = Target
+    if (D_toTar < 200)  # Igrok podoshel  
+    {
+        T_Stalk = 600
+        T_Active++
+    } 
+    if (D_toPos > 100) {T_Active += Coef*5}
+}
+else
+{
+    I_Died = 1 
+    I_Damage = I_Damage = V_Power = 0
+#[    B_0:setAng( B_0:toWorld(toAng(B_0:angles(), A_0, Anim_Speed)) )
+    V_0 = vec(0,0,-4)
+    A_0 = angv(-90,Chao:angles():yaw(),0)
+    A_head = angv(0, 70, 0)
+    A_lLeg_0 = angv(-10, 0, 0)
+    A_rLeg_0 = angv(-10, 0, 0) 
+    A_lLeg_1 = angv(60, 20, 30)
+    A_rLeg_1 = angv(60, -20, -30) 
+    A_lArm = angv(0, 30, 80) 
+    A_rArm = angv(0, -30, 80) ]#
+    
+    T_Particle += Coef
+    if (T_Particle < 2) 
+    {
+        Chao:soundPlay(2, 1000, S_Spark[randint(6),string])
+        particle(1, 2, 0, "effects/spark", vec(255), Chao:pos(), vec(random(2)-1,random(2)-1,2)*100, 1, 0, 255, 0)
+        particleGravity(vec(0,0,-600))
+        particleBounce(0.5)
+    }
+    elseif (T_Particle > 30) {T_Particle = 0}
+    if (Chao:isPlayerHolding())
+        {T_Active += Coef*10}
+    else
+        {T_Active += Coef}
+    
+    #P_Smoke = particleEffect("effects/ManhackSparks", Chao:pos(), angv(0))
+}
+
+    Buf_Vec = toVec(B_0:pos()-Chao:pos(), V_0, Anim_Speed*0.05)
+if (Buf_Vec != vec(0)) { holoPos( B_0_N, B_0:pos() + Buf_Vec ) }
+#B_0:setAng( B_0:toWorld(toAng(B_0:angles(), A_0, Anim_Speed)) )
+    Buf_Ang = toAng(B_0:toLocal(B_head:angles()), A_head, Anim_Speed)
+if (Buf_Ang != ang(0)) { holoAng( B_head_N, B_head:toWorld(Buf_Ang) ) }
+    Buf_Ang = toAng(B_0:toLocal(B_lArm:angles()), A_lArm, Anim_Speed)
+if (Buf_Ang != ang(0)) { holoAng( B_lArm_N, B_lArm:angles() + (Buf_Ang) ) }
+    Buf_Ang = toAng(B_0:toLocal(B_rArm:angles()), A_rArm, Anim_Speed)
+if (Buf_Ang != ang(0)) { holoAng( B_rArm_N, B_rArm:angles() + (Buf_Ang) ) }
+    Buf_Ang = toAng(B_0:toLocal(B_lLeg_0:angles()), A_lLeg_0, Anim_Speed)
+if (Buf_Ang != ang(0)) { holoAng( B_lLeg_0_N, B_lLeg_0:toWorld(Buf_Ang) ) }
+    Buf_Ang = toAng(B_0:toLocal(B_rLeg_0:angles()), A_rLeg_0, Anim_Speed)
+if (Buf_Ang != ang(0)) { holoAng( B_rLeg_0_N, B_rLeg_0:toWorld(Buf_Ang) ) }
+    Buf_Ang = toAng(B_lLeg_0:toLocal(B_lLeg_1:angles()), A_lLeg_1, Anim_Speed)
+if (Buf_Ang != ang(0)) { holoAng( B_lLeg_1_N, B_lLeg_1:toWorld(Buf_Ang) ) }
+    Buf_Ang = toAng(B_rLeg_0:toLocal(B_rLeg_1:angles()), A_rLeg_1, Anim_Speed)
+if (Buf_Ang != ang(0)) { holoAng( B_rLeg_1_N, B_rLeg_1:toWorld(Buf_Ang) ) }

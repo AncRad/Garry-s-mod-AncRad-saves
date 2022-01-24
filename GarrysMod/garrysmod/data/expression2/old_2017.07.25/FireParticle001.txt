@@ -1,0 +1,25 @@
+@name FireParticle001
+
+@inputs 
+@outputs 
+@persist [Q]:table
+
+
+
+if(changed(0)) {
+    
+    if(entity():getName() == "FireParticle001") {
+        Q["needParts", number] = 40
+        timer("", 50)
+    }
+    
+    function test(D:string) {
+        if(changed(D)) {print(D)}
+    }
+}
+
+
+if(clk("")) {
+        timer("", 50)
+    
+}

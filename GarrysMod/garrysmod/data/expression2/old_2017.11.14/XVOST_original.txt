@@ -1,0 +1,69 @@
+
+@name XVOST
+@persist T WiggleSin WiggleSideSin
+@model models/hunter/plates/plate025x025.mdl
+ 
+interval(40)
+ 
+Amount = 21
+ThickX = 0.2
+ThickY = 0.2
+ThickZ = 1
+ColorSpeed = 1
+ 
+if(first()){
+for(I = 1,Amount){
+holoCreate(I)
+holoModel(I, "hq_rcylinder_thick")
+holoScale(I, vec(ThickX+I/Amount*0.1,ThickY+I/Amount*0.1,ThickZ*0.13))
+holoDisableShading(I,1)
+holoCreate(I+Amount)
+holoModel(I+Amount, "hq_rcylinder_thick")
+holoScale(I+Amount, -vec(ThickX+I/Amount*0.15,ThickY+I/Amount*0.15,ThickZ*0.18))
+holoParent(I+Amount,I)
+holoColor(I+Amount,vec(0))
+    }
+holoScale(Amount, vec(0.35))
+holoModel(Amount,"hq_sphere")
+holoScale(Amount*2, -vec(0.40))
+holoModel(Amount*2,"hq_sphere")
+
+
+entity():propFreeze(1)
+noCollideAll(entity(), 1)
+entity():setAlpha(1)
+entity():setMaterial("models/effects/vol_light001")
+}
+ 
+if(owner():keyDuck()){
+Crouch = 9
+WiggleSideSin += 10
+}
+ 
+WiggleSin += 5
+WiggleSide = sin(WiggleSideSin)*2
+Wiggle = sin(WiggleSin)*2
+ 
+entity():setPos(owner():pos() +owner():forward()*3+ vec(0,0,19-Crouch))
+entity():setAng(owner():angles() + ang(0,-90+WiggleSide,90+Wiggle))
+ 
+for(I=1,Amount){
+if(I==1){
+holoPos(I,entity():pos()+entity():up()*6)
+Ang = (holoEntity(I+1):pos()-entity():pos()):toAngle()+ang(90,0,0)
+holoAng(I,Ang)
+}elseif(I==Amount){
+holoPos(I,holoEntity(I-1):pos()+holoEntity(I-1):up()*ThickZ*1.5)
+Ang = (holoEntity(I-1):pos()-holoEntity(I):pos()):toAngle()+ang(90,0,0)
+holoAng(I,Ang)
+}else{
+holoPos(I,holoEntity(I-1):pos()+holoEntity(I-1):up()*ThickZ*0.7)
+Ang = (holoEntity(I+1):pos()-holoEntity(I-1):pos()):toAngle()+ang(90,0,0)
+holoAng(I,Ang)
+    }
+   
+T+=0.01
+Color = (I*ColorSpeed)-T
+if(Color == -360+(I*ColorSpeed*1.7)){ Color = 0, T = 0 }
+holoColor(I, hsv2rgb(Color,1,1))
+}

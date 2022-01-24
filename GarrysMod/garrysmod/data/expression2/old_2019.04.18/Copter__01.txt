@@ -1,0 +1,470 @@
+@name Copter__01
+
+@inputs [Pod DP_e]:entity [DHC_w]:wirelink
+@inputs [V1 V1_L1 V1_L2 V1_L3  V2 V2_L1 V2_L2 V2_L3  Base]:entity 
+@outputs V1_ok V2_ok V1_crit V2_crit
+
+
+@persist [Q]:table ForceList:array [V_needVel V1_vel V2_vel DIF SUB]   NeedAng:angle Control:vector4
+@trigger 
+@model models/bull/gates/processor.mdl
+
+
+
+if(changed(0)) {
+    
+    function entity:unConstrainAll() {
+        #ifdef entity:unConstrain()
+            This:unConstrain()
+        #else
+            #ifdef entity:constraintBreak()
+                This:constraintBreak()
+            #endif
+        #endif
+    }
+    
+    E = entity() E:setSkin(1)
+    
+    
+    V_needVel = 1225
+    
+    ####
+    ##
+    
+    timer("", 1)
+    timer("driver", 1)
+    timer("forces", 1)
+    ##
+    ####
+}
+
+
+if(clk("driver")) {
+        timer("driver", 100)
+    
+    if(changed(0)) {
+        
+        DHC_w["Constant", number] = 3600     #3600
+        DHC_w["Damping" , number] = 720      #720
+    }
+    
+    local LastCurtime = Q["lastCurtime", number]
+    local Curtime = 0
+    Curtime = Q["lastCurtime", number] = curtime()
+    local Interval = Curtime - LastCurtime
+    local Loop = Interval / 0.015625
+    
+    
+    local User = Pod:isWeldedTo() ? Pod:driver() : noentity()
+    
+    
+    if(changed(User)) {
+        if(User) {
+            Q["door_need", number] = 0
+            Q["door_changed", number] = 1
+        }
+        else {
+            Q["door_need", number] = 1
+            Q["door_changed", number] = 1
+        }
+        NeedAng = ang(20,0,0)
+        Control = vec4()
+    }
+    
+    if(User) {
+        
+        if(V1_ok|V2_ok) {
+            local Key_start = User:keyReload()
+            if(changed(Key_start) & Key_start) {
+                V_needVel = V_needVel ? 0 : 1125
+            }
+            Control = vec4((User:keyForward()-User:keyBack()+(User:keyJump()*2))*0.2,(User:keyLeft()-User:keyRight())*75,0,0)
+            NeedAng = angnorm(Pod:toLocal(User:eyeAngles())-ang(0,90,0))
+        }
+        
+        if(DP_e) {
+            local Key_door = User:keyAttack1()
+            local Key_door_changed = changed(Key_door)
+            if(Key_door) {
+                if(User:aimEntity() == DP_e) {
+                    if(Key_door_changed) {
+                        if(DHC_w["Length", number] > 5.93) {
+                            Q["door_need", number] = 0
+                        }
+                        else {
+                            Q["door_need", number] = 1
+                        }
+                        Q["door_changed", number] = 1
+                    }
+                }
+                else {
+                }
+            }
+        }
+    }
+    else {
+        
+        ####(
+        if(DP_e) {
+            findInSphere(DP_e:boxCenterW(), 52.5 * 2)
+            foreach(C, Player:entity = findToArray()) {
+                if(Player:keyUse()) {
+                    if(Player:aimEntity() == DP_e) {
+                        if(Player:aimPos():distance(Player:shootPos()) < 75) {
+                            if(Curtime - Q["door_lockTime", number] > 0.5) {
+                                Q["door_lockTime", number] = curtime()
+                                
+                                
+                                if(DHC_w["Length", number] < 16) {
+                                    Q["door_need", number] = 1
+                                }
+                                else {
+                                    Q["door_need", number] = 0
+                                }
+                                Q["door_changed", number] = 1
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        ####)
+    }
+    if(DP_e & Q["door_changed", number]) {
+        local Door_need = Q["door_need", number]
+        local Length = DHC_w["Length", number]
+        DHC_w["Length", number] = Length = clamp(Length + Interval*83*20*(Door_need ? 1 : -1),2,85)
+        
+        Q["door_changed", number] = !(Length == (Door_need ? 85 : 2))
+    }
+}
+
+
+if(clk("")) {
+        timer("", 100)
+    
+    local First = changed(0)
+    if(First) {
+        V1_ok = V2_ok = 1
+        
+        V1:soundPlay("loop1", 0, "NPC_AttackHelicopter.RotorsLoud") soundVolume("loop1", 0) soundPitch("loop1", 0)
+        V2:soundPlay("loop2", 0, "NPC_AttackHelicopter.RotorsLoud") soundVolume("loop2", 0) soundPitch("loop2", 0)
+        
+        
+        Q["vint/criticalDamage", number] = 110
+        Q["loop/criticalDamage", number] = 90
+        
+        for(C1 = 1,2) {
+            local V = select(C1,V1,V2)
+            
+            local V_n = ""
+            V_n = Q["name/" + V:toString(), string] = "vint" + C1
+            Q[V_n + "/type", string] = "vint"
+            runOnDamage(1, V)
+            
+            
+            
+            for(C2 = 1,3) {
+                local L = V
+                if(C1==1) {L = select(C2,V1_L1,V1_L2,V1_L3)}
+                if(C1==2) {L = select(C2,V2_L1,V2_L2,V2_L3)}
+                
+                local L_n = ""
+                L_n = Q["name/" + L:toString(), string] = V_n + "_loop" + C2
+                Q[L_n + "/type", string] = "loop"
+                runOnDamage(1, L)
+            }
+        }
+    }
+    
+    local Vmin = vec(-30,40,-30)
+    local Vmax = vec(30,60,30)
+    if(V1_ok) {
+        if(Base:toLocal(V1:boxCenterW()):distance(vec(0,0,13.75)) < 15) {
+            local Last = V1_ok
+            V1_ok = inrange(V1_L1:toLocal(V1:pos()),Vmin,Vmax) + inrange(V1_L2:toLocal(V1:pos()),Vmin,Vmax) + inrange(V1_L3:toLocal(V1:pos()),Vmin,Vmax)
+            
+            if(V1_ok < Last) {
+                V1:soundPlay("loopBroken1" + Last, 0.8, "physics/metal/metal_sheet_impact_hard6.wav")
+            }
+        }
+        else {
+            V1_ok = 0
+        }
+        if(!V1_ok) {
+            soundStop("loop1")
+            soundStop("vintScrape1")
+            V1:soundPlay("vintBroken1", 0.7, "physics/metal/metal_sheet_impact_hard8.wav")
+            runOnDamage(0, V1) runOnDamage(0, V1_L1) runOnDamage(0, V1_L2) runOnDamage(0, V1_L3)
+        }
+    }
+    if(V2_ok) {
+        if(Base:toLocal(V2:boxCenterW()):distance(vec(0,0,7.75)) < 15) {
+            local Last = V2_ok
+            V2_ok = inrange(V2_L1:toLocal(V2:pos()),Vmin,Vmax) + inrange(V2_L2:toLocal(V2:pos()),Vmin,Vmax) + inrange(V2_L3:toLocal(V2:pos()),Vmin,Vmax)
+            
+            if(V2_ok < Last) {
+                V2:soundPlay("loopBroken2" + Last, 0.8, "physics/metal/metal_sheet_impact_hard6.wav")
+            }
+        }
+        else {
+            V2_ok = 0
+        }
+        if(!V2_ok) {
+            soundStop("loop2")
+            soundStop("vintScrape2")
+            V2:soundPlay("vintBroken2", 0.7, "physics/metal/metal_sheet_impact_hard8.wav")
+            runOnDamage(0, V2) runOnDamage(0, V2_L1) runOnDamage(0, V2_L2) runOnDamage(0, V2_L3)
+        }
+    }
+    
+}
+
+
+
+
+if(damageEntClk()) {
+    local DE = damageEntClk()
+    
+    local Damage = DE:getDamage()
+    local DamageType = DE:getDamageType()
+    local E_n = Q["name/" + DE:toString(), string]
+    local E_t = Q[E_n + "/type", string]
+    
+    switch(DamageType) {
+        case "burn",
+            Damage*=0.5
+        break
+        default,
+            
+        break
+    }
+    local E_d = 0
+    E_d = Q[E_n + "/damage", number] = Q[E_n + "/damage", number] + Damage
+    
+    if(E_d >= Q[E_t + "/criticalDamage", number]) {
+        
+        
+        
+        if(E_t == "vint") {
+            
+            runOnDamage(0, DE)
+            DE:soundPlay("vintScrape" + (1 + (E_n == "vint2"|0)), 0, "physics/metal/canister_scrape_smooth_loop1.wav") soundVolume("vintScrape1", 0) soundPitch("vintScrape1", 0)
+            
+            if(E_n == "vint1") {
+                V1_crit = 1
+                
+                local V1_cv = vec2()
+                while(V1_cv:length()<4) {
+                    V1_cv = randvec2(-7,7)
+                }
+                Q["vint1_crit/vector", vector] = vec(V1_cv[1],V1_cv[2],0)
+            }
+            else {
+                V2_crit = 1
+                
+                local V2_cv = vec2()
+                while(V2_cv:length()<4) {
+                    V2_cv = randvec2(-7,7)
+                }
+                Q["vint2_crit/vector", vector] = vec(V2_cv[1],V2_cv[2],0)
+            }
+            if(randint(1,3) == 1) {
+                local DE_IWT = DE:isWeldedTo()
+                if(DE_IWT) {
+                    DE_IWT:unConstrainAll()
+                }
+            }
+        }
+        elseif(E_t == "loop") {
+            if(randint(1,2) != 1) {
+                DE:unConstrainAll()
+                runOnDamage(0, DE)
+            }
+            else {
+                Q[E_n + "/damage", number] = min(E_d,100) * 0.5
+            }
+        }
+        else {
+            runOnDamage(0, DE)
+        }
+    }
+}
+
+
+
+
+if(clk("forces")) {
+        timer("forces", 1)
+    
+    if(changed(0)) {
+                         #700 750 800 850 900 950 1000 1050 1100 1150 1200 1250 1300 1350 1400 1450 1500
+        ForceList = array(405,470,540,617,696,785, 880, 985,1100,1225,1358,1509,1670,1838,2015,2220,2440)
+        
+        function number v_getForece(V_needVel:number) {
+            local I = floor(V_needVel/50)
+            local A = ForceList[clamp(I-13,1,17), number]
+            local B = ForceList[clamp(I-12,1,17), number]
+            local F = A + (B-A)*mod(V_needVel,50)/50
+            return F
+        }
+        
+        
+        V1:soundPlay("vintLoop1", 0, "NPC_AttackHelicopter.RotorsLoud") soundVolume("vintLoop1", 0) soundPitch("vintLoop1", 0)
+        V2:soundPlay("vintLoop2", 0, "NPC_AttackHelicopter.RotorsLoud") soundVolume("vintLoop2", 0) soundPitch("vintLoop2", 0)
+        
+        
+        
+        
+        Q["lastCurtime", number] = curtime()
+    }
+    
+    local LastCurtime = Q["lastCurtime", number]
+    local Curtime = 0
+    Curtime = Q["lastCurtime", number] = curtime()
+    local Interval = Curtime - LastCurtime
+    local Loop = Interval / 0.015625
+    
+    if(V1_ok|V2_ok) {
+        
+        
+         V1_vel =  V1:angVel()[2]*V1_ok/3
+         V2_vel = -V2:angVel()[2]*V2_ok/3
+        DIF = V1_vel-V2_vel
+        SUB = V1_vel+V2_vel
+        
+        V_needDif = clamp(((Base:angVel()[2]-Control[2])*3-DIF/2)*2,-200,200)
+        
+        if(V_needVel) {
+            local V_needVel_ = V_needVel*(1+Control[1]) - clamp(Base:vel()[3]/1.5,-100,150)
+            
+            if(V1_ok) {
+                local V1_needVel = V_needVel_ + V_needDif
+                local V1_f = Q["V1_f", number]
+                V1_f = Q["V1_f", number] = clamp(V1_f + clamp((V1_needVel-V1_vel),-20,20) ,-500,500)
+                local V1_f = v_getForece(V1_needVel) + V1_f
+                V1:applyAngForce(ang(0,V1_f*Loop*14,0))
+            }
+            
+            if(V2_ok) {
+                local V2_needVel = V_needVel_ - V_needDif
+                local V2_f = Q["V2_f", number]
+                V2_f = Q["V2_f", number] = clamp(V2_f + clamp((V2_needVel-V2_vel),-20,20) ,-500,500)
+                local V2_f = v_getForece(V2_needVel) + V2_f
+                V2:applyAngForce(ang(0,-V2_f*Loop*14,0))
+            }
+        }
+        
+        
+        if(V1_ok) {
+            local V1_soundVel = abs(V1_vel)
+            local V1_soundVol = min(V1_soundVel / 1000,1) ^ 1.5
+            local V1_soundPit = V1_soundVel / 1600 * 130
+            soundVolume("vintLoop1", V1_soundVol) soundPitch("vintLoop1", V1_soundPit)
+            soundVolume("vintScrape1", V1_soundVol^1.2) soundPitch("vintScrape1", 100+V1_soundPit/10)
+        }
+        if(V2_ok) {
+            local V2_soundVel = abs(V2_vel)
+            local V2_soundVol = min(V2_soundVel / 1000,1) ^ 1.5
+            local V2_soundPit = V2_soundVel / 1600 * 130
+            soundVolume("vintLoop2", V2_soundVol) soundPitch("vintLoop2", V2_soundPit)
+            soundVolume("vintScrape2", V2_soundVol^1.2) soundPitch("vintScrape2", 100+V2_soundPit/10)
+        }
+        
+        
+        ####
+        ##
+        #
+        if(V1_vel < 850) {V1_vel = (max(V1_vel,0)/850)^1.1*850}
+        if(V2_vel < 850) {V2_vel = (max(V2_vel,0)/850)^1.1*850}
+        
+        
+        local BA = Base:toWorld(ang(-NeedAng[1],0,NeedAng[2]))+Base:angVel()*0.8
+        local V = vec(-2.832983,-0.183000,0)*0 + clamp(vec(BA[1],-BA[3],0)*2,-15,15)
+        if(V1_crit|V2_crit) {
+            if(V1_crit & V1_ok) {
+                V+=Q["vint1_crit/vector", vector]+randvec(-3,3)
+            }
+            if(V2_crit & V2_ok) {
+                V+=Q["vint2_crit/vector", vector]+randvec(-3,3)
+            }
+        }
+        local B_f = (1250+300) * (V1_vel+V2_vel)/2/1050
+        Base:applyOffsetForce(Base:up()*9*Loop*B_f,Base:toWorld(V))
+        
+        
+        Base:applyAngForce(ang(0,-(V1_vel-V2_vel) * 200,0))
+        #
+        ##
+        ####
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName("Copter__01\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage() * 1e6))
+if(dupefinished()) {reset()}

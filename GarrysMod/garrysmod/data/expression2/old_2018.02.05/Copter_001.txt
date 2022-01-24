@@ -1,0 +1,171 @@
+@name Copter_001
+
+
+
+@inputs [Pod]:entity
+@inputs [V1 V1_L1 V1_L2 V1_L3  V2 V2_L1 V2_L2 V2_L3  Base]:entity
+
+
+
+@outputs [V1_vel V2_vel DIF SUB] NeedAng:angle
+
+
+
+@persist Q:table ForceList:array V_needVel
+@model models/bull/gates/processor.mdl
+
+
+
+if(changed(0)) {
+    
+    E = entity() E:setSkin(1)
+    
+    timer("", 1)
+}
+
+if(clk("")) {
+        timer("", 1)
+    
+    if(changed(0)) {
+                         #700 750 800 850 900 950 1000 1050 1100 1150 1200 1250 1300 1350 1400 1450 1500
+        ForceList = array(405,470,540,617,696,785, 880, 985,1100,1225,1358,1509,1670,1838,2015,2220,2440)
+        
+        function number v_getForece(V_needVel:number) {
+            local I = floor(V_needVel/50)
+            local A = ForceList[clamp(I-13,1,17), number]
+            local B = ForceList[clamp(I-12,1,17), number]
+            local F = A + (B-A)*mod(V_needVel,50)/50
+            return F
+        }
+        
+        
+        V1:soundPlay("loop1", 0, "NPC_AttackHelicopter.RotorsLoud") soundVolume("loop1", 0) soundPitch("loop1", 0)
+        V2:soundPlay("loop2", 0, "NPC_AttackHelicopter.RotorsLoud") soundVolume("loop2", 0) soundPitch("loop2", 0)
+        
+        
+        
+        
+        Q["lastCurtime", number] = curtime()
+    }
+    
+    local LastCurtime = Q["lastCurtime", number]
+    local Curtime = Q["lastCurtime", number] = curtime()
+    local Interval = Curtime - LastCurtime
+    local Loop = Interval / 0.015625
+    
+    
+    
+    local User = Pod:driver()
+    local Control = vec4(1+(User:keyForward()-User:keyBack())*0.2,(User:keyLeft()-User:keyRight())*75,0,0)
+    if(changed(User)) {
+        NeedAng = ang()
+    }
+    if(User) {
+        NeedAng = angnorm(Pod:toLocal(User:eyeAngles())-ang(0,90,0))
+    }
+    
+    local Key_start = User:keyReload()
+    if(changed(Key_start) & Key_start) {
+        V_needVel = V_needVel ? 0 : 1125
+    }
+    
+    
+    local V_needVel_ = V_needVel*Control[1] - clamp(Base:vel()[3]/2,-25,25) + User:keyJump()*300# + Control[1]
+    
+     V1_vel =  V1:angVel()[2]
+     V2_vel = -V2:angVel()[2]
+    DIF = V1_vel-V2_vel
+    SUB = V1_vel+V2_vel
+    
+    V_needDif = clamp((Base:angVel()[2]-Control[2])*3-DIF/2,-200,200)
+    
+    if(V_needVel) {
+        
+        local V1_needVel = V_needVel_ + V_needDif
+        local V1_f = Q["V1_f", number]
+        local V1_f = Q["V1_f", number] = clamp(V1_f + clamp((V1_needVel-V1_vel),-20,20) ,-500,500)
+        local V1_f = v_getForece(V1_needVel) + V1_f
+        V1:applyAngForce(ang(0,V1_f*Loop*14,0))
+        
+        
+        local V2_needVel = V_needVel_ - V_needDif
+        local V2_f = Q["V2_f", number]
+        local V2_f = Q["V2_f", number] = clamp(V2_f + clamp((V2_needVel-V2_vel),-20,20) ,-500,500)
+        local V2_f = v_getForece(V2_needVel) + V2_f
+        V2:applyAngForce(ang(0,-V2_f*Loop*14,0))
+    }
+    
+    
+    local V1_soundVel = abs(V1_vel)
+    local V1_soundVol = min(V1_soundVel / 1000,1) ^ 1.5
+    local V1_soundPit = V1_soundVel / 1600 * 130
+    soundVolume("loop1", V1_soundVol) soundPitch("loop1", V1_soundPit)
+    local V2_soundVel = abs(V2_vel)
+    local V2_soundVol = min(V2_soundVel / 1000,1) ^ 1.5
+    local V2_soundPit = V2_soundVel / 1600 * 130
+    soundVolume("loop2", V2_soundVol) soundPitch("loop2", V2_soundPit)
+    
+    
+    
+    
+    local BA = Base:toWorld(ang(-NeedAng[1],0,NeedAng[2]))+Base:angVel()*0.8
+    local V = vec(-2.832983,-0.183000,0)*0 + clamp(vec(BA[1],-BA[3],0)*2 ,-15,15)
+    local B_f = 1306.5 * (V1_vel+V2_vel)/2/1050
+    Base:applyOffsetForce(Base:up()*9*Loop*B_f,Base:toWorld(V))
+    
+    
+    Base:applyAngForce(ang(0,-DIF * 200,0))
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+# 700 750 800 850 900 950 1000 1050 1100 1150 1200 1250 1300 1350 1400 1450 1500
+#(405,470,540,617,696,785, 880, 985,1100,1225,1358,1509,1670,1838,2015,2220,2440)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+setName("Copter_001\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage() * 1e6))

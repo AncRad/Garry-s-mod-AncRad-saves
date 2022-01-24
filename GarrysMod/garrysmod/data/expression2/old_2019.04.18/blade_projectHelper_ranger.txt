@@ -1,0 +1,248 @@
+@name blade_projectHelper_ranger
+
+@inputs [E1 E2]:entity
+@outputs 
+
+@persist [E]:entity [Size]:vector Shag Holo X Y Z Filter:array
+@trigger 
+
+
+if(changed(0)) {
+    
+    E = entity()
+    
+    Shag = 5
+    Size = vec(70,70,50)
+    
+    while(!!holoEntity(Holo)) {Holo++}
+    holoCreate(Holo, E:toWorld(vec(0,0,Size[3])),Size/6,E:angles(),vec(255),"cube")
+    holoMaterial(Holo, "models/wireframe")
+    holoParent(Holo, E)
+    while(!!holoEntity(Holo)) {Holo++}
+    holoCreate(Holo, E:toWorld(vec(0,0,Size[3])),-Size/6,E:angles(),vec(255),"cube")
+    holoMaterial(Holo, "models/wireframe")
+    holoParent(Holo, E)
+    
+    X = -Size[1]
+    Y = -Size[2]
+    Z = Size[3]*2
+    
+    timer("", 1)
+}
+
+if(clk("")) {
+        timer("", 1)
+    
+    
+    while(perf() & holoCanCreate()) {
+        X+=Shag
+        if(X>=Size[1]) {
+            X=-Size[1]
+            Y+=Shag
+            if(Y>Size[2]) {
+                stoptimer("")
+            }
+        }
+        
+        local SP = E:toWorld(vec(X,Y,1))
+        local R = noranger()
+        local Ent = noentity()
+        while(1) {
+            rangerFilter(Filter)
+            R = rangerOffset(Z,SP,E:up())
+            Ent = R:entity()
+            
+            break
+            
+            if(!Ent) {break}
+            if(Ent != E1 & Ent != E2) {
+                Filter:pushEntity(Ent)
+                continue
+            }
+            break
+        }
+        if(!Ent) {continue}
+        while(!!holoEntity(Holo)) {Holo++}
+        local Norm = R:hitNormal()
+        holoCreate(Holo, R:pos()+Norm*1,vec(0.001,Shag,Shag)/12*0.95,-Norm:toAngle(),vec4(255,255,255,50),"cube")
+        holoParent(Holo, R:entity())
+        holoMaterial(Holo,"models/wireframe")
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,37 @@
+@name acf_test_bgm_71e_001
+@inputs 
+@outputs OK:string V:vector
+@persist X [R T]:entity 
+@trigger 
+
+interval(50)
+
+Rack_P = R:boxCenterW()
+Targ_P = T:boxCenterW() + T:vel() * 0.3
+Dist = Rack_P:distance(Targ_P)
+if(!X) {
+    Targ_P+= vec(0,0,20*52.5)
+    Dist = Rack_P:distance(Targ_P)
+    if(Dist < 50*52.5) {X = 1}
+}
+V = Targ_P
+
+if(!R) {
+    findClearBlackList()
+    findClearWhiteList()
+    findIncludeClass("acf_missile")
+    findInSphere(entity():pos(),9e9)
+    R = findClosest(entity():pos())
+    #models/missiles/bgm_71e.mdl
+}
+#T = owner()
+if(!T) {
+    findClearBlackList()
+    findClearWhiteList()
+    findIncludeModel("models/props_wasteland/laundry_washer001a.mdl")
+    findInSphere(entity():pos(),9e9)
+    T = findClosest(entity():pos())
+    X = 0
+}
+if(changed(T) | changed(R)) {X = 0}
+OK = "" + !!T + !!R + !X

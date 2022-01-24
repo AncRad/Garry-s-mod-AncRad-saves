@@ -1,0 +1,102 @@
+@name creberus_turret_mode_v01_005
+
+@inputs 
+@outputs 
+
+#- base
+@persist CT_FirstRun
+@persist CT_is [CT_GateName]:string
+#- logging
+@persist [CT_logging_GateName]:array
+
+#- model
+@persist 
+@persist CT_Preloaded CT_Loaded
+#- preload 
+@persist 
+
+
+
+switch(clkName()) {
+    default,
+        if(changed(0)) {
+            if(CT_FirstRun) {reset()}
+            
+            #- includes
+            #include "AddHolo_v01"
+            
+            #- functions
+            #
+            
+            
+            
+            #- settings base
+            CT_GateName = entity():name()
+            if(CT_GateName == "creberus_turret_mode_v01_005") {
+                
+            }
+            else {
+                
+            }
+            
+            #- model preload start
+            timer("creberus_turret_preloadStart", 1)
+        }
+    break
+        #
+        #
+        #
+    case "creberus_turret_preloadStart",
+        
+        
+        
+        addHolo_callFunc("creberus_turret_Load")
+        function creberus_turret_Load() {
+            
+            CT_Loaded = 1
+        }
+        
+        addHolo_start()
+        CT_Preloaded = 1
+    break
+        #
+        #
+        #
+    case "AddHolo",
+        addHolo()
+    break
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

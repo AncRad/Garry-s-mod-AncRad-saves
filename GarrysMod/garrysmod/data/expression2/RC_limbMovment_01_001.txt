@@ -1,0 +1,239 @@
+@name RC_limbMovment_01_001
+
+@inputs [Mark1 Mark2]:entity
+@outputs 
+
+#- CODE
+@persist Code_FirstRun
+
+#- DEBUG
+@persist 
+@outputs BoneView_Number
+
+#- RAGDOLL
+@persist R:entity
+@persist R_curtime:number
+
+
+
+switch(clkName()) {
+    default,
+        if(changed(0)) {
+            if(Code_FirstRun) {reset()}
+            Code_FirstRun = 1
+            
+            
+            local Gate_e = entity()
+            Gate_e:setMass(0.001)
+            Gate_e:propGravity(0)
+            Gate_e:propPhysicalMaterial("superice")
+            #ifdef noCollideAll(entity,number)
+                noCollideAll(Gate_e, 1)
+            #endif
+            
+            R = Gate_e:isWeldedTo()
+            if(R:type() != "prop_ragdoll") {
+                print("[Ragdoll] this is not ragdoll")
+                selfDestruct()
+                exit()
+            }
+            if(0) {
+                R:setMaterial("models/wireframe")
+                R:setColor(vec4(vec(25,25,255), 150))
+            }
+            else {
+                R:setMaterial("")
+                R:setColor(vec4(255))
+            }
+            
+            function holoClip([ID Index]:number, LocalPos:vector, LocalAng:angle, Offset:number) {
+                holoClipEnabled(ID, Index, 1)
+                holoClip(ID, Index, LocalPos + vec(Offset,0,0):rotate(LocalAng), vec(1,0,0):rotate(LocalAng), 0)
+            }
+            function addQuat(N:number, P:vector, Q:quaternion) {
+                if(!holoEntity(N)) {
+                    local S = 3
+                    holoCreate(N,P,vec(S),Q:toAngle(),vec(255), "models/editor/axis_helper.mdl")
+                    holoClip(N,1,vec(),ang(0,90,0),-S/2)
+                    holoClip(N,2,vec(),ang(0,0,0),-S/2)
+                    holoClip(N,3,vec(),ang(-90,0,0),-S/2)
+                }
+                holoPos(N, P)
+                holoAng(N, Q:toAngle())
+            }
+            
+            BoneView_Number = -1
+            
+            addQuat(2,vec(),quat())
+            holoScale(2, vec(3))
+            
+            
+            timer("debug", 1)
+            timer("unFreeze", 1)
+        }
+    break
+    case "unFreeze",
+        if(!R:isFrozen() | 1) {
+            print("[Ragdoll] started")
+            timer("ragdoll", 1)
+            R_curtime = curtime()
+            break
+        }
+        timer("unFreeze", 1)
+    break
+    case "ragdoll",
+        timer("ragdoll", 50)
+        
+        #################################
+        ###            [10]           ###
+        ###             |             ###
+        ###       /[2]\ | /[3]\       ###
+        ###      /     \|/     \      ###
+        ###    [6]     [1]      \     ###
+        ###    /        |       [4]   ###
+        ###   /         |         \   ###
+        ###  /          |          \  ###
+        ###[7]     [8]-[0]-[11]    [5]###
+        ###         |       |         ###
+        ###         |       |         ###
+        ###         |       |         ###
+        ###        [9]     [12]       ###
+        ###         |       |         ###
+        ###         |       |         ###
+        ###         |       |         ###
+        ###        [14]    [13]       ###
+        #################################
+        #####- STANDART GM SKELET -######
+        #################################
+        
+        local Interval = curtime() - R_curtime
+        R_curtime = curtime()
+        
+        local Key = owner():keyPressed("mouse_4")-owner():keyPressed("mouse_5")
+        if(changed(Key) & Key) {
+            BoneView_Number = clamp(BoneView_Number + Key,-1,14)
+            
+            #print(R:bone(BoneView_Number):mass())
+            
+        }
+        
+        local BoneView = R:bone(BoneView_Number)
+        addQuat(1, BoneView:pos(), quat(BoneView:angles()))
+        
+        
+        local Chest = R:bone(1)
+        local Chest_A = Chest:angles()
+        local Chest_P = Chest:pos()
+        
+        local RH_targetPos = toWorld(vec(-7,0,-22),ang(),Chest_P,Chest_A)
+        local LH_targetPos = toWorld(vec(-7,0, 22),ang(),Chest_P,Chest_A)
+        holoCreate(122,RH_targetPos,vec(0.2))
+        
+        local RH = R:bone(7)
+        local RH_CM = RH:massCenter()
+        local Acc = clamp((Chest:vel()-RH:vel()) * 2,-1542,1542)   + clamp((RH_targetPos-RH_CM)*30,-576,576)
+        local Force = Acc * RH:mass() * Interval * 20
+        RH:applyOffsetForce(Force,RH_CM)
+        Chest:applyOffsetForce(-Force,RH_CM)
+        
+        local RH = R:bone(5)
+        local RH_CM = RH:massCenter()
+        local Acc = clamp((Chest:vel()-RH:vel()) * 2,-1542,1542)   + clamp((LH_targetPos-RH_CM)*30,-576,576)
+        local Force = Acc * RH:mass() * Interval * 20
+        RH:applyOffsetForce(Force,RH_CM)
+        Chest:applyOffsetForce(-Force,RH_CM)
+        
+        
+        #local Acc = clamp((Chest:vel()-RH:vel()) * 2,-1542,1542)   + clamp((TargetPos-RH_CM)*30,-576,576)
+        
+        
+        #[
+        local Fot_L_B = R:bone(13)
+        local Fot_R_B = R:bone(14)
+        local Body_B = R:bone(0)
+        local Chest_B = R:bone(1)
+        local Head_B = R:bone(10)
+        rangerPersist(1)
+        rangerFilter(R)
+        local Fot_L_R = rangerOffset(0.525*18,Fot_L_B:pos(),vec(0,0,-1))
+        holoPos(1001, Fot_L_R:pos())
+        holoColor(1001, vec4(Fot_L_R:hit() ? vec(50,50,255) : vec(50) ,255))
+        local Fot_R_R = rangerOffset(0.525*18,Fot_R_B:pos(),vec(0,0,-1))
+        holoPos(1002, Fot_R_R:pos())
+        holoColor(1002, vec4(Fot_R_R:hit() ? vec(50,50,255) : vec(50) ,255))
+        rangerPersist(0)
+        addQuat(101, Fot_L_B:massCenter(), quat(Fot_L_B:angles()))
+        addQuat(102, Fot_R_B:pos(), quat(Fot_R_B:angles()))
+        #- BODY
+        local Body_yaw = toWorldAng(vec(),ang(0,0,0),vec(),Body_B:angles()) #-ang(0,90,0)
+        local NeedA = ang(0,Body_yaw[2],90)
+        local AngAcc = clamp( toLocalAng(vec(),NeedA,vec(),Body_B:angles()) ,ang(-30),ang(30))
+        local QuatAcc = conj(quat(AngAcc))
+        local VecAcc = -rotationVector(QuatAcc)
+        Body_B:applyTorque((VecAcc*5-Body_B:angVelVector()*0.5)*Body_B:mass()*5)
+        #- CHEST
+        local Chest_yaw = (toWorldAng(vec(),ang(90,0,0),vec(),Chest_B:angles())+ang(0,90,0))[2]
+        local NeedA = ang(-90,Chest_yaw,-90)
+        local AngAcc = clamp( toLocalAng(vec(),NeedA,vec(),Chest_B:angles()) ,ang(-30),ang(30))
+        local QuatAcc = conj(quat(AngAcc))
+        local VecAcc = -rotationVector(QuatAcc)
+        Chest_B:applyTorque((VecAcc*5-Chest_B:angVelVector()*0.5)*Chest_B:mass()*5)
+        #- HEAD
+        local NeedA = toWorldAng(vec(),ang(0,15,180),vec(),Chest_B:angles())
+        local AngAcc = clamp( toLocalAng(vec(),NeedA,vec(),Head_B:angles()) ,ang(-30),ang(30))
+        local QuatAcc = conj(quat(AngAcc))
+        local VecAcc = -rotationVector(QuatAcc)
+        Head_B:applyTorque((VecAcc*5-Head_B:angVelVector()*0.5)*Head_B:mass()*1)
+        local ForceZ = vec(0,0,35.966403*Head_B:mass()*1)
+        #Head_B:applyForce(ForceZ)
+        #Chest_B:applyForce(-ForceZ)
+        local Debug = ""
+        +"\n" + round(angnorm(Body_yaw))
+        ]#
+        
+        setName("RC_limbMovment_01_001\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1e6))
+        
+    break
+}
+
+
+#models/dusty/playermodels/zoom/zoom.mdl
+#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

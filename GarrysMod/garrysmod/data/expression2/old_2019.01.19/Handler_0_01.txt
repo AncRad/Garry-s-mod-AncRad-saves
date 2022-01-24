@@ -1,0 +1,131 @@
+@name Handler_0_01
+
+###################################################
+################# this code is CORE ###############
+###################################################
+
+@inputs 
+@outputs 
+
+
+
+@persist [FunctionQueye]:table NumberQueye
+
+@persist 
+
+
+if(changed(0)) {
+    
+    #include "Handler_0_module_functionRegister_01"
+    
+    
+    timer("",1)
+}
+
+if(clk("")) {
+    
+    local Run = 0
+    local Count = FunctionQueye:count()
+    while(perf() < 99 & Count <= Run) {
+        Run++
+        NumberQueye = NumberQueye == Count ? 1 : NumberQueye + 1
+        
+        
+    }
+    
+    
+    local Count = FunctionQueye:count()
+    while(perf() < 99) {
+        Count--
+        
+        local Function_T = FunctionQueye[1, table]
+        local Function_N = Function_T["name", string]
+        
+        if(FunctionRegister:exists(Function_N)) {
+            local Function_D = Function_T["data", table]
+            
+            Function_N(Function_D)[number]
+        }
+        FunctionQueye:remove(1)
+    }
+    timer("", Count ? 50 : 200)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

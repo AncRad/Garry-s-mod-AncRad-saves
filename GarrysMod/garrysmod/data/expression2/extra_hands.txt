@@ -1,0 +1,209 @@
+@name extra_hands
+
+@inputs 
+@outputs 
+
+@persist Code_FirstRun
+@persist Code_Name:string
+
+@inputs HandLeft_targetEnt1:entity
+@inputs HandLeft_targetEnt2:entity
+@persist Hands_User:entity
+@persist Hands_base_E:entity
+@persist HandLeft_base_E:entity
+@persist HandLeft_bone1_E:entity
+@persist HandLeft_bone2_E:entity
+@persist HandLeft_bone3_E:entity
+@persist HandLeft_bone1_I
+@persist HandLeft_bone2_I
+@persist HandLeft_bone3_I
+@persist Hands_
+
+
+
+switch(clkName()) {
+    default,
+        if(changed(0)) {
+            if(Code_FirstRun) {reset()}
+            Code_FirstRun = 1
+            Code_Name = "extra_hands" #entity():name()
+            
+            #include "AddHolo_v01"
+            
+            addHolo("player",vec(),vec(1),ang(),vec(255),"models/dusty/playermodels/zoom/zoom.mdl","","") addHolo_INTO(entity())
+            addHolo("chest",vec(),vec(),ang(),vec(),"cube","","player")
+            if(1) {
+                addHolo_INTO("chest",owner(), "chest")
+            }
+            else {
+                addHolo_INTO("chest","player", "chest")
+            }
+            addHolo("base",vec(),vec(),ang(),vec(),"cube","","chest")
+            local Hand_n = "handLeft_"
+            local Hand_l = 17
+            addHolo_nameGroup_Open(Hand_n)
+            addHolo("base"   ,vec(-8,5,0),vec( 0.0),ang(-60,120,0),vec(0,0,0),"icosphere","lights/white","#base")
+            addHolo("bone1"  ,vec(0,0,0),vec(-1.0),ang(0,0,0),vec(100),"icosphere","lights/white","base")
+            addHolo("bone2"  ,vec(Hand_l,0,0),vec(-1.0),ang(0,0,0),vec(100),"icosphere","lights/white","bone1")
+            addHolo("bone3"  ,vec(Hand_l,0,0),vec(-1.0),ang(0,0,0),vec(100),"icosphere","lights/white","bone2")
+            
+            local R = 1.5
+            addHolo("",vec(0,0,0),vec(R),ang(-90,0,0),vec(200),"hq_hdome_thin","","base")
+            addHolo("",vec(0,0,0),vec(R*0.9),ang(0,0,0),vec(200),"hq_sphere","","bone1")
+            addHolo("",vec(Hand_l/2,0,0),vec(R*0.5,R*0.5,Hand_l/2),ang(90,0,0),vec(200),"hexagon","","bone1")
+            addHolo("",vec(Hand_l,0,0),vec(R*0.8,R*0.8,R*0.6),ang(0,0,90),vec(200),"hq_cylinder","","bone1")
+            addHolo("",vec(Hand_l/2,0,0),vec(R*0.5,R*0.5,Hand_l/2),ang(90,0,0),vec(200),"hexagon","","bone2")
+            addHolo("",vec(Hand_l,0,0),vec(R*0.8,R*0.8,R*0.6),ang(0,0,90),vec(200),"hq_cylinder","","bone2")
+            Hand_l = Hand_l * 30
+            addHolo("",vec(Hand_l/3,0,0),vec(R*0.5,R*0.5,Hand_l/3),ang(90,0,0),vec(200),"hexagon","","bone3")
+            
+            addHolo_nameGroup_Close(Hand_n)
+            addHolo_callFunc("handsInit")
+            function handsInit() {
+                #Hands_User = AddHolo["player/entity", entity]
+                Hands_User = owner()
+                #Hands_base_E = AddHolo["base/entity", entity]
+                HandLeft_base_E = AddHolo["handLeft_base/entity", entity]
+                HandLeft_bone1_E = AddHolo["handLeft_bone1/entity", entity]
+                HandLeft_bone2_E = AddHolo["handLeft_bone2/entity", entity]
+                HandLeft_bone3_E = AddHolo["handLeft_bone3/entity", entity]
+                HandLeft_bone1_I = AddHolo["handLeft_bone1/index", number]
+                HandLeft_bone2_I = AddHolo["handLeft_bone2/index", number]
+                HandLeft_bone3_I = AddHolo["handLeft_bone3/index", number]
+            }
+            
+            addHolo_timer("hands")
+            addHolo_start()
+            exit()
+        }
+    break
+    
+    case "hands",
+        timer("hands", 1)
+        
+        
+        if(Hands_User:isAlive() & !Hands_User:inVehicle() | Hands_User:type()=="gmod_wire_hologram") {
+            local Ang = ang(0,Hands_User:angles()[2],0)
+            
+            
+            local HandOffset = vec(6.296143, -8.390311, 14.461914	):rotate(0,Hands_User:attachmentAng("chest")[2],0)
+            local HandBasePos = HandLeft_base_E:pos()
+            local TargetPos1 = Hands_User:attachmentPos("chest") + HandOffset
+            local TargetPos1_local = TargetPos1-HandBasePos
+            local TargetPos2 = Hands_User:aimPos()
+            
+            local Hand_l = 17*2
+            
+            local Pitch = acos(clamp(TargetPos1_local:length()/Hand_l,0,1))
+            
+            local Normal = TargetPos1_local:cross(TargetPos2-TargetPos1)
+            local Ang1 = quat(TargetPos1_local:rotateAroundAxis(Normal,-Pitch),TargetPos1_local:cross(Normal)):toAngle()
+            local Ang2 = ang(Pitch*2,0,0)
+            holoAng(HandLeft_bone1_I, HandLeft_base_E:toWorld(clamp(HandLeft_base_E:toLocal(Ang1),-ang(80,80,999),ang(80,80,999))))
+            holoAng(HandLeft_bone2_I, HandLeft_bone1_E:toWorld(Ang2))
+            
+            local VecToAngle = (TargetPos2-HandLeft_bone3_E:pos())
+            local Ang3 = ang(clamp(HandLeft_bone2_E:toLocal(VecToAngle:toAngle())[1],-80,80),0,0)
+            holoAng(HandLeft_bone3_I, HandLeft_bone2_E:toWorld(Ang3))
+            
+            #[
+            local Hand_l = 17*2
+            
+            local TargetPos1 = HandLeft_targetEnt1:pos() #print(toLocal(TargetPos1,ang(),Hands_User:attachmentPos("chest"),Hands_User:attachmentAng("chest")))
+            local TargetPos2 = owner():aimPos() #HandLeft_targetEnt2:pos()
+            local HandOffset = vec(6.296143, -8.390311, 14.461914	):rotate(0,Hands_User:attachmentAng("chest")[2],0)
+            local HandTargetPos = Hands_User:attachmentPos("chest") + HandOffset
+            local DIF = HandTargetPos - HandLeft_base_E:pos()
+            local DIS = DIF:length()
+            local Pitch = acos(min(DIS/Hand_l,1))
+            
+            #local Back = vec(-1,0,0):rotate(0,Hands_User:angles()[2],0)
+            #local Vec = DIF:cross(Back)
+            local UP = DIF:cross(Vec)
+            local Forward = DIF:rotateAroundAxis(UP:cross(DIF), Pitch)
+            
+            local Ang1 = quat(Forward, UP):toAngle() # DIF:toAngle() + ang(Pitch,0,0)
+            local Ang2 = ang(-Pitch*2,0,0)
+            local Ang1 = HandLeft_base_E:toWorld(clamp(HandLeft_base_E:toLocal(Ang1),-ang(80,80,999),ang(80,80,999)))
+            local Ang2 = HandLeft_bone1_E:toWorld(clamp(Ang2,-ang(160,0,0),ang(0,0,0)))
+            holoAng(HandLeft_bone1_I, Ang1)
+            holoAng(HandLeft_bone2_I, Ang2)
+            local VecToAngle = (TargetPos2-HandLeft_bone3_E:pos())
+            local Ang3 = ang(clamp(HandLeft_bone2_E:toLocal(VecToAngle:toAngle())[1],-60,60),0,0)
+            holoAng(HandLeft_bone3_I, HandLeft_bone2_E:toWorld(Ang3))
+            ]#
+        }
+    break
+    
+    case "AddHolo",
+        addHolo()
+    break
+}
+
+
+setName(Code_Name + "\nOPS: "+ops() + "\nCPU: " + floor(cpuUsage()*1e6))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

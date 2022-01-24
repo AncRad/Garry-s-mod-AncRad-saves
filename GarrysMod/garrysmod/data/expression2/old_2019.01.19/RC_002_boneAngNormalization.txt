@@ -1,0 +1,176 @@
+@name RC_002_boneAngNormalization
+
+@inputs [T1 T2 T3]:entity
+@outputs V:vector A:angle N
+
+@persist W:entity [Q]:table
+@persist [Ragdoll]:entity [R_pelvic R_chest R_head  R_LFoot R_RFoot  ]:bone
+
+
+
+if(changed(0)) {
+    
+    function angle bone:getAngles() {
+        switch(This:index()) {
+            case  0, return toWorldAng(vec(),ang( -90,   0, -90),vec(),angnorm(This:angles()))
+            case  1, return toWorldAng(vec(),ang(   0,  90,  90),vec(),angnorm(This:angles()))
+            case 10, return toWorldAng(vec(),ang(   0, -90, -90),vec(),angnorm(This:angles()))
+            default, return ang()
+        }
+    }
+    
+    
+    
+    Ragdoll  = entity():isWeldedTo()
+    R_pelvic = Ragdoll:bone(0)
+    R_chest  = Ragdoll:bone(1)
+    R_head   = Ragdoll:bone(10)
+    R_LFoot  = Ragdoll:bone(13)
+    R_RFoot  = Ragdoll:bone(14)
+    
+    
+    
+    if(1) {
+        foreach(C, B:bone = W:bones()) {
+            B:setMass(0.1)
+        }
+        W:bone(0):setMass(20)
+        W:bone(10):setMass(20)
+        W:bone(1):setMass(20) #W:bone(1):boneGravity(0)
+    }
+}
+
+timer("", 50)
+
+
+if(changed(0)) {
+    Q["curtime", number] = curtime()
+}
+local LastCurtime = Q["curtime", number]
+local Curtime = curtime()
+Q["curtime", number] = Curtime
+local Interval = Curtime - LastCurtime
+local Loop = Interval / 0.015625
+
+
+
+
+
+local EyeAngles = T3:angles():setRoll(0)   if(T3:angles()[3] & !T3:isPlayerHolding()) {T3:setAng(EyeAngles)}
+
+
+
+#- chest
+local RC_tp1 = T1:pos()
+local RC_tp2 = T2:pos()
+
+local RC_a = R_chest:getAngles()
+local RC_p = R_chest:pos()
+
+local RC_v1 = toLocal(EyeAngles:forward():setZ(0),ang(),vec(),RC_a) #toLocal(RC_tp1,ang(),RC_p,RC_a)
+local RC_v2 = toLocal(-EyeAngles:right(),ang(),vec(),RC_a) #toLocal(RC_tp2,ang(),RC_p,RC_a)
+
+local RC_a1 = angnorm(RC_v1:toAngle())
+local RC_a2 = angnorm(RC_v2:toAngle())
+
+local RC_AR = ang(RC_a1[1],RC_a1[2],RC_a2[1])
+
+# -3 1 2
+local RC_AR = clamp(  clamp(ang(-RC_AR[3],RC_AR[1],RC_AR[2])*5,-50,50)  -  R_chest:angVel()/4,-50,50)
+R_chest:applyAngForce(R_chest:mass()*RC_AR*Loop)
+
+
+#- pelvic
+local RP_tp1 = T1:pos()
+local RP_tp2 = T2:pos()
+
+local RP_a = R_pelvic:getAngles()
+local RP_p = R_pelvic:pos()
+
+local RP_v1 = toLocal(EyeAngles:forward():setZ(0),ang(),vec(),RP_a) #toLocal(RP_tp1,ang(),RP_p,RP_a)
+local RP_v2 = toLocal(-EyeAngles:right(),ang(),vec(),RP_a) #toLocal(RP_tp2,ang(),RP_p,RP_a)
+
+local RP_a1 = angnorm(RP_v1:toAngle())
+local RP_a2 = angnorm(RP_v2:toAngle())
+
+local RP_AR = ang(RP_a1[1],RP_a1[2],RP_a2[1])
+
+# 2 -3 1
+local RP_AR = clamp(  clamp(ang(RP_AR[2],-RP_AR[3],RP_AR[1])*5,-50,50)  -  R_pelvic:angVel()/4,-50,50)
+R_pelvic:applyAngForce(R_pelvic:mass()*RP_AR*Loop)
+
+
+
+#- head
+local RH_tp1 = T1:pos()
+local RH_tp2 = T2:pos()
+
+local RH_a = R_head:getAngles()
+local RH_p = R_head:pos()
+
+local RH_v1 = toLocal(EyeAngles:forward(),ang(),vec(),RH_a) #toLocal(RH_tp1,ang(),RH_p,RH_a)
+local RH_v2 = toLocal(R_chest:up(),ang(),vec(),RH_a) #toLocal(RH_tp2,ang(),RH_p,RH_a)
+
+local RH_a1 = angnorm(RH_v1:toAngle())
+local RH_a2 = angnorm(RH_v2:toAngle())
+
+local RH_AR = ang(RH_a1[1],RH_a1[2],RH_a2[1])
+
+# 3 -1 2
+local RH_AR = clamp(  clamp(ang(RH_AR[3],-RH_AR[1],RH_AR[2])*3,-50,50)  -  R_head:angVel()/4,-30,30)
+R_head:applyAngForce(R_head:mass()*RH_AR*Loop)
+
+
+
+
+
+#[
+
+
+local RH_tp1 = T1:pos()
+local RH_tp2 = T2:pos()
+
+local B_a = 1 ? B:getAngles() : angnorm(B:angles())
+local B_p = B:pos()
+
+local B_v1 = toLocal(RH_tp1,ang(),B_p,B_a)
+local B_v2 = toLocal(RH_tp2,ang(),B_p,B_a)
+
+local B_a1 = angnorm(B_v1:toAngle())
+local B_a2 = angnorm(B_v2:toAngle())
+
+local RH_AR = ang(B_a1[1],B_a1[2],B_a2[1])
+
+local RH_AR = clamp((ang(RH_AR[3],-RH_AR[1],RH_AR[2]))*10,-100,100) - clamp(B:angVel()/4,-100,100)
+B:applyAngForce(B:mass()*RH_AR*Loop)
+
+
+
+
+#if(!toWorldAng(vec(),ang(),vec(),B:angles()):forward():dot(B:angles():forward())) {print("ALARM")}
+#Angle=toWorldAng(vector localpos,angle localang,vector worldpos,angle worldang)
+#Angle=toLocalAng(vector localpos,angle localang,vector worldpos,angle worldang)
+
+
+
+
+
+
+
+]#
+
+
+
+
+
+
+
+
+
+
+
+
+
+#Angle=bone:heading(vector pos)
+
+setName("RC_002_boneAngNormalization\nOPS: " + ops() + "\nCPU: " + floor(cpuUsage()*1e6))

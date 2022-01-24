@@ -1,0 +1,69 @@
+@name effect 01 001
+
+@inputs 
+@outputs 
+@persist [E O]:entity [Q]:table
+
+
+
+#include "AddHolo"
+if(changed(0)) {
+    
+    
+    E = entity()
+    O = owner()
+    
+    #Q["interval", number] = 75
+    
+    
+    function number addEffect01(Name:string, LocalPos:vector, [Radius Lenght]:number, LocalAng:angle, NumberParts:number, INTO:string) {
+        local Effect_i = Q[Name + "/effect/id", number]
+        if(Effect_i) {
+            
+        }
+        else {
+            Effect_i = Q["effectCount", number] = Q["effectCount", number] + 1
+            
+            local Base_n = "effect01/" + Name + "/base"
+            addHolo(Base_n, LocalPos, vec(), LocalAng, vec(), "tetra", "", INTO)
+            for(C = 1, NumberParts) {
+                
+                addHolo(Base_n + "/part" + C, vec(), -vec(Radius,Radius,Lenght*2), ang(0,360*C/NumberParts,0), vec(255), "hq_sphere", "models/roller/rollermine_glow", Base_n)
+                addHoloClip(ang(0,0,0), 0)
+            }
+        }
+    }
+    function number entity:addEffect01(Name:string, LocalPos:vector, [Radius Lenght]:number, LocalAng:angle, NumberParts:number) {
+        
+        local ID = addEffect01(Name, LocalPos, Radius, Lenght, LocalAng, NumberParts, "")
+        addHoloINTO(This)
+        
+        return ID
+    }
+    
+    
+    
+    E:addEffect01("test", vec(2,0,0), 20, 200, ang(0,0,0), 30)
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+}

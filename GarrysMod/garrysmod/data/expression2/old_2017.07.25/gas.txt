@@ -1,0 +1,177 @@
+@name gas
+
+@inputs 
+@outputs 
+@persist [E O]:entity [Q]:table Scale
+
+@trigger none
+
+
+
+if(changed(0)) {
+    
+    E = entity()
+    O = owner()
+    
+    
+    Scale = 100
+    Q["parts", number] = 0
+    timer("", 0)
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+}
+
+
+
+if(clk("")) {
+        timer("", 50)
+    
+    if(changed(0)) {
+        
+        Q["lastCurtime", number] = curtime()
+    }
+    local LastCurtime = Q["lastCurtime", number]
+    local Curtime = curtime()
+    Q["lastCurtime", number] = Curtime
+    local Interval = Curtime - LastCurtime
+    
+    
+    
+    local EYE = O:eye()
+    local EYEA = EYE:toAngle()
+    local ShootPos = O:shootPos()
+    
+    
+    
+    
+    
+    if(O:keyPressed("E")) {
+        if(holoCanCreate()) {
+            local Part = Q["part", number] = Q["part", number] + 1
+            
+            local Pos = O:shootPos() + O:eye() * 30
+            local Sector = ceil(Pos/Scale)
+            local SS = Sector:toString()
+            local Vel = O:eye() * 300
+            
+            local Holo = holoCreate(Part, Pos, vec(), ang(), vec(100,255,0),"models/hunter/blocks/cube1x1x1.mdl")
+            Holo:ignite(50000)
+            Q[Part + "/vel", vector] = Vel
+            
+            
+            Q["parts", array] = Q["parts", array]:add(array(Part))
+            Q[SS + "/parts", array] = Q[SS + "/parts", array]:add(array(Part))
+        }
+    }
+    
+    
+    
+    
+    foreach(C, Part:number = Q["parts", array]) {
+        local Holo = holoEntity(Part)
+        local Pos = Holo:pos()
+        
+        local Sector = ceil(E:toLocal(Pos)/Scale)
+        local SS = Sector:toString()
+        local SA = Q[SS + "/parts", array]
+        local Count = SA:count()
+        
+        local Vel = Q[Part + "/vel", vector]
+        local V = vec()
+        if(Count > 1) {
+            foreach(S, SPart:number = SA) {
+                if(SPart == Part) {continue}
+                V+= holoEntity(SPart):pos()
+            }
+            V = V / clamp(Count-1,1,100)
+            Vel = Vel + (Pos-V):normalized() * clamp(Count / 4,0.2,1) ^ 2 * 500 * Interval
+        }
+        
+        
+        local R = rangerOffset(Pos,Pos+Vel)
+        if(R:hit()) {
+            Vel = -Vel:rotateAroundAxis(R:hitNormal(),180) * 1
+        }
+        
+        Pos = R:pos()
+        holoPos(Part, Pos)
+        Q[Part + "/vel", vector] = Vel = Vel - (Vel + vec(0,0,600)) * 2 * Interval
+        
+        local NextSector = ceil(E:toLocal(Pos)/Scale)
+        if(Sector != NextSector) {
+            foreach(S, SPart:number = SA) {
+                if(SPart == Part) {
+                    Q[SS + "/parts", array]:remove(S)
+                    break
+                }
+            }
+            local NSS = NextSector:toString()
+            Q[NSS + "/parts", array] = Q[NSS + "/parts", array]:add(array(Part))
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,54 @@
+@name e2c_FFT_Test
+
+#0x13BB
+
+@inputs 
+@outputs 
+@persist D XD DXD XDX
+@trigger 
+
+if(first())
+{
+        XD=65
+       soundURLload("1","https://muzofond.fm/zvuk_transfer?q=aHR0cHM6Ly96dm9vcS5jb20vZ20vaGUvZ28%2FdXRtX3NvdXJjZT16Y3BhJnV0bV9tZWRpdW09bXV6b2ZvbmRvcmcmdHJhY2staWQ9NDE0MjIyODQmdXRtX3Rlcm09cnUtdmxh",0.05,0,entity())
+        soundURLvolume("1",1) 
+}
+
+runOnTick(1)
+
+if(D<64&holoCanCreate())
+{
+    D++   
+     holoCreate(D)
+      holoPos(D,entity():toWorld(vec(D*-5.5,0,0)))
+      holoScale(D,vec(0.5))  
+   # holoColor(D,vec(random(255),random(255),random(255)))
+    holoColor(D,hsv2rgb(4.5*D,1,1)) 
+    holoDisableShading(D,1)
+}
+
+if(XD<128&holoCanCreate())
+{
+    XD++
+         holoCreate(XD)
+      holoPos(XD,entity():toWorld(vec(XD*5.5-65*5.5,0,0)))
+      holoScale(XD,vec(0.5)) 
+      holoColor(XD,hsv2rgb(4.5*D,1,1))
+ 
+      #holoColor(XD,vec(random(255),random(255),random(255))) 
+     holoDisableShading(XD,1) 
+}
+
+FFT=entity():soundFFT("1")
+
+
+
+
+for(B=1,64)
+{
+    XDX=B
+    holoScale(B,vec(0.5,0.5,0.5*FFT[XDX,number]))  
+    holoScale(65+B,vec(0.5,0.5,0.5*FFT[XDX,number]))    
+}
+
+
